@@ -1,7 +1,7 @@
 ---
-title: "rq-go: Go Bindings for RaptorQ Erasure Coding"
+title: "rq-go: RaptorQ Forward Error Correction Library for Go"
 sidebarTitle: "rq-go"
-description: "rq-go provides Go bindings for the RaptorQ forward error correction library. Encode files into fault-tolerant symbols and decode them back, even with missing data."
+description: "rq-go provides Go bindings for RaptorQ forward error correction. Encode files into fault-tolerant symbols and reconstruct them, even with missing data."
 ---
 
 `rq-go` is a Go library that wraps the RaptorQ Forward Error Correction (FEC) algorithm. Lumera's Cascade service uses it to split files into redundant, independently-retrievable symbols before distributing them across the SuperNode P2P network. Because RaptorQ is an erasure code, the original file can be reconstructed even if a subset of the symbols is lost or unavailable — making Cascade storage resilient to node churn and partial network failures.
@@ -35,7 +35,7 @@ go get github.com/LumeraProtocol/rq-go
 Then import it in your source files:
 
 ```go
-import raptorq "github.com/LumeraProtocol/rq-go"
+import "github.com/LumeraProtocol/rq-go"
 ```
 
 ---

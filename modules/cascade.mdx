@@ -77,9 +77,9 @@ You can query the current state of any action at any time using the CLI or the L
     After registering on-chain, stream the file bytes to the lead SuperNode's `CascadeService.Register` endpoint.
 
     ```shell
-    # The supernode CLI can handle the full register + upload flow
-    # See the SuperNode documentation for the sncli upload command
-    sncli cascade upload \
+    # The supernode binary handles the full register + upload flow
+    # See the SuperNode CLI reference for all available commands
+    supernode cascade upload \
       --action-id <action-id> \
       --file <path-to-file> \
       --supernode <supernode-grpc-address>

@@ -233,7 +233,7 @@ Once LumeScope is running, all of the following paths are available on your host
      psql "postgres://user:pass@host:5432/lumescope?sslmode=disable" -c "\dt"
      ```
 
-  3. Ensure the database user has `CREATE TABLE` and `CREATE INDEX` privileges — LumeScope runs schema migrations automatically on startup.
+  3. Ensure the database user has `CREATE TABLE` and `CREATE INDEX` privileges — LumeScope sets up the required schema automatically on first startup.
 </Accordion>
 
 </AccordionGroup>

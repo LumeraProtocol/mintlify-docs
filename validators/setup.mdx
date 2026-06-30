@@ -1,7 +1,7 @@
 ---
-title: "Set Up a Lumera Protocol Validator Node"
+title: "Install and Register a Lumera Protocol Validator Node"
 sidebarTitle: "Setup"
-description: "Install lumerad, join the Lumera mainnet or testnet, sync your node, and register as a validator in step-by-step instructions."
+description: "Install lumerad, join the Lumera mainnet or testnet, sync your node, and register as a validator with these step-by-step instructions."
 ---
 
 This guide walks you through everything needed to go from a fresh server to an active validator on Lumera Protocol. Follow the steps in order — each step assumes the previous one has been completed successfully. If you are joining testnet instead of mainnet, refer to the [Testnet tab](#network-specific-parameters) wherever network-specific values appear.
@@ -10,7 +10,7 @@ This guide walks you through everything needed to go from a fresh server to an a
 
 ### Install Prerequisites
 
-Before building `lumerad`, make sure your server has Go 1.21 or later, `make`, `git`, and the C toolchain that CGO needs to compile `libwasmvm`.
+Before building `lumerad`, make sure your server has Go 1.26 or later, `make`, `git`, and the C toolchain that CGO needs to compile `libwasmvm`.
 
 ```shell
 # Ubuntu / Debian
@@ -18,7 +18,7 @@ sudo apt-get update
 sudo apt-get install -y build-essential git curl jq
 
 # Install Go (replace with the version matching go.mod)
-GO_VERSION=1.22.4
+GO_VERSION=1.26.0
 curl -OL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go
 sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz

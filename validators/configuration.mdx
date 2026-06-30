@@ -1,7 +1,7 @@
 ---
-title: "Configure Your Lumera Validator Node"
+title: "Lumera Validator Node Configuration Reference Guide"
 sidebarTitle: "Configuration"
-description: "Key configuration options for lumerad nodes: app.toml, config.toml, client.toml settings for gas prices, peers, pruning, and more."
+description: "Key configuration options for lumerad validator nodes: app.toml, config.toml, and client.toml settings for gas prices, peers, and pruning."
 ---
 
 After `lumerad init` runs, three configuration files live under `~/.lumera/config/`. Each file controls a different layer of the node: `config.toml` governs the CometBFT engine and networking, `app.toml` controls the Cosmos SDK application layer, and `client.toml` sets defaults for the `lumerad` CLI. This page covers the most important settings in each file and explains when to change them.

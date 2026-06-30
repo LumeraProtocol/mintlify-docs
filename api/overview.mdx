@@ -1,7 +1,7 @@
 ---
-title: "Lumera Protocol REST API Overview"
+title: "Lumera Protocol REST API Overview: LumeScope and LCD"
 sidebarTitle: "Overview"
-description: "Lumera Protocol exposes REST APIs through LumeScope (network aggregator) and the lumerad LCD endpoint. Learn about base URLs, authentication, and rate limits."
+description: "Lumera Protocol exposes REST APIs via LumeScope and the lumerad LCD endpoint. Learn about base URLs, authentication, and rate limits."
 ---
 
 Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD** endpoint speaks directly to the chain, letting you query state and broadcast transactions with no middleware in the way. **LumeScope** sits in front of the network as a neutral, read-only aggregator: it decodes Action metadata (Cascade and Sense), tracks SuperNode hardware metrics, and assembles network-wide statistics so your application doesn't have to reconstruct that data from raw chain state. Both surfaces return JSON and require no authentication for read operations.

@@ -1,7 +1,7 @@
 ---
-title: "Lumera Protocol Custom Modules Overview"
+title: "Lumera Protocol Custom Modules: Developer Overview"
 sidebarTitle: "Overview"
-description: "Lumera Protocol extends the Cosmos SDK with four custom modules: action, claim, lumeraid, and supernode — enabling storage, identity, and reward distribution."
+description: "Lumera Protocol's four custom modules — action, claim, lumeraid, and supernode — enable permanent storage, identity, and reward distribution."
 ---
 
 Lumera Protocol is a Cosmos SDK Layer 1 blockchain that goes beyond the standard module set to deliver permanent decentralized storage, AI-powered content analysis, on-chain identity, and structured SuperNode coordination. These capabilities are implemented as four custom **`x/` modules** — the Cosmos SDK convention for application-specific logic that lives alongside standard modules like `x/bank`, `x/staking`, and `x/gov`. Each module owns its own state, message types, query endpoints, and governance parameters, and they are wired together at the application layer in `app/app.go`.
