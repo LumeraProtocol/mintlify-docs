@@ -1,0 +1,125 @@
+---
+title: "Cascade: Permanent Decentralized Storage on Lumera"
+sidebarTitle: "Cascade"
+description: "Cascade is Lumera's permanent storage service. Files are encoded with RaptorQ erasure coding, distributed across SuperNodes, and retrievable indefinitely."
+---
+
+Cascade is Lumera's permanent decentralized storage service. When you store a file through Cascade, it is not hosted on a single server — it is encoded into redundant symbols using RaptorQ Forward Error Correction, split across multiple SuperNodes in the Lumera network, and anchored on-chain through the `x/action` module. As long as a sufficient number of SuperNodes hold their assigned symbols, your file is retrievable by anyone with the right access credentials — indefinitely.
+
+## How Cascade Works
+
+<Steps>
+  <Step title="Register the action on-chain">
+    You submit a `MsgRegisterAction` transaction to the `x/action` module, providing the SHA-256 hash of your file and its byte size. The chain records this as a new Cascade action in the `registered` state and assigns a unique action ID.
+  </Step>
+  <Step title="SuperNodes encode the file">
+    A set of top-ranked SuperNodes (selected by the `x/supernode` module) picks up the action. You stream the raw file bytes to the lead SuperNode via gRPC. The SuperNode encodes the file into RaptorQ symbols — each symbol is a fixed-size encoded chunk that can be used to reconstruct the original, even if other symbols are missing.
+  </Step>
+  <Step title="Symbols are distributed across the P2P network">
+    The encoded symbols are stored in the SuperNode P2P DHT (Distributed Hash Table) and replicated across multiple SuperNodes. Each symbol is identified by a unique hash recorded in the action metadata. The lead SuperNode then submits a `MsgFinalizeAction` transaction, moving the action to `finalized` state.
+  </Step>
+  <Step title="The network approves and the file is permanently stored">
+    Other SuperNodes independently verify the encoded symbols and collectively submit approval. The action transitions to `approved` state on-chain. At this point, the file is considered permanently stored and reward distribution to participating SuperNodes is triggered.
+  </Step>
+</Steps>
+
+## RaptorQ Erasure Coding
+
+RaptorQ is a **Forward Error Correction (FEC)** algorithm standardized in [RFC 6330](https://www.rfc-editor.org/rfc/rfc6330). It is the core technology that gives Cascade its resilience guarantees.
+
+<Accordion title="How RaptorQ works">
+RaptorQ splits your file into source blocks, then generates repair symbols on top of those blocks. The key property is that you can reconstruct the original file from **any** sufficiently large subset of symbols — you do not need all of them, and you do not need them in order.
+
+For example, if a file is encoded into 100 symbols with a redundancy factor of 4, the network holds 400 symbols total. Even if 75% of those symbols are lost (due to SuperNodes going offline), you can still recover the original file from the remaining 100.
+
+Lumera's `rq-go` library wraps the RaptorQ C++ implementation for use in Go, with configurable symbol size (default: 65,535 bytes), redundancy factor (default: 4×), and block-level processing for memory-efficient handling of large files.
+</Accordion>
+
+The metadata describing how the file was encoded — block IDs, encoder parameters, symbol hashes — is stored in a `_raptorq_layout.json` manifest and referenced from the on-chain action record. This manifest is what allows any SuperNode (or a future retriever) to reconstruct the file from the distributed symbols.
+
+## Action Lifecycle
+
+Every Cascade request moves through three on-chain states:
+
+```
+registered → finalized → approved
+```
+
+| State | Description |
+|-------|-------------|
+| `registered` | Action submitted on-chain; file upload in progress |
+| `finalized` | Lead SuperNode encoded and stored the symbols; submitted finalization proof |
+| `approved` | Network validated the symbols; rewards distributed to SuperNodes |
+
+You can query the current state of any action at any time using the CLI or the LumeScope API.
+
+## Submitting a Cascade Action
+
+<Tabs>
+  <Tab title="CLI">
+    Use `lumerad` to register a Cascade action from the command line.
+
+    ```shell
+    # Register a Cascade action
+    lumerad tx action register-cascade \
+      --data-hash <sha256-of-file> \
+      --data-size <bytes> \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1 \
+      --fees 5000ulume
+    ```
+
+    Replace `<sha256-of-file>` with the hex-encoded SHA-256 hash of the file you want to store, and `<bytes>` with the exact file size in bytes.
+
+    After broadcasting, note the `action_id` returned in the transaction response. You will need it to stream the file to the SuperNode and to query the action status.
+  </Tab>
+  <Tab title="gRPC (SuperNode)">
+    After registering on-chain, stream the file bytes to the lead SuperNode's `CascadeService.Register` endpoint.
+
+    ```shell
+    # The supernode CLI can handle the full register + upload flow
+    # See the SuperNode documentation for the sncli upload command
+    sncli cascade upload \
+      --action-id <action-id> \
+      --file <path-to-file> \
+      --supernode <supernode-grpc-address>
+    ```
+  </Tab>
+</Tabs>
+
+## Querying Cascade Actions
+
+```shell
+# List all Cascade actions on-chain
+lumerad query action list-actions
+
+# Get full details for a specific action, including state and metadata
+lumerad query action get-action <action-id>
+```
+
+You can also use the [LumeScope API](/api/lumescope) for richer action queries with filtering, pagination, and decoded metadata:
+
+```shell
+# Query Cascade actions via LumeScope REST API
+curl 'https://api.lumescope.io/v1/actions?type=cascade&limit=10'
+
+# Get a specific action with transaction history
+curl 'https://api.lumescope.io/v1/actions/<action-id>'
+```
+
+## Pricing
+
+Cascade costs consist of two components:
+
+<CardGroup cols={2}>
+  <Card title="On-chain gas fees" icon="fire">
+    Standard Cosmos SDK transaction fees paid in `ulume` when you broadcast the `register-cascade` message. Set with `--fees` or `--gas-prices`.
+  </Card>
+  <Card title="SuperNode service fees" icon="server">
+    Service fees paid to the SuperNodes that encode and store your file. These are calculated based on file size and current network parameters, and distributed automatically upon action approval.
+  </Card>
+</CardGroup>
+
+<Note>
+File permanence in Cascade depends on the health and size of the SuperNode network. The RaptorQ redundancy factor means files survive the loss of a significant fraction of storing SuperNodes — but if the network were to shrink below the minimum required for a given file's redundancy configuration, retrieval could be impaired. Monitor SuperNode network health via the [LumeScope dashboard](/api/lumescope).
+</Note>

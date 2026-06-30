@@ -1,0 +1,66 @@
+---
+title: "Lumera Protocol REST API Overview"
+sidebarTitle: "Overview"
+description: "Lumera Protocol exposes REST APIs through LumeScope (network aggregator) and the lumerad LCD endpoint. Learn about base URLs, authentication, and rate limits."
+---
+
+Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD** endpoint speaks directly to the chain, letting you query state and broadcast transactions with no middleware in the way. **LumeScope** sits in front of the network as a neutral, read-only aggregator: it decodes Action metadata (Cascade and Sense), tracks SuperNode hardware metrics, and assembles network-wide statistics so your application doesn't have to reconstruct that data from raw chain state. Both surfaces return JSON and require no authentication for read operations.
+
+## API Surfaces
+
+**Lumera LCD (native chain API)** is the standard Cosmos SDK REST interface served by any `lumerad` node. Use it when you need to submit transactions, query on-chain parameters, or access data that LumeScope does not index.
+
+**LumeScope API** is a purpose-built aggregator that decodes, stores, and serves Lumera-specific data in developer-friendly shapes. It is the recommended starting point for application developers who want paginated Action lists, decoded metadata, and SuperNode health without writing their own chain-indexing logic.
+
+## Base URLs
+
+| Network | LumeScope Base | LCD Base |
+|---------|----------------|----------|
+| Mainnet | `https://api.lumera.io` | `https://lcd.lumera.io` |
+| Testnet | `https://api.testnet.lumera.io` | `https://lcd.testnet.lumera.io` |
+
+<Note>
+  All examples in this documentation target Mainnet. Replace the base URL with the Testnet equivalent when developing against **lumera-testnet-2**.
+</Note>
+
+## Authentication
+
+All LumeScope endpoints are **public** — no API key or bearer token is required. You can call any endpoint directly from a browser, curl, or your application's HTTP client.
+
+## Response Format
+
+Every LumeScope response is JSON. Successful responses use HTTP `200` status codes. Error responses include a machine-readable `error` field and an appropriate 4xx or 5xx status code.
+
+## OpenAPI Specification & Interactive Docs
+
+LumeScope embeds a full OpenAPI 3.0 specification and an interactive Swagger UI you can use to explore and test every endpoint:
+
+| Resource | URL |
+|----------|-----|
+| OpenAPI JSON spec | `{base}/openapi.json` |
+| Swagger UI | `{base}/docs` |
+
+For example, on Mainnet browse to `https://api.lumera.io/docs` to open the interactive documentation.
+
+## Explore the API
+
+<CardGroup cols={2}>
+  <Card
+    title="Actions API"
+    icon="bolt"
+    href="/api/actions"
+  >
+    Query Cascade and Sense actions with decoded metadata, transaction lifecycle tracking, and aggregated statistics.
+  </Card>
+  <Card
+    title="SuperNodes API"
+    icon="server"
+    href="/api/supernodes"
+  >
+    Fetch SuperNode hardware metrics, payment statistics, version compatibility matrix, and availability status.
+  </Card>
+</CardGroup>
+
+## Self-Hosting LumeScope
+
+If you need a private deployment — custom sync intervals, data sovereignty, or your own analytics pipeline — you can run LumeScope yourself with a single Docker command. See the [LumeScope deployment guide](/api/lumescope) for instructions.

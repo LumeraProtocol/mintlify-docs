@@ -1,0 +1,184 @@
+---
+title: "CascadeService gRPC API Reference"
+sidebarTitle: "CascadeService"
+description: "CascadeService provides streaming gRPC RPCs for registering files in Cascade permanent storage and downloading stored data from a Lumera SuperNode."
+---
+
+`CascadeService` is the gRPC interface you use to register files in Lumera's Cascade permanent-storage layer and to retrieve them later. Both operations use gRPC streaming: the `Register` RPC is bidirectional (you stream file chunks to the SuperNode while it streams progress events back), and the `Download` RPC streams chunks from the SuperNode to you. The SuperNode handles RaptorQ encoding, P2P distribution, and on-chain finalization — your client only needs to send the data and act on the event stream.
+
+## Proto definition
+
+```proto
+service CascadeService {
+  rpc Register (stream RegisterRequest) returns (stream RegisterResponse);
+  rpc Download (DownloadRequest) returns (stream DownloadResponse);
+}
+```
+
+---
+
+## Register
+
+`rpc Register(stream RegisterRequest) returns (stream RegisterResponse)`
+
+Use `Register` to upload a file and anchor it permanently on the Lumera network. The RPC is a bidirectional stream: your client opens the stream, sends the file in `DataChunk` messages, then sends a final `Metadata` message to identify the pre-created on-chain action. The SuperNode encodes the data with RaptorQ, distributes the encoded symbols across the P2P network, and finalizes the action on-chain — streaming `RegisterResponse` progress events back to you throughout.
+
+### Client stream — `RegisterRequest`
+
+Each message in your outgoing stream is one of two types (`oneof`):
+
+<ParamField body="chunk" type="DataChunk">
+  A slice of the file's raw bytes. Send as many chunk messages as needed to transfer the complete file. There is no prescribed chunk size — a few hundred kilobytes per message is a reasonable default.
+
+  <Expandable title="DataChunk fields">
+    <ParamField body="chunk.data" type="bytes" required>
+      The raw binary content of this chunk.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="metadata" type="Metadata">
+  Sent **once**, after all `DataChunk` messages, to tell the SuperNode which on-chain action this upload corresponds to.
+
+  <Expandable title="Metadata fields">
+    <ParamField body="metadata.task_id" type="string" required>
+      A client-assigned task identifier used for correlating logs and events.
+    </ParamField>
+    <ParamField body="metadata.action_id" type="string" required>
+      The on-chain Cascade action ID that was created before calling this RPC. The SuperNode reads the fee and ownership details from this action.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Server stream — `RegisterResponse`
+
+<ResponseField name="event_type" type="SupernodeEventType">
+  A progress milestone. See the event table below.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable description of the event, useful for logging.
+</ResponseField>
+
+<ResponseField name="tx_hash" type="string">
+  Populated on the `ACTION_FINALIZED` event — the transaction hash of the finalization transaction broadcast to the Lumera chain.
+</ResponseField>
+
+### Registration event sequence
+
+The server emits these events in order during a successful registration:
+
+| Event | Description |
+|-------|-------------|
+| `ACTION_RETRIEVED` | Action details fetched from the Lumera chain |
+| `ACTION_FEE_VERIFIED` | Required fee confirmed as paid |
+| `TOP_SUPERNODE_CHECK_PASSED` | This node confirmed as a top-ranked SuperNode |
+| `INPUT_ENCODED` | File data encoded with RaptorQ into erasure-coded symbols |
+| `RQID_GENERATED` | RaptorQ symbol identifiers generated |
+| `ARTEFACTS_STORED` | Encoded symbols distributed and stored in the P2P network |
+| `ACTION_FINALIZED` | Finalization transaction submitted on-chain; `tx_hash` is set |
+
+### Example — grpcurl
+
+```shell
+# Stream file registration (sends metadata only; pipe real file data in production)
+grpcurl -plaintext \
+  -d '{"metadata": {"task_id": "task-001", "action_id": "action-abc"}}' \
+  localhost:4444 \
+  lumera.supernode.v1.CascadeService/Register
+```
+
+<Note>
+  Production clients should use a gRPC library (e.g., the [supernode Go SDK](https://github.com/LumeraProtocol/supernode/tree/master/sdk)) to open a real bidirectional stream and send file data as `DataChunk` messages before sending the `Metadata` message. The `grpcurl` snippet above illustrates the shape of the metadata message only.
+</Note>
+
+---
+
+## Download
+
+`rpc Download(DownloadRequest) returns (stream DownloadResponse)`
+
+Use `Download` to retrieve a file that was previously registered via Cascade. You send a single unary request containing the action ID and a signature proving ownership, and the SuperNode streams back progress events followed by the raw file data in chunks.
+
+### Request — `DownloadRequest`
+
+<ParamField body="action_id" type="string" required>
+  The on-chain Cascade action ID whose data you want to retrieve.
+</ParamField>
+
+<ParamField body="signature" type="string" required>
+  A base64-encoded signature over the `action_id`, produced with the LumeraID key associated with the action's owner address. The SuperNode verifies this signature before serving the data.
+</ParamField>
+
+### Server stream — `DownloadResponse`
+
+Each message in the response stream is one of two types (`oneof`):
+
+<ResponseField name="event" type="DownloadEvent">
+  Progress milestone emitted during the retrieval phase.
+
+  <Expandable title="DownloadEvent fields">
+    <ResponseField name="event.event_type" type="SupernodeEventType">
+      The event milestone. Download-phase events include `SIGNATURE_VERIFIED`, `ACTION_RETRIEVED`, `RQID_VERIFIED`, `ARTEFACTS_DOWNLOADED`, and `DATA_HASH_VERIFIED`.
+    </ResponseField>
+    <ResponseField name="event.message" type="string">
+      Human-readable description of the event.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="chunk" type="DataChunk">
+  A slice of the reconstructed file's raw bytes. After all progress events are emitted, the SuperNode streams the complete file as a sequence of `DataChunk` messages.
+
+  <Expandable title="DataChunk fields">
+    <ResponseField name="chunk.data" type="bytes">
+      Raw binary content of this chunk of the recovered file.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example — grpcurl
+
+```shell
+grpcurl -plaintext \
+  -d '{"action_id": "action-abc", "signature": "base64-sig..."}' \
+  localhost:4444 \
+  lumera.supernode.v1.CascadeService/Download
+```
+
+<Note>
+  The `signature` field must be produced by signing the `action_id` string with the **LumeraID key** linked to the owner address recorded on the action. Signatures produced with a different key are rejected with an `UNAUTHENTICATED` gRPC status. See the LumeraID documentation for how to generate a compatible signature.
+</Note>
+
+---
+
+## SupernodeEventType reference
+
+The `SupernodeEventType` enum is shared by both `Register` and `Download`. Not every event appears in every flow.
+
+| Value | Name | Flows |
+|-------|------|-------|
+| `0` | `UNKNOWN` | — |
+| `1` | `ACTION_RETRIEVED` | Register, Download |
+| `2` | `ACTION_FEE_VERIFIED` | Register |
+| `3` | `TOP_SUPERNODE_CHECK_PASSED` | Register |
+| `4` | `METADATA_DECODED` | Download |
+| `5` | `DATA_HASH_VERIFIED` | Download |
+| `6` | `INPUT_ENCODED` | Register |
+| `7` | `SIGNATURE_VERIFIED` | Download |
+| `8` | `RQID_GENERATED` | Register |
+| `9` | `RQID_VERIFIED` | Download |
+| `10` | `FINALIZE_SIMULATED` | Register |
+| `11` | `ARTEFACTS_STORED` | Register |
+| `12` | `ACTION_FINALIZED` | Register |
+| `13` | `ARTEFACTS_DOWNLOADED` | Download |
+
+---
+
+## HTTP Gateway alternative
+
+If you cannot use gRPC directly, the SuperNode also exposes an HTTP/JSON gateway that wraps these RPCs. See [`docs/gateway.md`](https://github.com/LumeraProtocol/supernode/blob/master/docs/gateway.md) in the SuperNode repository for the full list of endpoints, request/response examples, and a link to the Swagger UI.
+
+<Note>
+  The HTTP gateway is useful for quick testing and browser-based tooling, but for production file transfers you should use the native gRPC streaming interface or the Go SDK. Streaming large files over the HTTP gateway may be subject to buffering and timeout constraints that the gRPC path avoids.
+</Note>

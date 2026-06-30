@@ -1,0 +1,155 @@
+---
+title: "Set Up a Lumera SuperNode from Scratch"
+sidebarTitle: "Setup"
+description: "Install and configure the Lumera SuperNode binary, initialize your identity, connect to the Lumera chain, and start earning rewards."
+---
+
+This guide walks you through everything you need to go from a bare validator server to a fully running SuperNode. By the end you will have the `supernode` binary installed, your validator key configured in the keyring, a `config.yml` that points to the right network, and the service running and ready to earn rewards.
+
+<Steps>
+
+### Confirm Prerequisites
+
+Before installing the SuperNode, make sure the following are in place on your server:
+
+- **Running Lumera validator node** — your validator must be active and synced. The SuperNode reads chain state and submits transactions through your validator's gRPC endpoint.
+- **Go installed** — required if you intend to build from source. Pre-built binaries are available for Linux amd64 and do not require Go at runtime.
+- **Ports open** — ensure your firewall allows inbound and outbound traffic on:
+  - `4444/tcp` — SuperNode gRPC service (clients connect here)
+  - `4445/tcp` — SuperNode P2P network (peers connect here)
+
+<Note>
+Your Lumera validator's gRPC port (`9090` by default) only needs to be accessible from your SuperNode process itself — it does not need to be exposed publicly.
+</Note>
+
+### Download the Latest SuperNode Release
+
+Download the latest pre-built binary from the [SuperNode releases page](https://github.com/LumeraProtocol/supernode/releases). Replace `<version>` and `<platform>` with the values that match your system.
+
+```shell
+# Example: download and install v2.5.2 for Linux amd64
+curl -L https://github.com/LumeraProtocol/supernode/releases/download/v2.5.2/supernode-linux-amd64 \
+  -o /usr/local/bin/supernode
+
+chmod +x /usr/local/bin/supernode
+```
+
+Confirm the binary is accessible:
+
+```shell
+supernode version
+```
+
+### Initialize the SuperNode (Interactive)
+
+Run the interactive setup wizard. It prompts you for each required value — keyring backend, key name, network address, gRPC endpoint, and chain ID — and writes `~/.supernode/config.yml`.
+
+```shell
+supernode init
+```
+
+The wizard is the easiest path for a first-time setup. If you are scripting a production deployment or running in a CI/CD pipeline, use the non-interactive approach in the next step instead.
+
+### Initialize the SuperNode (Non-Interactive / Production)
+
+For production deployments, pass all values as flags and read the keyring passphrase from an environment variable rather than embedding it in your shell history.
+
+<Warning>
+Never pass `--mnemonic` directly on a command line in production. Shell history logs the full command, exposing your mnemonic to anyone with access to the server. Use a secrets manager or a file with restricted permissions to supply the mnemonic, and clear your shell history after initialization.
+</Warning>
+
+<Tabs>
+  <Tab title="Mainnet">
+    ```shell
+    # Read passphrase from environment variable (recommended)
+    export KEYRING_PASS="your-secure-passphrase"
+
+    supernode init -y \
+      --keyring-backend file \
+      --keyring-passphrase-env KEYRING_PASS \
+      --key-name mykey \
+      --recover \
+      --mnemonic "word1 word2 ... word24" \
+      --supernode-addr 0.0.0.0 \
+      --supernode-port 4444 \
+      --lumera-grpc grpc.lumera.io:9090 \
+      --chain-id lumera-mainnet-1
+    ```
+  </Tab>
+  <Tab title="Testnet">
+    ```shell
+    # Read passphrase from environment variable (recommended)
+    export KEYRING_PASS="your-secure-passphrase"
+
+    supernode init -y \
+      --keyring-backend file \
+      --keyring-passphrase-env KEYRING_PASS \
+      --key-name mykey \
+      --recover \
+      --mnemonic "word1 word2 ... word24" \
+      --supernode-addr 0.0.0.0 \
+      --supernode-port 4444 \
+      --lumera-grpc grpc.testnet.lumera.io:9090 \
+      --chain-id lumera-testnet-2
+    ```
+  </Tab>
+</Tabs>
+
+**What `--recover` does:** instead of generating a new key, `supernode init` imports the key from the mnemonic you provide. Use the same mnemonic as your validator key so that your SuperNode identity matches your on-chain validator registration.
+
+<Tip>
+You can supply the passphrase from a file instead of an environment variable using `--keyring-passphrase-file /path/to/passphrase.txt`. Make sure the file has `600` permissions so only your process user can read it.
+</Tip>
+
+### Verify the Configuration
+
+After initialization, confirm that `config.yml` was written correctly and all expected fields are present:
+
+```shell
+supernode config list
+```
+
+Check that `lumera.grpc_addr` and `lumera.chain_id` match the network you intend to join, and that `supernode.identity` shows your validator's Lumera address.
+
+### Start the SuperNode
+
+Start the service using the default base directory (`~/.supernode`):
+
+```shell
+supernode start
+```
+
+To use a custom base directory — for example, if you manage multiple SuperNode instances on the same server — pass the `-d` flag:
+
+```shell
+supernode start -d /path/to/custom/dir
+```
+
+<Note>
+For production deployments, run the SuperNode as a systemd service so it restarts automatically on failure and survives server reboots. Create a unit file that calls `supernode start` with your chosen flags and set `Restart=always`.
+</Note>
+
+### Verify the SuperNode Is Running
+
+Check the version and confirm the process started without errors:
+
+```shell
+supernode version
+```
+
+For a full health check including P2P peer count, resource usage, and registered services, call the gRPC status endpoint directly or use a monitoring tool that queries the `SupernodeService.GetStatus` method.
+
+</Steps>
+
+## Network Connection Reference
+
+Use the table below when configuring `--lumera-grpc` and `--chain-id` during initialization:
+
+| Network | `--lumera-grpc` | `--chain-id` |
+|---------|-----------------|--------------|
+| Mainnet | `grpc.lumera.io:9090` | `lumera-mainnet-1` |
+| Testnet | `grpc.testnet.lumera.io:9090` | `lumera-testnet-2` |
+
+<Warning>
+Do not change the P2P port from its default value of `4445`. The Lumera P2P network expects all SuperNodes to communicate on this port. Changing it will prevent your node from connecting to peers and will cause action failures.
+</Warning>

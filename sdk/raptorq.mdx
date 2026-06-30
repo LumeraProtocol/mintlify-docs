@@ -1,0 +1,240 @@
+---
+title: "rq-go: Go Bindings for RaptorQ Erasure Coding"
+sidebarTitle: "rq-go"
+description: "rq-go provides Go bindings for the RaptorQ forward error correction library. Encode files into fault-tolerant symbols and decode them back, even with missing data."
+---
+
+`rq-go` is a Go library that wraps the RaptorQ Forward Error Correction (FEC) algorithm. Lumera's Cascade service uses it to split files into redundant, independently-retrievable symbols before distributing them across the SuperNode P2P network. Because RaptorQ is an erasure code, the original file can be reconstructed even if a subset of the symbols is lost or unavailable — making Cascade storage resilient to node churn and partial network failures.
+
+Most developers interact with Cascade through the [SuperNode gRPC API](/api/grpc/cascade-service) or the `lumerad` CLI rather than calling `rq-go` directly. This page documents the library for developers who need low-level encoding control or who are building tooling on top of Cascade's storage layer.
+
+---
+
+## Platform support
+
+`rq-go` ships pre-built static libraries for the following targets. No external shared libraries or C toolchains are required at runtime — the final binary is fully self-contained.
+
+| Platform | Architecture |
+|----------|--------------|
+| Linux | amd64 |
+| Linux | arm64 (including Raspberry Pi) |
+| macOS | amd64 (Intel) |
+| macOS | arm64 (Apple Silicon) |
+| Windows | amd64 |
+
+---
+
+## Installation
+
+Add `rq-go` to your Go module:
+
+```shell
+go get github.com/LumeraProtocol/rq-go
+```
+
+Then import it in your source files:
+
+```go
+import raptorq "github.com/LumeraProtocol/rq-go"
+```
+
+---
+
+## Quick start
+
+The example below shows the complete encode → decode round-trip using the library's default configuration:
+
+```go raptorq_example.go
+package main
+
+import (
+    "fmt"
+    "os"
+
+    raptorq "github.com/LumeraProtocol/rq-go"
+)
+
+func main() {
+    // Create a processor with default settings.
+    processor, err := raptorq.NewDefaultRaptorQProcessor()
+    if err != nil {
+        panic(err)
+    }
+    defer processor.Free() // Always free resources when done.
+
+    // Choose an optimal block size for the file being encoded.
+    fileInfo, err := os.Stat("large_file.dat")
+    if err != nil {
+        panic(err)
+    }
+    blockSize := processor.GetRecommendedBlockSize(uint64(fileInfo.Size()))
+
+    // Encode the file into RaptorQ symbols.
+    result, err := processor.EncodeFile("large_file.dat", "symbols/", blockSize)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("Encoded into %d symbols\n", result.TotalSymbolsCount)
+    fmt.Printf("Layout file: %s\n", result.LayoutFilePath)
+
+    // Decode symbols back to the original file.
+    err = processor.DecodeSymbols(
+        "symbols/",
+        "recovered.dat",
+        "symbols/_raptorq_layout.json",
+    )
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("File recovered successfully!")
+}
+```
+
+<Note>
+  Always call `processor.Free()` (or defer it immediately after creation) to release the memory held by the underlying C library. Forgetting to do so will cause a memory leak, especially in long-running services.
+</Note>
+
+---
+
+## Custom configuration
+
+Use `NewRaptorQProcessor` when you need to tune symbol size, redundancy, memory limits, or concurrency:
+
+```go
+// NewRaptorQProcessor(symbolSize, redundancyFactor, maxMemoryMB, concurrencyLimit)
+processor, err := raptorq.NewRaptorQProcessor(65535, 4, 4096, 2)
+if err != nil {
+    panic(err)
+}
+defer processor.Free()
+```
+
+### Configuration parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `symbolSize` | `65535` (64 KB − 1 B) | Size of each encoded symbol in bytes. Smaller symbols increase parallelism but raise overhead. |
+| `redundancyFactor` | `4` | Repair symbols generated per source symbol. Higher values improve loss tolerance at the cost of storage. |
+| `maxMemoryMB` | `16384` (16 GB) | Hard cap on memory the processor may allocate, in MB. |
+| `concurrencyLimit` | `4` | Maximum number of blocks encoded or decoded concurrently. |
+
+---
+
+## API reference
+
+### `NewDefaultRaptorQProcessor() (*RaptorQProcessor, error)`
+
+Creates a processor with default settings (see table above). Use this for most applications.
+
+### `NewRaptorQProcessor(symbolSize, redundancyFactor, maxMemoryMB, concurrencyLimit uint32) (*RaptorQProcessor, error)`
+
+Creates a processor with explicit parameters.
+
+### `processor.GetRecommendedBlockSize(fileSize uint64) uint64`
+
+Returns the recommended block size (in bytes) for the given file, taking into account the processor's memory limit and efficiency heuristics. Using this value avoids excessive memory consumption for large files.
+
+### `processor.EncodeFile(inputPath, outputDir string, blockSize uint64) (*EncodeResult, error)`
+
+Encodes the file at `inputPath` into RaptorQ symbols written to `outputDir`. The layout metadata file (`_raptorq_layout.json`) is also written to `outputDir`. Returns an `EncodeResult` with:
+
+- `TotalSymbolsCount` — total number of symbols generated across all blocks
+- `LayoutFilePath` — absolute path to the generated layout file
+
+### `processor.DecodeSymbols(symbolsDir, outputPath, layoutPath string) error`
+
+Reconstructs the original file from the symbols in `symbolsDir`, guided by the layout file at `layoutPath`, and writes the output to `outputPath`. Reconstruction succeeds even when some symbols are missing, as long as enough symbols survive for each block.
+
+### `processor.CreateMetadata(inputPath, layoutPath string, blockSize uint64) (*EncodeResult, error)`
+
+Generates the layout file without writing any symbol files. Use this to plan storage requirements or generate symbol identifiers ahead of time.
+
+### `processor.Free()`
+
+Releases all memory held by the processor. Must be called when the processor is no longer needed.
+
+---
+
+## Block processing and memory management
+
+`rq-go` processes files in blocks to bound peak memory usage:
+
+<Steps>
+  <Step title="Split">
+    The file is divided into blocks of at most `blockSize` bytes.
+  </Step>
+  <Step title="Encode each block independently">
+    Each block is encoded separately. Only one block's working memory is live at a time, so peak usage is proportional to `blockSize` rather than to the total file size.
+  </Step>
+  <Step title="Write symbols">
+    Each block produces a set of source symbols plus repair symbols (determined by `redundancyFactor`). Symbols are written to the output directory as individual files named by their content hash.
+  </Step>
+  <Step title="Write layout">
+    A single `_raptorq_layout.json` file records the encoder parameters, block boundaries, symbol identifiers, and block hashes needed for decoding.
+  </Step>
+</Steps>
+
+Use `GetRecommendedBlockSize` to let the library select a block size that balances memory efficiency against encoding overhead.
+
+---
+
+## Metadata file format
+
+The `_raptorq_layout.json` file produced by `EncodeFile` is required for decoding. Keep it alongside the symbols (or store it separately and pass its path to `DecodeSymbols`).
+
+```json
+{
+  "blocks": [
+    {
+      "block_id": 0,
+      "encoder_parameters": [0, 0, 25, 240, 160, 0, 195, 80, 1, 0, 1, 8],
+      "original_offset": 0,
+      "size": 1700000,
+      "symbols": [
+        "9yCaAXSexMsaWDP6pzK4wZ4w9Hqrr6QPjJZ86wJMGoq9",
+        "3Q4MtczkeZzWbECcA8eUeMaQ14cGHF4PpgeYo33cMtYD",
+        "G6okoLMA1wGtVZwieSykR9bvLSw49iwYZux2byJDrbDF",
+        "AJ9fp8Ydqo1aaVHzjHowajJA4ELwfetpQAMUT47GZays"
+      ],
+      "hash": "9gD64LFuoQPYJoWBQmnG2TdPErWwni7Bhrpn6ae74rk7"
+    },
+    {
+      "block_id": 1,
+      "encoder_parameters": [0, 0, 25, 240, 160, 0, 195, 80, 1, 0, 1, 8],
+      "original_offset": 1700000,
+      "size": 1700000,
+      "symbols": [
+        "CxFNCbQhtWLzXwpGCE8L1m67WEV85zuTpTtYyRm6nDQF",
+        "8NVZfQzFDsXwQgEbuNxzyo9D18da9qEHfDpou7mCzg72",
+        "2hsAk5xWZCJ6d3xnnEaPu6TXsVwN6vfVhLDbKo7fsGVd",
+        "96KaGntmMeqzL9uPxpKce2PMV9BiUXovMiDUBw1t3Mhz",
+        "3kMQUazSrgfpxxkw3yY9zfh8amHXCeD7ZsmaDCu2szdB"
+      ],
+      "hash": "9LvSmppDKePbZnY6PLX8hyEY8gcskVJKwzmgn7zyPNyC"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `block_id` | integer | Zero-based block index |
+| `encoder_parameters` | array of integers | 12-byte RaptorQ encoder parameter block needed for decoding |
+| `original_offset` | integer | Byte offset of this block within the original file |
+| `size` | integer | Size of this block in bytes |
+| `symbols` | array of strings | Base58-encoded content hashes that identify each symbol file |
+| `hash` | string | Base58-encoded hash of the block data, used for integrity verification |
+
+<Note>
+  If the file fits within a single block, the layout contains exactly one entry with `block_id: 0`. The decoder handles single-block and multi-block layouts identically.
+</Note>
+
+---
+
+## Usage in Lumera
+
+`rq-go` is used internally by the Lumera SuperNode's Cascade service. When you call [`CascadeService/Register`](/api/grpc/cascade-service), the SuperNode encodes your file with this library, distributes the resulting symbols across the P2P network, and records the symbol IDs on-chain. You do not need to use `rq-go` directly unless you are building custom tooling or integrating at a lower level than the gRPC API.
+
+<Note>
+  For most integration work, prefer the [SuperNode gRPC API](/api/grpc/cascade-service) or the `lumerad` CLI over calling `rq-go` directly. The SuperNode handles encoding parameters, P2P distribution, and on-chain finalization for you.
+</Note>

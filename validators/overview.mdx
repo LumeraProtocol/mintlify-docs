@@ -1,0 +1,87 @@
+---
+title: "Becoming a Lumera Protocol Validator"
+sidebarTitle: "Overview"
+description: "Validators secure the Lumera blockchain by staking LUME tokens, proposing and signing blocks, and participating in on-chain governance."
+---
+
+Validators are the backbone of Lumera Protocol. By running a validator node, you participate in BFT consensus via CometBFT — proposing new blocks, signing votes, and keeping the network in agreement. In exchange for this service, you earn staking rewards from transaction fees and block emissions. You also carry governance responsibilities: your vote on on-chain proposals shapes the direction of the protocol, from parameter changes to software upgrades.
+
+## What Validators Do
+
+Lumera uses **CometBFT** (formerly Tendermint Core) for Byzantine Fault Tolerant (BFT) consensus. At each block height, a proposer is selected from the active validator set weighted by voting power. The proposer bundles transactions into a block, and the remaining validators sign pre-votes and pre-commits. A block is finalized once more than two-thirds of the total voting power has committed to it — giving Lumera instant finality with no forks.
+
+Your responsibilities as a validator include:
+
+- **Staking LUME** — Self-delegating a minimum amount of `ulume` (the micro-denomination of LUME) to enter the active set and back your honesty with economic collateral.
+- **Proposing and signing blocks** — Staying online and responsive so you do not miss votes, which leads to downtime slashing.
+- **Governing the network** — Voting on governance proposals that alter chain parameters, fund the community pool, or trigger software upgrades.
+- **Operating SuperNodes** (optional but incentivized) — Lumera's SuperNode network extends validator roles into specialized off-chain services; see the SuperNode documentation for details.
+
+## Validator vs. Sentry Node Architecture
+
+Running a validator node directly exposed to the public internet creates an attack surface: a DDoS flood against your IP can knock you offline and cause downtime slashing. The recommended mitigation is a **sentry node architecture**:
+
+- **Validator node** — Your signing machine. Keep it on a private network, reachable only by your sentry nodes. Never expose its P2P or RPC port to the public internet.
+- **Sentry nodes** — Publicly facing full nodes that relay blocks and transactions between the validator and the wider peer-to-peer network. Run at least two sentries in different data centers or cloud regions.
+
+Your validator connects to its sentries via `persistent_peers` in `config.toml`. The sentries connect to the broader network via `seeds` and open peer slots. If a sentry is attacked, you can rotate it without exposing your validator's IP.
+
+## Hardware Requirements
+
+Both validator nodes and sentry nodes have demanding I/O and memory requirements. The table below lists the **minimum recommended** specifications for mainnet. Testnet operators can use lighter hardware, but practicing with production-grade machines reduces surprises at launch.
+
+| Component | Validator Node | Sentry Node |
+|-----------|----------------|-------------|
+| CPU | 8 Cores | 8 Cores |
+| Memory | 64 GB | 64 GB+ |
+| Storage | 2 TB | 2 TB |
+| Network | 5 Gbps+ | 5 Gbps+ |
+
+<Note>
+Use NVMe SSDs for storage. Mechanical drives and even SATA SSDs will struggle to keep up with the random-read / random-write patterns of a live CometBFT node under load. Storage growth depends on pruning settings; a default-pruned node grows at roughly 50–100 GB per month on an active mainnet.
+</Note>
+
+## Software Prerequisites
+
+Before you build `lumerad`, make sure the following tools are installed on your server:
+
+| Dependency | Purpose | Notes |
+|------------|---------|-------|
+| **Go 1.21+** | Compile `lumerad` from source | Check the `go.mod` in the repo for the exact version pin |
+| **Git** | Clone the Lumera repository | Any recent version |
+| **make** | Run the build targets in `Makefile` | Usually pre-installed on Linux |
+| **libwasmvm** | CosmWasm execution engine | Built automatically by `make build`; must match the version in `go.mod` |
+| **AWS CLI** | Snapshot sync from S3 | Optional — only needed for fast-sync via snapshot; no AWS account required |
+
+<Tip>
+If `libwasmvm` is not found at runtime, download the correct `.so` file from the [CosmWasm releases](https://github.com/CosmWasm/wasmvm/releases) page and place it in `/usr/lib/` or wherever your dynamic linker looks.
+</Tip>
+
+## Validator Lifecycle
+
+Every validator follows the same progression from bare metal to active signing:
+
+1. **Install** — Build `lumerad` from source and install the binary to your `$PATH`.
+2. **Initialize** — Run `lumerad init` to create the home directory, generate node keys, and scaffold default config files.
+3. **Join genesis or sync** — Download the correct `genesis.json` for your network (mainnet or testnet), configure seeds and peers, then sync the chain either from block 0 or via snapshot.
+4. **Register** — Once your node is synced, fund a key and submit a `create-validator` transaction to enter the active set.
+5. **Operate** — Monitor uptime, apply upgrades on time, vote on governance proposals, and withdraw rewards.
+
+The pages below walk you through each stage in detail.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Set Up a Validator Node" icon="server" href="/validators/setup">
+    Step-by-step instructions for building `lumerad`, syncing the chain, and submitting your `create-validator` transaction on mainnet or testnet.
+  </Card>
+  <Card title="Configuration Reference" icon="sliders" href="/validators/configuration">
+    Detailed reference for `config.toml`, `app.toml`, and `client.toml` — including ports, pruning strategies, and state sync.
+  </Card>
+  <Card title="Operations and Maintenance" icon="wrench" href="/validators/operations">
+    Day-to-day validator work: monitoring status, unjailing, editing validator metadata, withdrawing rewards, and upgrading `lumerad`.
+  </Card>
+  <Card title="SuperNode Operator Guide" icon="network-wired" href="/supernodes/overview">
+    Extend your validator into Lumera's SuperNode network for additional roles and rewards.
+  </Card>
+</CardGroup>

@@ -1,0 +1,168 @@
+---
+title: "Lumera Protocol Architecture and Core Components"
+sidebarTitle: "Architecture"
+description: "Understand Lumera Protocol's layered architecture: the base chain, custom modules, SuperNode layer, and client applications like Lumera Hub."
+---
+
+Lumera Protocol is organized into four distinct layers that work together to deliver a full-stack decentralized infrastructure platform. The base chain provides consensus, smart contracts, and cross-chain messaging. Custom modules extend the chain with storage and identity capabilities. The SuperNode layer executes the compute-intensive work those modules coordinate. Client applications then surface all of this to end users and developers. Understanding how these layers interact will help you navigate the rest of this documentation.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Client Layer                        │
+│         Lumera Hub  ·  LumeScope  ·  CLI            │
+├─────────────────────────────────────────────────────┤
+│                 SuperNode Layer                      │
+│      Cascade (permanent storage)  ·  Sense (AI)     │
+├─────────────────────────────────────────────────────┤
+│              Custom Module Layer                     │
+│   x/action  ·  x/claim  ·  x/lumeraid  ·  x/supernode │
+├─────────────────────────────────────────────────────┤
+│                   Base Layer                         │
+│    Cosmos SDK v0.53.6  ·  CosmWasm  ·  IBC  ·  EVM  │
+└─────────────────────────────────────────────────────┘
+```
+
+## Base Layer
+
+The base layer is the foundation of the Lumera chain. It handles block production, consensus (CometBFT), account management, governance, and the execution environments for smart contracts.
+
+### Cosmos SDK v0.53.6
+
+Lumera runs on **Cosmos SDK v0.53.6**, the same modular framework that powers Cosmos Hub, Osmosis, and dozens of other production chains. The SDK provides:
+
+- **CometBFT consensus** — Byzantine Fault Tolerant, fast-finality block production
+- **Standard modules** — `x/bank`, `x/staking`, `x/gov`, `x/distribution`, and more, all pre-audited
+- **gRPC and REST APIs** — Every module exposes queryable endpoints automatically
+- **`lumerad` binary** — The single binary that runs both full nodes and validator nodes (see below)
+
+### CosmWasm
+
+CosmWasm enables Rust-based smart contracts on Lumera. Contracts are compiled to WebAssembly and executed in a sandboxed environment with deterministic gas metering. You can instantiate contracts, store state, call other contracts, and interact with any Cosmos SDK module via `CosmosMsg` dispatches.
+
+### IBC (Inter-Blockchain Communication)
+
+IBC is natively integrated into the base layer, enabling trust-minimized token transfers and arbitrary message passing between Lumera and any other IBC-enabled chain. Lumera maintains IBC channels to major ecosystem chains, making it straightforward to bridge LUME and other assets.
+
+### Cosmos EVM
+
+Lumera's EVM layer provides an Ethereum-compatible execution environment. You can deploy existing Solidity contracts, use MetaMask or other EVM wallets, and integrate with EVM-native tooling—while benefiting from Cosmos's fast finality and low fees.
+
+<Note>
+  Cosmos EVM accounts and Cosmos accounts share the same underlying key material. A single private key can operate both an EVM address (`0x...`) and a Bech32 Cosmos address (`lumera1...`).
+</Note>
+
+## Custom Module Layer
+
+Lumera ships four custom Cosmos SDK modules that implement the protocol-specific logic for storage, identity, token migration, and SuperNode management.
+
+| Module | Path | Description |
+|---|---|---|
+| `x/action` | `lumera/x/action` | Manages the full lifecycle of Cascade and Sense actions: register, finalize, and approve. Coordinates the handoff between on-chain state and the SuperNode layer. |
+| `x/claim` | `lumera/x/claim` | Facilitates token migration from Pastel Network. PSL holders submit a signed claim proof and receive LUME at the configured conversion ratio. |
+| `x/lumeraid` | `lumera/x/lumeraid` | Decentralized identity (LumeraID) infrastructure. Associates on-chain identities with metadata, enabling permissioned access patterns and provenance tracking. |
+| `x/supernode` | `lumera/x/supernode` | Registers SuperNodes, maintains the active top-list used for action routing, tracks performance metrics, and calculates reward distributions. |
+
+### x/action — Action Lifecycle
+
+Every Cascade or Sense request is represented as an **Action** on-chain. The `x/action` module transitions actions through the following states:
+
+<Steps>
+  <Step title="Register">
+    A client submits a `MsgRegisterAction` transaction, locking the service fee in escrow. The action is assigned a unique ID and placed in a pending queue.
+  </Step>
+  <Step title="Process">
+    The top-ranked SuperNodes detect the pending action, retrieve the file data via the gRPC API, perform the requested operation (store or analyze), and submit their results.
+  </Step>
+  <Step title="Finalize">
+    Once a quorum of SuperNodes report success, a `MsgFinalizeAction` transaction moves the action to a finalized state. Artifacts are committed to the SuperNode P2P network.
+  </Step>
+  <Step title="Approve">
+    The module distributes the escrowed fee to participating SuperNodes and marks the action as approved. The client can now retrieve the stored file or sense report.
+  </Step>
+</Steps>
+
+### x/supernode — SuperNode Registry
+
+The `x/supernode` module is the on-chain source of truth for all SuperNode registrations. It maintains:
+
+- **Registration records** — Address, IP endpoint, version, and stake amount for each SuperNode
+- **Top-list selection** — A ranked list of the highest-staked active SuperNodes, updated each block, used by `x/action` to route requests
+- **Reward accounting** — Tracks action completions per SuperNode and triggers fee payouts
+
+<Warning>
+  A SuperNode must be associated with an active validator. If the underlying validator is jailed or unbonded, the SuperNode is automatically removed from the top-list.
+</Warning>
+
+## SuperNode Layer
+
+The SuperNode layer is where Lumera's off-chain compute happens. Each SuperNode runs the `supernode` binary alongside the `lumerad` validator binary.
+
+### Cascade — Permanent Storage
+
+Cascade is Lumera's permanent file storage protocol. When you register a Cascade action:
+
+1. The SuperNode receives the file via its gRPC `CascadeService.Register` streaming endpoint.
+2. The file is encoded with **RaptorQ** erasure coding, producing redundant repair symbols.
+3. The encoded symbols are distributed across the SuperNode P2P network (DHT-backed).
+4. The action is finalized on-chain with a content-addressed artifact ID.
+5. The file can be retrieved at any time by any SuperNode using `CascadeService.Download`, requiring only a subset of the total stored symbols.
+
+### Sense — AI Duplication Detection
+
+Sense analyzes digital media files and produces a semantic fingerprint used to detect near-duplicate content across the network. Sense results are stored as on-chain artifacts and are queryable via `x/action`.
+
+### SuperNode Binary (`supernode`)
+
+The `supernode` binary exposes:
+
+- **gRPC services** — `SupernodeService` (health/metrics) and `CascadeService` (register/download)
+- **HTTP gateway** — A REST/Swagger interface for clients that cannot use gRPC directly
+- **P2P network** — A Kademlia DHT for distributing and retrieving encoded file artifacts
+- **CLI** — `supernode init`, `supernode start`, `supernode keys`, `supernode config`
+
+<Tip>
+  The default SuperNode service port is `4444` and the P2P port is `4445`. Both must be open and publicly reachable for the SuperNode to be included in the top-list and receive action assignments.
+</Tip>
+
+## Client Layer
+
+### Lumera Hub
+
+**Lumera Hub** is the official user-facing client for Lumera Protocol. It is available as:
+
+- A **web application** accessible from any browser
+- A **desktop application** for Windows, macOS, and Linux
+- A **mobile application** for iOS and Android
+
+Through Lumera Hub, you can manage your LUME balance, stake to validators, submit Cascade storage requests, browse stored artifacts, and interact with LumeraID. Lumera Hub communicates with the chain via the LCD (REST) and gRPC endpoints.
+
+### LumeScope
+
+**LumeScope** is a neutral, read-only API aggregator designed for developers and integrators who need aggregated network state without running their own node. It:
+
+- Decodes Action metadata (Cascade/Sense types) and tracks transaction lifecycle
+- Aggregates SuperNode hardware metrics, version compatibility matrices, and payment statistics
+- Probes SuperNode endpoints for availability
+- Exposes 16 REST endpoints with a built-in Swagger UI at `/docs` and an OpenAPI 3.0 spec at `/openapi.json`
+- Ships as a single Docker container with an embedded PostgreSQL 14 database
+
+LumeScope is the recommended backend for building lightweight Lumera clients and dashboards.
+
+### `lumerad` — The Chain Binary
+
+`lumerad` is the single Go binary that runs the Lumera full node and validator. Key subcommands include:
+
+| Command | Description |
+|---|---|
+| `lumerad start` | Start the node and begin syncing/validating |
+| `lumerad init` | Initialize a new node with a given chain ID and moniker |
+| `lumerad keys` | Manage keys in the local keyring |
+| `lumerad tx` | Broadcast transactions (staking, governance, actions, etc.) |
+| `lumerad query` | Query chain state from any module |
+| `lumerad tendermint` | Access CometBFT-level utilities (show node ID, validator address, etc.) |
+
+<Note>
+  `lumerad` follows the standard Cosmos SDK binary layout. If you are familiar with `gaiad`, `osmosisd`, or any other Cosmos binary, the command structure is identical.
+</Note>

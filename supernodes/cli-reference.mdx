@@ -1,0 +1,194 @@
+---
+title: "Lumera SuperNode CLI Command Reference"
+sidebarTitle: "CLI Reference"
+description: "Complete reference for all supernode CLI commands: init, start, version, keys list/recover, and config list/update with all flags and examples."
+---
+
+The `supernode` binary exposes a structured CLI with commands grouped into three areas: core lifecycle commands (`init`, `start`, `version`), key management (`keys`), and configuration management (`config`). Every command accepts a global `--basedir` flag so you can manage multiple SuperNode instances on the same machine. This page documents every command, its flags, and usage examples drawn directly from the binary.
+
+---
+
+## Global Flags
+
+The following flag applies to every `supernode` command:
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--basedir` | `-d` | `~/.supernode` | Path to the SuperNode base directory containing `config.yml`, the keyring, and all data subdirectories. |
+
+```shell
+# Use a custom base directory for all commands
+supernode start -d /opt/supernode-data
+supernode config list -d /opt/supernode-data
+supernode keys list -d /opt/supernode-data
+```
+
+---
+
+## Core Commands
+
+### `supernode init`
+
+Initialize a new SuperNode. This command creates the base directory, generates or imports a key into the keyring, and writes `~/.supernode/config.yml` with all required parameters. Run `init` once before the first `start`.
+
+By default, `init` launches an interactive wizard. Pass `-y` / `--yes` to skip all prompts and provide every value via flags instead.
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Override an existing installation. Use this to re-initialize a SuperNode that was previously set up. |
+| `-y`, `--yes` | Skip all interactive prompts. Every required value must be supplied via the flags below. |
+| `--keyring-backend` | Key storage backend: `os` (system keychain), `file` (encrypted file), or `test` (plaintext, never use in production). |
+| `--key-name` | Name of the key to create or recover. Used to look up the key in the keyring at runtime. |
+| `--recover` | Import an existing key from a mnemonic instead of generating a new one. Required when your SuperNode identity must match an existing on-chain validator. |
+| `--mnemonic` | The 24-word BIP-39 mnemonic phrase used for key recovery. Only meaningful when `--recover` is also set. |
+| `--supernode-addr` | IP address the SuperNode gRPC service binds to. Use `0.0.0.0` to listen on all interfaces. |
+| `--supernode-port` | Port for the SuperNode gRPC service (default: `4444`). |
+| `--lumera-grpc` | gRPC endpoint of the Lumera full node your SuperNode will connect to (format: `host:port`). |
+| `--chain-id` | Lumera blockchain chain ID. Must match the network you are joining. |
+| `--keyring-passphrase` | Plain text passphrase for the `file` keyring backend. **Use only for testing** — this value is visible in shell history. |
+| `--keyring-passphrase-env` | Name of an environment variable that contains the keyring passphrase. Preferred method for automated deployments. |
+| `--keyring-passphrase-file` | Path to a file whose contents are the keyring passphrase. Ensure the file has `600` permissions. |
+
+**Examples:**
+
+<CodeGroup>
+```shell Interactive setup
+supernode init
+```
+
+```shell Non-interactive — passphrase from env (recommended)
+export KEYRING_PASS="your-secure-passphrase"
+
+supernode init -y \
+  --keyring-backend file \
+  --keyring-passphrase-env KEYRING_PASS \
+  --key-name mykey \
+  --recover \
+  --mnemonic "word1 word2 ... word24" \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc grpc.lumera.io:9090 \
+  --chain-id lumera-mainnet-1
+```
+
+```shell Non-interactive — passphrase from file
+supernode init -y \
+  --keyring-backend file \
+  --keyring-passphrase-file /etc/supernode/keyring-pass.txt \
+  --key-name mykey \
+  --recover \
+  --mnemonic "word1 word2 ... word24" \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc grpc.lumera.io:9090 \
+  --chain-id lumera-mainnet-1
+```
+
+```shell Re-initialize (override existing)
+supernode init --force
+```
+</CodeGroup>
+
+---
+
+### `supernode start`
+
+Start the SuperNode service. The process connects to the configured Lumera gRPC endpoint, joins the P2P network, and begins serving Cascade and Sense actions.
+
+```shell
+# Start using the default base directory (~/.supernode)
+supernode start
+
+# Start using a custom base directory
+supernode start -d /opt/supernode-data
+```
+
+`start` is a long-running foreground process. In production, wrap it in a systemd unit or process supervisor so it restarts automatically on failure.
+
+---
+
+### `supernode version`
+
+Print the SuperNode binary version to stdout. Use this to confirm a successful installation or to report the version when filing a bug report.
+
+```shell
+supernode version
+```
+
+---
+
+## Key Management
+
+### `supernode keys list`
+
+List all keys stored in the keyring, along with their associated Lumera addresses. Use this to confirm that your validator key was imported correctly during `init`.
+
+```shell
+supernode keys list
+
+# List keys from a custom base directory
+supernode keys list -d /opt/supernode-data
+```
+
+Example output:
+
+```
+NAME    ADDRESS
+mykey   lumera15t2e8gjgmuqtj...
+```
+
+---
+
+### `supernode keys recover [name]`
+
+Recover a key from an existing BIP-39 mnemonic phrase and store it in the keyring under the given name. This is useful if you need to re-import your key after a keyring migration or hardware change without running a full `init`.
+
+| Flag | Description |
+|------|-------------|
+| `--mnemonic` | The 24-word mnemonic phrase to recover from. If omitted, the command prompts for it interactively. |
+
+```shell
+# Interactive recovery (prompts for mnemonic)
+supernode keys recover mykey
+
+# Non-interactive recovery (mnemonic inline — use in secure environments only)
+supernode keys recover mykey --mnemonic "word1 word2 ... word24"
+```
+
+<Warning>
+Passing `--mnemonic` inline on the command line stores the phrase in your shell history. In production, omit the flag and let the command prompt you for it, or pipe the mnemonic from a secrets manager.
+</Warning>
+
+---
+
+## Configuration Management
+
+### `supernode config list`
+
+Print the current values from `~/.supernode/config.yml` in a readable format. Use this after `init` to verify that every section was written correctly before starting the service.
+
+```shell
+supernode config list
+
+# Check config in a custom base directory
+supernode config list -d /opt/supernode-data
+```
+
+---
+
+### `supernode config update`
+
+Launch an interactive prompt to update individual configuration parameters in `config.yml` without editing the file directly. The command presents each current value and allows you to change it in place.
+
+```shell
+supernode config update
+
+# Update config in a custom base directory
+supernode config update -d /opt/supernode-data
+```
+
+<Note>
+After updating the configuration, restart the SuperNode for changes to take effect: stop the running process and run `supernode start` again.
+</Note>

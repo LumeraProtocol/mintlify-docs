@@ -1,0 +1,51 @@
+---
+title: "Lumera Protocol Custom Modules Overview"
+sidebarTitle: "Overview"
+description: "Lumera Protocol extends the Cosmos SDK with four custom modules: action, claim, lumeraid, and supernode — enabling storage, identity, and reward distribution."
+---
+
+Lumera Protocol is a Cosmos SDK Layer 1 blockchain that goes beyond the standard module set to deliver permanent decentralized storage, AI-powered content analysis, on-chain identity, and structured SuperNode coordination. These capabilities are implemented as four custom **`x/` modules** — the Cosmos SDK convention for application-specific logic that lives alongside standard modules like `x/bank`, `x/staking`, and `x/gov`. Each module owns its own state, message types, query endpoints, and governance parameters, and they are wired together at the application layer in `app/app.go`.
+
+## What Are Cosmos SDK Modules?
+
+In the Cosmos SDK, a module is a self-contained unit of blockchain functionality. Each module defines:
+
+- **Messages** — transactions users broadcast to change state
+- **Queries** — read-only calls to inspect state
+- **Keepers** — the Go code that reads and writes module state
+- **Genesis** — how the module initializes at chain start
+
+Custom modules follow the same conventions as core Cosmos SDK modules, giving them first-class access to the same security model, governance hooks, and IBC capabilities as the rest of the chain.
+
+## Lumera's Four Custom Modules
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| Action | `x/action` | Manages Cascade and Sense action lifecycle (register, finalize, approve) |
+| Claim | `x/claim` | Token migration from Pastel Network (PSL) to Lumera (LUME) |
+| LumeraID | `x/lumeraid` | Decentralized identity management |
+| SuperNode | `x/supernode` | SuperNode registration, ranking, and reward distribution |
+
+## How the Modules Interact
+
+The four modules form an integrated system rather than isolated silos:
+
+- **`x/action` → `x/supernode`**: When an action (Cascade or Sense) reaches the `approved` state, the action module triggers reward distribution to the SuperNodes that processed the request. SuperNode rankings — maintained by `x/supernode` — determine which nodes are eligible to be selected for each action.
+- **`x/action` → `x/lumeraid`**: Download authorization for Cascade-stored files requires a valid ownership proof tied to a LumeraID. The action module checks identity records before releasing file access.
+- **`x/supernode` → `x/lumeraid`**: SuperNode operators register their node identity on-chain through `x/lumeraid`, so each SuperNode has a verifiable, tamper-proof identity that cannot be spoofed.
+- **`x/claim`** is a one-time migration module. It operates independently, allowing holders of Pastel Network PSL tokens to claim their equivalent LUME balance on Lumera using a snapshot-based allowlist loaded at genesis.
+
+<CardGroup cols={2}>
+  <Card title="Cascade" icon="database" href="/modules/cascade">
+    Permanent, redundant file storage powered by RaptorQ erasure coding and distributed across the SuperNode network.
+  </Card>
+  <Card title="Sense" icon="magnifying-glass" href="/modules/sense">
+    AI-powered near-duplicate detection for NFTs, digital assets, and content originality verification.
+  </Card>
+  <Card title="LumeraID" icon="id-card" href="/modules/lumeraid">
+    On-chain decentralized identity for users, SuperNode operators, and asset ownership proofs.
+  </Card>
+  <Card title="Claims" icon="coins" href="/modules/claims">
+    Token migration module for Pastel Network PSL holders to claim equivalent LUME on Lumera.
+  </Card>
+</CardGroup>

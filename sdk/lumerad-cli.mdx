@@ -1,0 +1,251 @@
+---
+title: "lumerad CLI Reference"
+sidebarTitle: "lumerad CLI"
+description: "Complete reference for the lumerad command-line tool: querying chain state, submitting transactions, managing keys, and interacting with Lumera Protocol modules."
+---
+
+`lumerad` is the Lumera blockchain node binary and the primary command-line tool for interacting with the Lumera Protocol. You use it to run a full node, query any on-chain state, submit transactions, manage cryptographic keys, and work with Lumera-specific modules such as actions (Cascade/Sense), claims, and the supernode registry. It is built on the Cosmos SDK and follows the same command conventions as other Cosmos chains, so existing Cosmos familiarity transfers directly.
+
+Current version: **v1.20.0 — Aurora Convergence**
+
+---
+
+## Installation
+
+### Build from source
+
+<Steps>
+  <Step title="Clone the repository">
+    ```shell
+    git clone https://github.com/LumeraProtocol/lumera
+    cd lumera
+    ```
+  </Step>
+  <Step title="Build the binary">
+    ```shell
+    make build
+    ```
+    The compiled binary is placed at `build/lumerad`. You can also run `make build-debug` to include debug symbols.
+  </Step>
+  <Step title="Install system-wide">
+    ```shell
+    sudo mv build/lumerad /usr/local/bin/
+    ```
+  </Step>
+  <Step title="Verify the installation">
+    ```shell
+    lumerad version
+    ```
+  </Step>
+</Steps>
+
+**Prerequisites:** Go 1.26+ (see `go.mod` for the exact version) and `make`. The `libwasmvm` shared library is built automatically during `make build` or can be sourced from the [CosmWasm releases page](https://github.com/CosmWasm/wasmvm/releases).
+
+---
+
+## Key management
+
+Before you can sign transactions, you need at least one key in your local keyring.
+
+```shell
+lumerad keys add <name>          # Generate a new key and display its mnemonic
+lumerad keys list                # List all keys in the keyring
+lumerad keys show <name>         # Show a key's details, address, and public key
+lumerad keys import <name>       # Import a key from a mnemonic phrase
+lumerad keys delete <name>       # Permanently delete a key from the keyring
+```
+
+<Warning>
+  When you run `lumerad keys add`, the mnemonic is displayed **once** and never stored. Write it down and keep it in a safe place — it is the only way to recover your key if you lose access to the keyring files.
+</Warning>
+
+---
+
+## Query commands
+
+Query commands read on-chain state without submitting any transactions. They are safe to run at any time and do not require a signing key.
+
+<Tabs>
+  <Tab title="Staking">
+    ```shell
+    # List all active validators
+    lumerad query staking validators
+
+    # Show delegations for a specific address
+    lumerad query staking delegations <address>
+
+    # Show token balances for a specific address
+    lumerad query bank balances <address>
+    ```
+  </Tab>
+  <Tab title="Actions">
+    ```shell
+    # List all Cascade/Sense actions
+    lumerad query action list-actions
+
+    # Fetch a specific action by ID
+    lumerad query action get-action <action-id>
+    ```
+  </Tab>
+  <Tab title="Claims">
+    ```shell
+    # Check the claim status for an address
+    lumerad query claim get-claim <address>
+    ```
+  </Tab>
+  <Tab title="Node status">
+    ```shell
+    # Query the connected node's sync status and block height
+    lumerad status
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Transaction commands
+
+Transaction commands broadcast signed messages to the chain. Every transaction command requires `--from` (the signing key) and `--chain-id`. Fees are charged in `ulume` (1 LUME = 1,000,000 ulume).
+
+<Tabs>
+  <Tab title="Staking">
+    ```shell
+    # Delegate tokens to a validator
+    lumerad tx staking delegate <validator-address> <amount>ulume \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1
+
+    # Unbond tokens from a validator (subject to unbonding period)
+    lumerad tx staking unbond <validator-address> <amount>ulume \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1
+    ```
+  </Tab>
+  <Tab title="Governance">
+    ```shell
+    # Vote on an active governance proposal
+    lumerad tx gov vote <proposal-id> yes \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1
+
+    # Valid vote options: yes | no | abstain | no_with_veto
+    ```
+  </Tab>
+  <Tab title="Claims">
+    ```shell
+    # Claim your allocated LUME tokens (if eligible)
+    lumerad tx claim claim-tokens \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Global flags
+
+These flags apply to every `lumerad` command. You can set frequently-used flags as environment variables (e.g., `LUMERA_CHAIN_ID`) or in `~/.lumera/config/client.toml`.
+
+| Flag | Description |
+|------|-------------|
+| `--chain-id` | Chain identifier — `lumera-mainnet-1` for mainnet, `lumera-testnet-2` for testnet |
+| `--from` | Key name or bech32 address used to sign the transaction |
+| `--fees` | Transaction fee in `ulume` (e.g., `5000ulume`) |
+| `--gas` | Gas limit as an integer, or `"auto"` to estimate automatically |
+| `--gas-adjustment` | Multiplier applied to the estimated gas when using `--gas auto` (default `1.3`) |
+| `--node` | Tendermint RPC endpoint (default: `tcp://localhost:26657`) |
+| `--output` | Output format: `text` (default) or `json` |
+| `--broadcast-mode` | How to wait for the result: `sync`, `async`, or `block` |
+| `--keyring-backend` | Keyring backend: `os`, `file`, or `test` |
+
+<Tip>
+  Add `--output json` to any query command and pipe the result to `jq` for easy scripting:
+
+  ```shell
+  lumerad query bank balances lumera1abc... --output json | jq '.balances'
+  ```
+
+  For transactions, combine `--broadcast-mode block` with `--output json` to get the full transaction result — including events and the transaction hash — in a single call.
+</Tip>
+
+---
+
+## Common workflows
+
+<AccordionGroup>
+  <Accordion title="Check your balance and delegate">
+    ```shell
+    # 1. Find your address
+    lumerad keys show mykey --bech acc
+
+    # 2. Check your balance
+    lumerad query bank balances $(lumerad keys show mykey -a)
+
+    # 3. Pick a validator
+    lumerad query staking validators --output json | jq '.validators[] | {moniker: .description.moniker, address: .operator_address}'
+
+    # 4. Delegate
+    lumerad tx staking delegate lumeravaloper1xyz... 1000000ulume \
+      --from mykey \
+      --chain-id lumera-mainnet-1 \
+      --fees 5000ulume \
+      --gas auto \
+      --gas-adjustment 1.4
+    ```
+  </Accordion>
+
+  <Accordion title="Query an action and verify it is finalized">
+    ```shell
+    lumerad query action get-action <action-id> --output json | jq '{state: .action.state, tx_hash: .action.finalize_tx_hash}'
+    ```
+
+    A finalized Cascade action has `state: "ACTION_STATE_DONE"` and a populated `finalize_tx_hash`.
+  </Accordion>
+
+  <Accordion title="Connect to a remote node">
+    ```shell
+    lumerad status --node tcp://rpc.mainnet.lumera.io:26657
+    lumerad query bank balances lumera1abc... --node tcp://rpc.mainnet.lumera.io:26657
+    ```
+
+    Set `--node` once in your client config to avoid repeating it:
+
+    ```shell
+    lumerad config node tcp://rpc.mainnet.lumera.io:26657
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Additional build targets
+
+The Makefile exposes several targets useful during development:
+
+```shell
+make build-debug          # Build with debug symbols
+make build-proto          # Regenerate protobuf files from .proto sources
+make lint                 # Run golangci-lint
+make unit-tests           # Run unit test suite
+make integration-tests    # Run integration tests
+```
+
+---
+
+## Further reading
+
+<CardGroup cols={2}>
+  <Card title="Cosmos SDK docs" icon="book" href="https://docs.cosmos.network">
+    The upstream documentation for the SDK that powers `lumerad`.
+  </Card>
+  <Card title="CometBFT docs" icon="server" href="https://docs.cometbft.com">
+    Consensus engine and RPC reference.
+  </Card>
+  <Card title="IBC Protocol" icon="arrow-right-arrow-left" href="https://ibc.cosmos.network">
+    Cross-chain messaging used by Lumera.
+  </Card>
+  <Card title="Lumera Networks" icon="network-wired" href="https://github.com/LumeraProtocol/lumera-networks">
+    Genesis files, seeds, and peer lists for mainnet and testnet.
+  </Card>
+</CardGroup>

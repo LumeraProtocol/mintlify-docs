@@ -1,0 +1,849 @@
+# Source: https://github.com/LumeraProtocol/supernode
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+[LumeraProtocol](https://github.com/LumeraProtocol) / **[supernode](https://github.com/LumeraProtocol/supernode)** Public
+
+- [Notifications](https://github.com/login?return_to=%2FLumeraProtocol%2Fsupernode) You must be signed in to change notification settings
+- [Fork 0](https://github.com/login?return_to=%2FLumeraProtocol%2Fsupernode)
+- [Star 0](https://github.com/login?return_to=%2FLumeraProtocol%2Fsupernode)
+ 
+
+ 
+
+ master
+
+[Branches](https://github.com/LumeraProtocol/supernode/branches) [Tags](https://github.com/LumeraProtocol/supernode/tags)
+
+Go to file
+
+Code
+
+Open more actions menu
+
+## Folders and files
+
+| Name | Name | 
+Last commit message
+
+ | 
+
+Last commit date
+
+ |
+| --- | --- | --- | --- |
+| 
+
+## Latest commit
+
+## History
+
+[332 Commits](https://github.com/LumeraProtocol/supernode/commits/master/)
+
+332 Commits
+
+ |
+| 
+
+[.github](https://github.com/LumeraProtocol/supernode/tree/master/.github '.github')
+
+ | 
+
+[.github](https://github.com/LumeraProtocol/supernode/tree/master/.github '.github')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[.vscode](https://github.com/LumeraProtocol/supernode/tree/master/.vscode '.vscode')
+
+ | 
+
+[.vscode](https://github.com/LumeraProtocol/supernode/tree/master/.vscode '.vscode')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[cmd/sncli](https://github.com/LumeraProtocol/supernode/tree/master/cmd/sncli 'This path skips through empty directories')
+
+ | 
+
+[cmd/sncli](https://github.com/LumeraProtocol/supernode/tree/master/cmd/sncli 'This path skips through empty directories')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[docs](https://github.com/LumeraProtocol/supernode/tree/master/docs 'docs')
+
+ | 
+
+[docs](https://github.com/LumeraProtocol/supernode/tree/master/docs 'docs')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[gen/supernode](https://github.com/LumeraProtocol/supernode/tree/master/gen/supernode 'This path skips through empty directories')
+
+ | 
+
+[gen/supernode](https://github.com/LumeraProtocol/supernode/tree/master/gen/supernode 'This path skips through empty directories')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[p2p](https://github.com/LumeraProtocol/supernode/tree/master/p2p 'p2p')
+
+ | 
+
+[p2p](https://github.com/LumeraProtocol/supernode/tree/master/p2p 'p2p')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[pkg](https://github.com/LumeraProtocol/supernode/tree/master/pkg 'pkg')
+
+ | 
+
+[pkg](https://github.com/LumeraProtocol/supernode/tree/master/pkg 'pkg')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[proto](https://github.com/LumeraProtocol/supernode/tree/master/proto 'proto')
+
+ | 
+
+[proto](https://github.com/LumeraProtocol/supernode/tree/master/proto 'proto')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[sdk](https://github.com/LumeraProtocol/supernode/tree/master/sdk 'sdk')
+
+ | 
+
+[sdk](https://github.com/LumeraProtocol/supernode/tree/master/sdk 'sdk')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[sn-manager](https://github.com/LumeraProtocol/supernode/tree/master/sn-manager 'sn-manager')
+
+ | 
+
+[sn-manager](https://github.com/LumeraProtocol/supernode/tree/master/sn-manager 'sn-manager')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[supernode](https://github.com/LumeraProtocol/supernode/tree/master/supernode 'supernode')
+
+ | 
+
+[supernode](https://github.com/LumeraProtocol/supernode/tree/master/supernode 'supernode')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[tests](https://github.com/LumeraProtocol/supernode/tree/master/tests 'tests')
+
+ | 
+
+[tests](https://github.com/LumeraProtocol/supernode/tree/master/tests 'tests')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[tools](https://github.com/LumeraProtocol/supernode/tree/master/tools 'tools')
+
+ | 
+
+[tools](https://github.com/LumeraProtocol/supernode/tree/master/tools 'tools')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[.gitignore](https://github.com/LumeraProtocol/supernode/blob/master/.gitignore '.gitignore')
+
+ | 
+
+[.gitignore](https://github.com/LumeraProtocol/supernode/blob/master/.gitignore '.gitignore')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[CHANGELOG.md](https://github.com/LumeraProtocol/supernode/blob/master/CHANGELOG.md 'CHANGELOG.md')
+
+ | 
+
+[CHANGELOG.md](https://github.com/LumeraProtocol/supernode/blob/master/CHANGELOG.md 'CHANGELOG.md')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[Makefile](https://github.com/LumeraProtocol/supernode/blob/master/Makefile 'Makefile')
+
+ | 
+
+[Makefile](https://github.com/LumeraProtocol/supernode/blob/master/Makefile 'Makefile')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[README.md](https://github.com/LumeraProtocol/supernode/blob/master/README.md 'README.md')
+
+ | 
+
+[README.md](https://github.com/LumeraProtocol/supernode/blob/master/README.md 'README.md')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[check\_supernodes.sh](https://github.com/LumeraProtocol/supernode/blob/master/check_supernodes.sh 'check_supernodes.sh')
+
+ | 
+
+[check\_supernodes.sh](https://github.com/LumeraProtocol/supernode/blob/master/check_supernodes.sh 'check_supernodes.sh')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[claims.csv](https://github.com/LumeraProtocol/supernode/blob/master/claims.csv 'claims.csv')
+
+ | 
+
+[claims.csv](https://github.com/LumeraProtocol/supernode/blob/master/claims.csv 'claims.csv')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[example\_env](https://github.com/LumeraProtocol/supernode/blob/master/example_env 'example_env')
+
+ | 
+
+[example\_env](https://github.com/LumeraProtocol/supernode/blob/master/example_env 'example_env')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[go.mod](https://github.com/LumeraProtocol/supernode/blob/master/go.mod 'go.mod')
+
+ | 
+
+[go.mod](https://github.com/LumeraProtocol/supernode/blob/master/go.mod 'go.mod')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[go.sum](https://github.com/LumeraProtocol/supernode/blob/master/go.sum 'go.sum')
+
+ | 
+
+[go.sum](https://github.com/LumeraProtocol/supernode/blob/master/go.sum 'go.sum')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[profile\_cascade.sh](https://github.com/LumeraProtocol/supernode/blob/master/profile_cascade.sh 'profile_cascade.sh')
+
+ | 
+
+[profile\_cascade.sh](https://github.com/LumeraProtocol/supernode/blob/master/profile_cascade.sh 'profile_cascade.sh')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[test\_init\_validation.sh](https://github.com/LumeraProtocol/supernode/blob/master/test_init_validation.sh 'test_init_validation.sh')
+
+ | 
+
+[test\_init\_validation.sh](https://github.com/LumeraProtocol/supernode/blob/master/test_init_validation.sh 'test_init_validation.sh')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[test\_interactive\_validation.sh](https://github.com/LumeraProtocol/supernode/blob/master/test_interactive_validation.sh 'test_interactive_validation.sh')
+
+ | 
+
+[test\_interactive\_validation.sh](https://github.com/LumeraProtocol/supernode/blob/master/test_interactive_validation.sh 'test_interactive_validation.sh')
+
+ | 
+
+ | 
+
+ |
+| 
+
+[testnet\_version\_check.sh](https://github.com/LumeraProtocol/supernode/blob/master/testnet_version_check.sh 'testnet_version_check.sh')
+
+ | 
+
+[testnet\_version\_check.sh](https://github.com/LumeraProtocol/supernode/blob/master/testnet_version_check.sh 'testnet_version_check.sh')
+
+ | 
+
+ | 
+
+ |
+| 
+
+View all files
+
+ |
+
+## Repository files navigation
+
+# Lumera Supernode
+
+Lumera Supernode is a companion application for Lumera validators who want to provide cascade, sense, and other services to earn rewards.
+
+## gRPC API
+
+The supernode exposes two main gRPC services:
+
+### SupernodeService
+
+Provides system status and monitoring information.
+
+```proto
+service SupernodeService {
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+}
+
+// Optional request flags
+message StatusRequest {
+  // When true, the response includes detailed P2P metrics and
+  // network peer information.
+  //
+  // This is gated to avoid heavy work unless explicitly requested:
+  // - peers_count is kept fast
+  // - heavier diagnostics are served from a cached last-known-good snapshot
+  bool include_p2p_metrics = 1;
+}
+
+message StatusResponse {
+  string version = 1;                        // Supernode version
+  uint64 uptime_seconds = 2;                 // Uptime in seconds
+  
+  message Resources {
+    message CPU {
+      double usage_percent = 1;  // CPU usage percentage (0-100)
+      int32 cores = 2;          // Number of CPU cores
+    }
+    
+    message Memory {
+      double total_gb = 1;       // Total memory in GB
+      double used_gb = 2;        // Used memory in GB
+      double available_gb = 3;   // Available memory in GB
+      double usage_percent = 4;  // Memory usage percentage (0-100)
+    }
+    
+    message Storage {
+      string path = 1;           // Storage path being monitored
+      uint64 total_bytes = 2;
+      uint64 used_bytes = 3;
+      uint64 available_bytes = 4;
+      double usage_percent = 5;  // Storage usage percentage (0-100)
+    }
+    
+    CPU cpu = 1;
+    Memory memory = 2;
+    repeated Storage storage_volumes = 3;
+    // Note: currently only the first entry is populated; it reports the filesystem
+    // that contains the configured base directory (--basedir).
+    string hardware_summary = 4;  // Formatted hardware summary (e.g., "8 cores / 32GB RAM")
+  }
+  
+  message Network {
+    int32 peers_count = 1;               // Number of connected peers in P2P network
+    repeated string peer_addresses = 2;  // List of connected peer addresses (format: "ID@IP:Port")
+  }
+  
+  Resources resources = 3;
+  repeated string registered_services = 5;   // All registered/available services
+  Network network = 6;                      // P2P network information
+  int32 rank = 7;                           // Rank in the top supernodes list (0 if not in top list)
+  string ip_address = 8;                    // Supernode IP address with port (e.g., "192.168.1.1:4445")
+  
+  // Optional detailed P2P metrics (present only when requested)
+  message P2PMetrics {
+    message DhtMetrics {
+      message StoreSuccessPoint {
+        int64 time_unix = 1;     // event time (unix seconds)
+        int32 requests = 2;      // total node RPCs attempted
+        int32 successful = 3;    // successful node RPCs
+        double success_rate = 4; // percentage (0-100)
+      }
+
+      message BatchRetrievePoint {
+        int64 time_unix = 1;     // event time (unix seconds)
+        int32 keys = 2;          // keys requested
+        int32 required = 3;      // required count
+        int32 found_local = 4;   // found locally
+        int32 found_network = 5; // found on network
+        int64 duration_ms = 6;   // duration in milliseconds
+      }
+
+      repeated StoreSuccessPoint store_success_recent = 1;
+      repeated BatchRetrievePoint batch_retrieve_recent = 2;
+      int64 hot_path_banned_skips = 3;
+      int64 hot_path_ban_increments = 4;
+    }
+
+    message HandleCounters {
+      int64 total = 1;
+      int64 success = 2;
+      int64 failure = 3;
+      int64 timeout = 4;
+    }
+
+    message BanEntry {
+      string id = 1;
+      string ip = 2;
+      uint32 port = 3;
+      int32 count = 4;
+      int64 created_at_unix = 5;
+      int64 age_seconds = 6;
+    }
+
+    message DatabaseStats {
+      double p2p_db_size_mb = 1;
+      int64 p2p_db_records_count = 2;
+    }
+
+    message DiskStatus {
+      double all_mb = 1;
+      double used_mb = 2;
+      double free_mb = 3;
+    }
+
+    DhtMetrics dht_metrics = 1;
+    map<string, HandleCounters> network_handle_metrics = 2;
+    map<string, int64> conn_pool_metrics = 3;
+    repeated BanEntry ban_list = 4;
+    DatabaseStats database = 5;
+    DiskStatus disk = 6;
+  }
+
+  P2PMetrics p2p_metrics = 9;               // Only present when include_p2p_metrics=true
+}
+```
+
+### CascadeService
+
+Handles cascade operations for data storage and retrieval.
+
+```proto
+service CascadeService {
+  rpc Register (stream RegisterRequest) returns (stream RegisterResponse);
+  rpc Download (DownloadRequest) returns (stream DownloadResponse);
+}
+
+message RegisterRequest {
+  oneof request_type {
+    DataChunk chunk = 1;
+    Metadata metadata = 2;
+  }
+}
+
+message DataChunk {
+  bytes data = 1;
+}
+
+message Metadata {
+  string task_id = 1;
+  string action_id = 2;
+}
+
+message RegisterResponse {
+  SupernodeEventType event_type = 1;
+  string message = 2;
+  string tx_hash = 3;
+}
+
+message DownloadRequest {
+  string action_id = 1;
+  string signature = 2;
+}
+
+message DownloadResponse {
+  oneof response_type {
+    DownloadEvent event = 1;
+    DataChunk chunk = 2;
+  }
+}
+
+message DownloadEvent {
+  SupernodeEventType event_type = 1;
+  string message = 2;
+}
+
+enum SupernodeEventType {
+  UNKNOWN = 0;
+  ACTION_RETRIEVED = 1;
+  ACTION_FEE_VERIFIED = 2;
+  TOP_SUPERNODE_CHECK_PASSED = 3;
+  METADATA_DECODED = 4;
+  DATA_HASH_VERIFIED = 5;
+  INPUT_ENCODED = 6;
+  SIGNATURE_VERIFIED = 7;
+  RQID_GENERATED = 8;
+  RQID_VERIFIED = 9;
+  FINALIZE_SIMULATED = 10;
+  ARTEFACTS_STORED = 11;
+  ACTION_FINALIZED = 12;
+  ARTEFACTS_DOWNLOADED = 13;
+}
+```
+
+## HTTP Gateway
+
+See docs/gateway.md for the full gateway guide (endpoints, examples, Swagger links).
+
+### HTTP Gateway
+
+See docs/gateway.md for the full gateway guide (endpoints, examples, Swagger links).
+
+## CLI Commands
+
+### Core Commands
+
+#### `supernode init`
+
+Initialize a new supernode with interactive setup.
+
+```shell
+# Interactive setup
+supernode init
+
+# Non-interactive setup with all flags (plain passphrase - use only for testing)
+supernode init -y \
+  --keyring-backend file \
+  --keyring-passphrase "your-secure-passphrase" \
+  --key-name mykey \
+  --recover \
+  --mnemonic "word1 word2 word3 ... word24" \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc https://grpc.testnet.lumera.io \
+  --chain-id lumera-testnet-1
+
+# Non-interactive setup with passphrase from environment variable
+export KEYRING_PASS="your-secure-passphrase"
+supernode init -y \
+  --keyring-backend file \
+  --keyring-passphrase-env KEYRING_PASS \
+  --key-name mykey \
+  --recover \
+  --mnemonic "word1 word2 word3 ... word24" \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc https://grpc.testnet.lumera.io \
+  --chain-id lumera-testnet-1
+
+# Non-interactive setup with passphrase from file
+echo "your-secure-passphrase" > /path/to/passphrase.txt
+supernode init -y \
+  --keyring-backend file \
+  --keyring-passphrase-file /path/to/passphrase.txt \
+  --key-name mykey \
+  --recover \
+  --mnemonic "word1 word2 word3 ... word24" \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc https://grpc.testnet.lumera.io \
+  --chain-id lumera-testnet-1
+```
+
+**Available flags:**
+
+- `--force` - Override existing installation
+- `-y`, `--yes` - Skip interactive prompts, use defaults
+- `--keyring-backend` - Keyring backend (`os`, `file`, `test`)
+- `--key-name` - Name of key to create or recover
+- `--recover` - Recover existing key from mnemonic
+- `--mnemonic` - Mnemonic phrase for recovery (use with --recover)
+- `--supernode-addr` - IP address for supernode service
+- `--supernode-port` - Port for supernode service
+- `--lumera-grpc` - Lumera gRPC address (host:port)
+- `--chain-id` - Lumera blockchain chain ID
+- `--keyring-passphrase` - Keyring passphrase for non-interactive mode (plain text)
+- `--keyring-passphrase-env` - Environment variable containing keyring passphrase
+- `--keyring-passphrase-file` - File containing keyring passphrase
+
+#### `supernode start`
+
+Start the supernode service.
+
+```shell
+supernode start                   # Use default config directory
+supernode start -d /path/to/dir   # Use custom base directory
+```
+
+#### `supernode version`
+
+Display version information.
+
+```shell
+supernode version
+```
+
+### Key Management
+
+#### `supernode keys list`
+
+List all keys in the keyring with addresses.
+
+```shell
+supernode keys list
+```
+
+#### `supernode keys recover [name]`
+
+Recover key from existing mnemonic phrase.
+
+```shell
+supernode keys recover mykey
+supernode keys recover mykey --mnemonic "word1 word2..."
+```
+
+### Configuration Management
+
+#### `supernode config list`
+
+Display current configuration parameters.
+
+```shell
+supernode config list
+```
+
+#### `supernode config update`
+
+Interactive configuration parameter updates.
+
+```shell
+supernode config update
+```
+
+### Global Flags
+
+#### `--basedir, -d`
+
+Specify custom base directory (default: `~/.supernode`).
+
+```shell
+supernode start -d /custom/path
+supernode config list -d /custom/path
+```
+
+## Configuration
+
+The configuration file is located at `~/.supernode/config.yml` and contains the following sections:
+
+### Supernode Configuration
+
+```yaml
+supernode:
+  key_name: "mykey"                    # Name of the key for signing transactions
+  identity: "lumera15t2e8gjgmuqtj..."  # Lumera address for this supernode  
+  host: "0.0.0.0"                     # Host address to bind the service (IP or hostname)
+  port: 4444                          # Port for the supernode service
+```
+
+### Keyring Configuration
+
+```yaml
+keyring:
+  backend: "os"              # Key storage backend (os, file, test)
+  dir: "keys"                # Directory to store keyring files (relative to basedir)
+  passphrase_plain: ""       # Plain text passphrase (use only for testing)
+  passphrase_env: ""         # Environment variable containing passphrase
+  passphrase_file: ""        # Path to file containing passphrase
+```
+
+### P2P Configuration
+
+```yaml
+p2p:
+  port: 4445                 # P2P communication port (do not change)
+  data_dir: "data/p2p"       # Directory for P2P data storage
+```
+
+### Lumera Network Configuration
+
+```yaml
+lumera:
+  grpc_addr: "localhost:9090"    # gRPC endpoint of Lumera validator node
+  chain_id: "lumera-mainnet-1"   # Lumera blockchain chain identifier
+```
+
+### RaptorQ Configuration
+
+```yaml
+raptorq:
+  files_dir: "raptorq_files"     # Directory to store RaptorQ files
+```
+
+**Notes:**
+
+- Relative paths are resolved relative to the base directory (`~/.supernode` by default)
+- Absolute paths are used as-is
+- The P2P port should not be changed from the default value
+
+## About
+
+No description, website, or topics provided.
+
+### Resources
+
+[Readme](https://github.com/#readme-ov-file)
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+[Activity](https://github.com/LumeraProtocol/supernode/activity)
+
+[Custom properties](https://github.com/LumeraProtocol/supernode/custom-properties)
+
+### Stars
+
+[**0** stars](https://github.com/LumeraProtocol/supernode/stargazers)
+
+### Watchers
+
+[**1** watching](https://github.com/LumeraProtocol/supernode/watchers)
+
+### Forks
+
+[**0** forks](https://github.com/LumeraProtocol/supernode/forks)
+
+[Report repository](https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2FLumeraProtocol%2Fsupernode&report=LumeraProtocol+%28user%29)
+
+## [Releases 166](https://github.com/LumeraProtocol/supernode/releases)
+
+[v2.5.2 Latest\\ \\ May 29, 2026](https://github.com/LumeraProtocol/supernode/releases/tag/v2.5.2)
+
+[\+ 165 releases](https://github.com/LumeraProtocol/supernode/releases)
+
+## [Packages 0](https://github.com/orgs/LumeraProtocol/packages?repo_name=supernode)
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+## [Contributors 5](https://github.com/LumeraProtocol/supernode/graphs/contributors)
+
+- [![@mateeullahmalik](https://avatars.githubusercontent.com/u/46045452?s=64&v=4)](https://github.com/mateeullahmalik)
+- [![@j-rafique](https://avatars.githubusercontent.com/u/113895287?s=64&v=4)](https://github.com/j-rafique)
+- [![@akobrin1](https://avatars.githubusercontent.com/u/24538001?s=64&v=4)](https://github.com/akobrin1)
+- [![@a-ok123](https://avatars.githubusercontent.com/u/54385956?s=64&v=4)](https://github.com/a-ok123)
+- [![@Copilot](https://avatars.githubusercontent.com/in/946600?s=64&v=4)](https://github.com/apps/copilot-pull-request-reviewer)
+
+## Languages
+
+- [Go 98.4%](https://github.com/LumeraProtocol/supernode/search?l=go)
+- [Shell 1.3%](https://github.com/LumeraProtocol/supernode/search?l=shell)
+- [Makefile 0.3%](https://github.com/LumeraProtocol/supernode/search?l=makefile)

@@ -1,0 +1,302 @@
+---
+title: "LumeScope Actions API: Query Cascade and Sense Actions"
+sidebarTitle: "Actions API"
+description: "Query Cascade and Sense actions on the Lumera network. List all actions, get action details with transaction lifecycle, and fetch aggregated statistics."
+---
+
+The LumeScope Actions API gives you a decoded view of every Cascade and Sense action registered on the Lumera network. Rather than parsing raw chain transactions yourself, you query a pre-indexed store that tracks each action through its full lifecycle — from the initial `register` transaction through `finalize` and `approve`. Three endpoints cover the most common needs: listing actions with filters, fetching the full detail for a single action, and retrieving aggregate counts across the network.
+
+<Note>
+  All Actions API endpoints are read-only and require no authentication. The base URL for Mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for Testnet.
+</Note>
+
+---
+
+## GET /v1/actions
+
+Returns a paginated list of Cascade and Sense actions with fully decoded metadata. Use the query parameters to filter by type, creator, state, and block height range.
+
+### Query Parameters
+
+<ParamField query="type" type="string">
+  Filter by action type. Accepted values: `cascade`, `sense`. Omit to return both types.
+</ParamField>
+
+<ParamField query="creator" type="string">
+  Filter by the Bech32 address of the account that created the action.
+</ParamField>
+
+<ParamField query="state" type="string">
+  Filter by action state. Common values: `registered`, `finalized`, `approved`.
+</ParamField>
+
+<ParamField query="supernode" type="string">
+  Filter actions associated with a specific SuperNode address.
+</ParamField>
+
+<ParamField query="fromHeight" type="integer">
+  Return only actions created at or after this block height.
+</ParamField>
+
+<ParamField query="toHeight" type="integer">
+  Return only actions created at or before this block height.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  Maximum number of actions to return per page.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Opaque pagination cursor returned by the previous response. Pass this value to fetch the next page.
+</ParamField>
+
+<ParamField query="include_transactions" type="boolean" default="false">
+  When `true`, each action in the list includes its full transaction lifecycle (register, finalize, approve tx hashes and heights).
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```shell Cascade actions
+curl https://api.lumera.io/v1/actions?type=cascade&limit=10
+```
+
+```shell With transactions
+curl "https://api.lumera.io/v1/actions?type=sense&limit=5&include_transactions=true"
+```
+
+```shell Height range
+curl "https://api.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=20"
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "actions": [
+    {
+      "id": "abc123",
+      "type": "cascade",
+      "status": "approved",
+      "data_hash": "sha256:deadbeef...",
+      "created_at": "2024-01-15T10:30:00Z",
+      "finalized_at": "2024-01-15T10:45:00Z"
+    }
+  ],
+  "total": 1234,
+  "page": 1
+}
+```
+
+### Response Fields
+
+<ResponseField name="actions" type="array">
+  Array of action objects matching the query.
+
+  <Expandable title="Action object fields">
+    <ResponseField name="id" type="string">
+      Unique action identifier on the Lumera chain.
+    </ResponseField>
+    <ResponseField name="type" type="string">
+      Action type: `cascade` or `sense`.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Current lifecycle state: `registered`, `finalized`, or `approved`.
+    </ResponseField>
+    <ResponseField name="data_hash" type="string">
+      SHA-256 content hash of the stored data.
+    </ResponseField>
+    <ResponseField name="created_at" type="string">
+      RFC 3339 timestamp of the registration transaction.
+    </ResponseField>
+    <ResponseField name="finalized_at" type="string">
+      RFC 3339 timestamp of the finalization transaction. Null if not yet finalized.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  Total number of actions matching the query filters, across all pages.
+</ResponseField>
+
+<ResponseField name="page" type="integer">
+  Current page number (1-indexed).
+</ResponseField>
+
+---
+
+## GET /v1/actions/\{id\}
+
+Returns the full details for a single action, including its complete transaction lifecycle. Use this endpoint when you need register, finalize, and approve transaction hashes and block heights for a specific action.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique action ID. This is the same `id` value returned by `GET /v1/actions`.
+</ParamField>
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/actions/abc123
+```
+
+### Example Response
+
+```json
+{
+  "id": "abc123",
+  "type": "cascade",
+  "status": "approved",
+  "data_hash": "sha256:deadbeef...",
+  "creator": "lumera1qg5ega6dykkxc307y25pecuufrjkxkaggkkxh",
+  "created_at": "2024-01-15T10:30:00Z",
+  "finalized_at": "2024-01-15T10:45:00Z",
+  "approved_at": "2024-01-15T10:50:00Z",
+  "transactions": {
+    "register": {
+      "tx_hash": "A1B2C3D4...",
+      "height": 123456
+    },
+    "finalize": {
+      "tx_hash": "E5F6G7H8...",
+      "height": 123789
+    },
+    "approve": {
+      "tx_hash": "I9J0K1L2...",
+      "height": 123901
+    }
+  }
+}
+```
+
+### Response Fields
+
+<ResponseField name="id" type="string">
+  Unique action identifier.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Action type: `cascade` or `sense`.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current lifecycle state.
+</ResponseField>
+
+<ResponseField name="data_hash" type="string">
+  SHA-256 content hash of the stored data.
+</ResponseField>
+
+<ResponseField name="creator" type="string">
+  Bech32 address of the account that registered the action.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  RFC 3339 timestamp of the registration transaction.
+</ResponseField>
+
+<ResponseField name="finalized_at" type="string">
+  RFC 3339 timestamp of the finalization transaction.
+</ResponseField>
+
+<ResponseField name="approved_at" type="string">
+  RFC 3339 timestamp of the approval transaction.
+</ResponseField>
+
+<ResponseField name="transactions" type="object">
+  Transaction lifecycle for this action.
+
+  <Expandable title="Transaction lifecycle fields">
+    <ResponseField name="register.tx_hash" type="string">
+      Transaction hash of the register message.
+    </ResponseField>
+    <ResponseField name="register.height" type="integer">
+      Block height of the register transaction.
+    </ResponseField>
+    <ResponseField name="finalize.tx_hash" type="string">
+      Transaction hash of the finalize message.
+    </ResponseField>
+    <ResponseField name="finalize.height" type="integer">
+      Block height of the finalize transaction.
+    </ResponseField>
+    <ResponseField name="approve.tx_hash" type="string">
+      Transaction hash of the approve message.
+    </ResponseField>
+    <ResponseField name="approve.height" type="integer">
+      Block height of the approve transaction.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /v1/actions/stats
+
+Returns aggregated action statistics across the entire network. Use this endpoint to build dashboards or monitor overall Cascade and Sense activity without paginating through individual records.
+
+### Query Parameters
+
+<ParamField query="type" type="string">
+  Scope statistics to a single action type: `cascade` or `sense`. Omit to aggregate across both types.
+</ParamField>
+
+<ParamField query="from" type="string">
+  Start of the time window as an RFC 3339 timestamp (e.g. `2024-01-01T00:00:00Z`).
+</ParamField>
+
+<ParamField query="to" type="string">
+  End of the time window as an RFC 3339 timestamp.
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```shell All actions
+curl https://api.lumera.io/v1/actions/stats
+```
+
+```shell Cascade only
+curl "https://api.lumera.io/v1/actions/stats?type=cascade"
+```
+
+```shell Time-bounded
+curl "https://api.lumera.io/v1/actions/stats?from=2024-01-01T00:00:00Z&to=2024-12-31T23:59:59Z"
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "total_actions": 5000,
+  "cascade_count": 3200,
+  "sense_count": 1800,
+  "approved_count": 4800
+}
+```
+
+### Response Fields
+
+<ResponseField name="total_actions" type="integer">
+  Total number of actions indexed by LumeScope, across all types and states.
+</ResponseField>
+
+<ResponseField name="cascade_count" type="integer">
+  Number of Cascade actions.
+</ResponseField>
+
+<ResponseField name="sense_count" type="integer">
+  Number of Sense actions.
+</ResponseField>
+
+<ResponseField name="approved_count" type="integer">
+  Number of actions that have reached the `approved` state.
+</ResponseField>
+
+---
+
+<Tip>
+  Combine `GET /v1/actions/stats` with time-window filters to plot approval rates over time and detect anomalies in SuperNode throughput.
+</Tip>

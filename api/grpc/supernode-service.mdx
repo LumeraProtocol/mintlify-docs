@@ -1,0 +1,234 @@
+---
+title: "SupernodeService gRPC API Reference"
+sidebarTitle: "SupernodeService"
+description: "SupernodeService provides system status and resource metrics for a Lumera SuperNode over gRPC. Includes CPU, memory, storage, P2P, and DHT metrics."
+---
+
+`SupernodeService` is a gRPC service exposed by every Lumera SuperNode. It gives you a real-time snapshot of the node's health: software version, uptime, CPU and memory load, connected peers, and — when you opt in — detailed DHT diagnostics. You can use this service to build monitoring dashboards, alerting pipelines, or operational tooling without any on-chain queries.
+
+## Connection
+
+SuperNodes listen on **port 4444** by default (configurable via `supernode.port` in `config.yml`). You can verify connectivity with `grpcurl`:
+
+```shell
+grpcurl -plaintext localhost:4444 lumera.supernode.v1.SupernodeService/GetStatus
+```
+
+<Note>
+  If TLS is enabled on the SuperNode, replace `-plaintext` with the appropriate `-cacert` / `-cert` / `-key` flags. Most production deployments terminate TLS at a reverse proxy and expose plaintext gRPC internally.
+</Note>
+
+---
+
+## Proto definition
+
+```proto
+service SupernodeService {
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+}
+```
+
+---
+
+## GetStatus
+
+Returns a point-in-time status snapshot of the SuperNode. The request lets you toggle expensive P2P diagnostics on or off, so routine polling stays lightweight.
+
+### Request — `StatusRequest`
+
+<ParamField body="include_p2p_metrics" type="bool" default="false">
+  When `true`, the response includes the full `p2p_metrics` object containing DHT store/retrieve history, handle counters, ban list, database stats, and disk usage. Set this to `false` (or omit it) for routine health polling — `peers_count` is always fast and is returned regardless of this flag. Heavier diagnostics are served from a cached last-known-good snapshot.
+</ParamField>
+
+### Response — `StatusResponse`
+
+<ResponseField name="version" type="string">
+  The SuperNode software version string (e.g., `"v2.5.2"`).
+</ResponseField>
+
+<ResponseField name="uptime_seconds" type="uint64">
+  Seconds elapsed since the SuperNode process started.
+</ResponseField>
+
+<ResponseField name="resources" type="object">
+  Hardware resource utilisation at the time of the call.
+
+  <Expandable title="resources fields">
+    <ResponseField name="resources.cpu" type="object">
+      <Expandable title="cpu fields">
+        <ResponseField name="resources.cpu.usage_percent" type="double">
+          Current CPU utilisation across all cores, expressed as a percentage (0–100).
+        </ResponseField>
+        <ResponseField name="resources.cpu.cores" type="int32">
+          Number of logical CPU cores available to the process.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="resources.memory" type="object">
+      <Expandable title="memory fields">
+        <ResponseField name="resources.memory.total_gb" type="double">
+          Total physical memory installed, in GB.
+        </ResponseField>
+        <ResponseField name="resources.memory.used_gb" type="double">
+          Memory currently in use, in GB.
+        </ResponseField>
+        <ResponseField name="resources.memory.available_gb" type="double">
+          Memory available to new allocations, in GB.
+        </ResponseField>
+        <ResponseField name="resources.memory.usage_percent" type="double">
+          Memory utilisation as a percentage (0–100).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="resources.storage_volumes" type="array of objects">
+      Storage volumes monitored by the SuperNode. Currently the array contains one entry — the filesystem that hosts the configured base directory (`--basedir`).
+
+      <Expandable title="storage_volumes item fields">
+        <ResponseField name="path" type="string">
+          Filesystem mount path being reported (e.g., `"/"`).
+        </ResponseField>
+        <ResponseField name="total_bytes" type="uint64">
+          Total capacity of the volume in bytes.
+        </ResponseField>
+        <ResponseField name="used_bytes" type="uint64">
+          Bytes currently consumed on the volume.
+        </ResponseField>
+        <ResponseField name="available_bytes" type="uint64">
+          Bytes available for new writes.
+        </ResponseField>
+        <ResponseField name="usage_percent" type="double">
+          Volume utilisation as a percentage (0–100).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="resources.hardware_summary" type="string">
+      Human-readable summary of the node's hardware profile (e.g., `"8 cores / 32GB RAM"`).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="registered_services" type="array of strings">
+  The service names this SuperNode is registered to provide — typically `["cascade", "sense"]` or a subset thereof.
+</ResponseField>
+
+<ResponseField name="network" type="object">
+  P2P network connectivity information.
+
+  <Expandable title="network fields">
+    <ResponseField name="network.peers_count" type="int32">
+      Number of peers currently connected in the P2P network. Always present, even when `include_p2p_metrics` is `false`.
+    </ResponseField>
+    <ResponseField name="network.peer_addresses" type="array of strings">
+      List of connected peer addresses in `"ID@IP:Port"` format.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="rank" type="int32">
+  This node's rank in the top-SuperNodes list as computed by the chain. Returns `0` if the node is not currently in the top list.
+</ResponseField>
+
+<ResponseField name="ip_address" type="string">
+  The publicly-advertised IP address and service port of this SuperNode (e.g., `"203.0.113.45:4444"`).
+</ResponseField>
+
+<ResponseField name="p2p_metrics" type="object">
+  Detailed P2P and DHT diagnostics. **Only present when `include_p2p_metrics` is `true`.**
+
+  <Expandable title="p2p_metrics fields">
+    <ResponseField name="p2p_metrics.dht_metrics" type="object">
+      Recent DHT operation history.
+
+      <Expandable title="dht_metrics fields">
+        <ResponseField name="store_success_recent" type="array of objects">
+          Recent DHT store-operation data points. Each entry includes `time_unix` (epoch seconds), `requests` (total node RPCs attempted), `successful` (successful node RPCs), and `success_rate` (percentage 0–100).
+        </ResponseField>
+        <ResponseField name="batch_retrieve_recent" type="array of objects">
+          Recent batch-retrieval data points. Each entry includes `time_unix`, `keys` (keys requested), `required`, `found_local`, `found_network`, and `duration_ms`.
+        </ResponseField>
+        <ResponseField name="hot_path_banned_skips" type="int64">
+          Number of times a hot-path request was skipped because the target was banned.
+        </ResponseField>
+        <ResponseField name="hot_path_ban_increments" type="int64">
+          Number of times a ban counter was incremented on the hot path.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="p2p_metrics.network_handle_metrics" type="map&lt;string, HandleCounters&gt;">
+      Per-handler RPC counters. Each `HandleCounters` value contains `total`, `success`, `failure`, and `timeout` int64 fields.
+    </ResponseField>
+
+    <ResponseField name="p2p_metrics.conn_pool_metrics" type="map&lt;string, int64&gt;">
+      Connection pool statistics keyed by metric name.
+    </ResponseField>
+
+    <ResponseField name="p2p_metrics.ban_list" type="array of objects">
+      Peers currently banned by this node. Each entry contains `id`, `ip`, `port` (uint32), `count` (ban increment count), `created_at_unix`, and `age_seconds`.
+    </ResponseField>
+
+    <ResponseField name="p2p_metrics.database" type="object">
+      P2P key-value database stats: `p2p_db_size_mb` (double) and `p2p_db_records_count` (int64).
+    </ResponseField>
+
+    <ResponseField name="p2p_metrics.disk" type="object">
+      Disk usage for the P2P data directory: `all_mb`, `used_mb`, and `free_mb` (all double).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Example response
+
+```json
+{
+  "version": "v2.5.2",
+  "uptime_seconds": 86400,
+  "resources": {
+    "cpu": { "usage_percent": 12.5, "cores": 8 },
+    "memory": {
+      "total_gb": 64,
+      "used_gb": 12.3,
+      "available_gb": 51.7,
+      "usage_percent": 19.2
+    },
+    "storage_volumes": [
+      {
+        "path": "/",
+        "total_bytes": 2000398934016,
+        "used_bytes": 480374956032,
+        "available_bytes": 1520023977984,
+        "usage_percent": 24.0
+      }
+    ],
+    "hardware_summary": "8-core CPU, 64GB RAM, 2TB storage"
+  },
+  "registered_services": ["cascade", "sense"],
+  "network": {
+    "peers_count": 15,
+    "peer_addresses": [
+      "12D3KooWExample1@203.0.113.10:4445",
+      "12D3KooWExample2@203.0.113.20:4445"
+    ]
+  },
+  "rank": 3,
+  "ip_address": "203.0.113.45:4444"
+}
+```
+
+---
+
+## Full example with P2P metrics
+
+Pass `include_p2p_metrics: true` to receive DHT diagnostics alongside the standard fields:
+
+```shell
+grpcurl -plaintext \
+  -d '{"include_p2p_metrics": true}' \
+  localhost:4444 \
+  lumera.supernode.v1.SupernodeService/GetStatus
+```

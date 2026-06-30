@@ -1,0 +1,110 @@
+---
+title: "Claim LUME Tokens from Pastel Network Migration"
+sidebarTitle: "Claims"
+description: "If you held PSL tokens on Pastel Network, claim your equivalent LUME tokens on Lumera Protocol using the x/claim module and the lumerad CLI."
+---
+
+Lumera Protocol is the next evolution of Pastel Network. As part of this transition, holders of Pastel Network PSL tokens are entitled to claim equivalent LUME tokens on Lumera through the `x/claim` module. The migration uses a snapshot of PSL balances taken at a specific Pastel Network block. If your address was in that snapshot, the corresponding LUME allocation is waiting for you on Lumera — you just need to claim it.
+
+## Eligibility
+
+You are eligible to claim LUME tokens if your Pastel Network address held a PSL balance at the time of the snapshot block. The full list of eligible addresses and allocations is published in the official claims CSV:
+
+```
+https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/refs/heads/master/mainnet/claims.csv
+```
+
+Each row in the CSV maps a Lumera address to a claimable LUME amount. If your address appears in that file, you have an unclaimed allocation on-chain.
+
+<Warning>
+Make sure you are using the **Lumera address that corresponds to your Pastel Network holdings**. The claim module matches on Lumera addresses derived from the same underlying key material as your Pastel wallet. Using a different address will result in no allocation being found, even if you held PSL at the snapshot. Double-check your address derivation before broadcasting any claim transaction.
+</Warning>
+
+## Checking Your Eligibility
+
+Before claiming, verify that your address has an allocation on-chain:
+
+```shell
+lumerad query claim get-claim <your-lumera-address>
+```
+
+If your address is in the snapshot, the response shows your claimable LUME amount and whether it has already been claimed. If the query returns an error or an empty result, your address was not included in the snapshot — see the [Troubleshooting](#troubleshooting) section below.
+
+## Claiming Your LUME Tokens
+
+<Steps>
+  <Step title="Confirm your address has an unclaimed allocation">
+    Run the eligibility check above. Make sure the `claimed` field is `false` and the amount shown is what you expect based on your PSL holdings.
+  </Step>
+  <Step title="Ensure your wallet is set up">
+    You need `lumerad` configured with the key that corresponds to your eligible Lumera address. If you need to import your key, see the [wallet setup guide](/hub/wallet).
+  </Step>
+  <Step title="Broadcast the claim transaction">
+    ```shell
+    lumerad tx claim claim-tokens \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1 \
+      --fees 5000ulume
+    ```
+
+    The `--from` key must control the address that appears in the claims snapshot. The module verifies the signature against the registered allocation and releases the LUME tokens to your address in the same transaction.
+  </Step>
+  <Step title="Verify your balance">
+    After the transaction is confirmed, check your LUME balance:
+
+    ```shell
+    lumerad query bank balances <your-lumera-address>
+    ```
+
+    Your claimed LUME tokens will appear in the `ulume` denomination.
+  </Step>
+</Steps>
+
+## Claims CSV Reference
+
+The claims CSV is hosted in the `lumera-networks` repository and loaded into chain state at genesis. You can inspect it directly to verify your allocation before submitting any transaction:
+
+```shell
+# Download and search the claims CSV for your address
+curl -s https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/refs/heads/master/mainnet/claims.csv \
+  | grep <your-lumera-address>
+```
+
+Each row has the format:
+
+```
+<lumera-address>,<claimable-ulume-amount>
+```
+
+<Note>
+The claims module may have a claim deadline after which unclaimed allocations are forfeited or redistributed according to governance parameters. Check the current chain parameters with `lumerad query claim params` to confirm whether a deadline is active and when it expires.
+</Note>
+
+## Troubleshooting
+
+<Accordion title='"address not found in claims"'>
+This error means the address you queried was not included in the Pastel Network snapshot. Common causes:
+
+- You are using a different Lumera address than the one derived from your Pastel wallet keys.
+- The PSL balance on your Pastel address was zero or below the minimum threshold at the snapshot block.
+- You are querying a testnet address against a mainnet snapshot (or vice versa).
+
+**What to do:** Re-derive your Lumera address from your Pastel wallet's seed phrase or private key and try again. If you held PSL on an exchange, the exchange — not your personal wallet — held the balance at snapshot time.
+</Accordion>
+
+<Accordion title="Transaction fails with insufficient fees">
+The `--fees 5000ulume` value in the example is a baseline. If the network is congested or the chain's `min_gas_price` has been updated via governance, you may need to increase the fee:
+
+```shell
+lumerad tx claim claim-tokens \
+  --from <key-name> \
+  --chain-id lumera-mainnet-1 \
+  --gas auto \
+  --gas-adjustment 1.4 \
+  --gas-prices 0.025ulume
+```
+</Accordion>
+
+<Accordion title='"claim already completed"'>
+Your allocation has already been claimed from this address. Each eligible address can only claim once. If you did not initiate the claim yourself, check whether you previously claimed from a different device or wallet interface.
+</Accordion>

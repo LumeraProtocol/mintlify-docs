@@ -1,0 +1,239 @@
+---
+title: "Deploy LumeScope: Self-Hosted Lumera API Aggregator"
+sidebarTitle: "LumeScope"
+description: "LumeScope is an open-source, read-only API aggregator for Lumera. Deploy it with Docker to aggregate action metadata, SuperNode metrics, and network stats."
+---
+
+LumeScope is an open-source, self-hosted API aggregator that indexes Lumera chain data and serves it through a clean REST interface. It is written in Go using only the standard library (`net/http` — no third-party web frameworks), bundles an embedded PostgreSQL 14 database so no separate data store is required, and runs as a single Docker container. When you deploy your own instance you control the sync cadence, keep all indexed data inside your infrastructure, and can build analytics pipelines on top without depending on a third-party service.
+
+## When to Deploy Your Own Instance
+
+The public Mainnet and Testnet endpoints (`https://api.lumera.io` and `https://api.testnet.lumera.io`) are suitable for most integrations. Consider running your own LumeScope instance when you need to:
+
+- **Tune sync intervals** — adjust how frequently actions, validators, SuperNodes, and probes refresh
+- **Ensure data sovereignty** — keep all network data inside your own infrastructure
+- **Build analytics** — connect your own dashboards or data pipelines directly to the embedded PostgreSQL database
+- **High availability** — run multiple replicas backed by a shared external PostgreSQL for failover
+
+---
+
+## Quickstart
+
+Get LumeScope running locally in under a minute with Docker.
+
+<Steps>
+
+<Step title="Pull and run the container">
+
+```shell
+# Connect to Mainnet
+docker run -d \
+  -p 18080:18080 \
+  -e LUMERA_API_BASE=https://lcd.lumera.io \
+  --name lumescope \
+  ghcr.io/lumeraprotocol/lumescope:latest
+```
+
+For Testnet, replace the `LUMERA_API_BASE` value with `https://lcd.testnet.lumera.io`.
+
+</Step>
+
+<Step title="Verify the deployment">
+
+```shell
+# Liveness check — returns 200 immediately if the process is running
+curl -i http://localhost:18080/healthz
+
+# Readiness check — returns 200 once the first sync has completed
+curl -i http://localhost:18080/readyz
+
+# Fetch the first three actions
+curl -s 'http://localhost:18080/v1/actions?limit=3' | jq .
+```
+
+</Step>
+
+<Step title="Explore the interactive docs">
+
+Open `http://localhost:18080/docs` in your browser to browse and test every endpoint using the embedded Swagger UI. The machine-readable OpenAPI 3.0 spec is available at `http://localhost:18080/openapi.json`.
+
+</Step>
+
+</Steps>
+
+---
+
+## Configuration
+
+LumeScope reads all configuration from environment variables at startup. Copy `.env.example` from the repository and customise it, or pass variables directly with `-e` flags.
+
+### Key Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LUMERA_API_BASE` | **Yes** | `http://localhost:1317` | Lumera REST (LCD) endpoint URL |
+| `PORT` | No | `18080` | HTTP server listen port |
+| `CORS_ALLOW_ORIGINS` | No | `*` | Comma-separated allowed CORS origins |
+| `VALIDATORS_SYNC_INTERVAL` | No | `5m` | Validators sync frequency |
+| `SUPERNODES_SYNC_INTERVAL` | No | `2m` | SuperNodes sync frequency |
+| `ACTIONS_SYNC_INTERVAL` | No | `30s` | Actions sync frequency |
+| `PROBE_INTERVAL` | No | `1m` | SuperNode probe frequency |
+
+<Note>
+  For the full list of available environment variables — including database connection settings, HTTP timeouts, and TCP dial timeouts — refer to the [LumeScope README](https://github.com/LumeraProtocol/lumescope).
+</Note>
+
+---
+
+## Production Deployment
+
+### Persistent Data Volume
+
+The embedded PostgreSQL 14 database stores its data files at `/var/lib/postgresql/data` inside the container. Mount a named volume to retain indexed data across container restarts and upgrades:
+
+```shell
+docker run -d \
+  -p 18080:18080 \
+  -e LUMERA_API_BASE=https://lcd.lumera.io \
+  -e POSTGRES_PASSWORD=your-secure-password \
+  -v lumescope_data:/var/lib/postgresql/data \
+  --name lumescope \
+  ghcr.io/lumeraprotocol/lumescope:latest
+```
+
+<Warning>
+  Always set `POSTGRES_PASSWORD` to a strong value in production. The default password (`postgres`) is suitable only for local development.
+</Warning>
+
+### External PostgreSQL Database
+
+If you prefer to manage the database separately, point LumeScope at an external PostgreSQL 13+ instance:
+
+```shell
+docker run -d \
+  -p 18080:18080 \
+  -e LUMERA_API_BASE=https://lcd.lumera.io \
+  -e DB_DSN="postgres://user:pass@your-pg-host:5432/lumescope?sslmode=require" \
+  --name lumescope \
+  ghcr.io/lumeraprotocol/lumescope:latest
+```
+
+LumeScope automatically creates all required tables and indexes on first startup.
+
+### High-Availability Setup
+
+Run multiple replicas pointing to a shared external PostgreSQL, then place a load balancer in front:
+
+```shell
+# Instance 1
+docker run -d -p 18081:18080 \
+  -e LUMERA_API_BASE=https://lcd.lumera.io \
+  -e DB_DSN="postgres://user:pass@pg-host:5432/lumescope?sslmode=require" \
+  --name lumescope-1 \
+  ghcr.io/lumeraprotocol/lumescope:latest
+
+# Instance 2
+docker run -d -p 18082:18080 \
+  -e LUMERA_API_BASE=https://lcd.lumera.io \
+  -e DB_DSN="postgres://user:pass@pg-host:5432/lumescope?sslmode=require" \
+  --name lumescope-2 \
+  ghcr.io/lumeraprotocol/lumescope:latest
+```
+
+Place nginx, HAProxy, or a cloud load balancer in front of both instances.
+
+---
+
+## Available Endpoints
+
+Once LumeScope is running, all of the following paths are available on your host:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /healthz` | Liveness probe — always `200` while the process is alive |
+| `GET /readyz` | Readiness probe — `200` once the database and first sync are ready |
+| `GET /v1/actions` | List decoded Cascade and Sense actions |
+| `GET /v1/supernodes/metrics` | SuperNode hardware metrics and probe status |
+| `GET /openapi.json` | OpenAPI 3.0 specification |
+| `GET /docs` | Interactive Swagger UI |
+| `GET /metrics` | Prometheus metrics endpoint (currently stub data) |
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+
+<Accordion title="LCD endpoint is unreachable — actions and supernodes are not syncing">
+  **Symptom:** Container starts but action and SuperNode data never populates. Container logs show connection errors.
+
+  **Steps:**
+
+  1. Verify that `LUMERA_API_BASE` is set to the correct LCD URL for your target network:
+     ```shell
+     # Mainnet
+     curl https://lcd.lumera.io/cosmos/base/tendermint/v1beta1/node_info
+
+     # Testnet
+     curl https://lcd.testnet.lumera.io/cosmos/base/tendermint/v1beta1/node_info
+     ```
+
+  2. Check connectivity from inside the container:
+     ```shell
+     docker exec lumescope wget -qO- https://lcd.lumera.io/healthz
+     ```
+
+  3. If you are pointing at a local `lumerad` node, confirm that port `1317` is exposed and the REST API is enabled in `app.toml` (`api.enable = true`).
+</Accordion>
+
+<Accordion title="Browser shows CORS policy errors">
+  **Symptom:** Your frontend application gets blocked by the browser with a CORS policy error, even though direct `curl` calls succeed.
+
+  **Steps:**
+
+  Set `CORS_ALLOW_ORIGINS` to your frontend's exact origin:
+
+  ```shell
+  docker run -d \
+    -p 18080:18080 \
+    -e LUMERA_API_BASE=https://lcd.lumera.io \
+    -e CORS_ALLOW_ORIGINS="https://your-app.com" \
+    --name lumescope \
+    ghcr.io/lumeraprotocol/lumescope:latest
+  ```
+
+  Use `*` only during local development. Wildcard origins are not recommended in production because they allow any website to call your API.
+</Accordion>
+
+<Accordion title="SuperNode probe failures — nodes show as unavailable">
+  **Symptom:** Several SuperNodes appear in `GET /v1/supernodes/unavailable` and their `failed_probe_counter` is incrementing.
+
+  **Cause:** LumeScope probes each SuperNode on ports 4444, 4445, and 8002. Some operators firewall these ports or disable their status API endpoint, which causes the probe to fail.
+
+  **Steps:**
+
+  1. This is **expected behavior** for a subset of SuperNodes — probe failures do not indicate a LumeScope misconfiguration.
+  2. Query `GET /v1/supernodes/unavailable` to see which specific nodes are affected and how long they have been unreachable.
+  3. If a node you operate is listed, verify that its status API port is publicly accessible and that no firewall rule is blocking LumeScope's outbound TCP dial.
+  4. Adjust `PROBE_INTERVAL` if you want to probe less (or more) frequently to reduce noise.
+</Accordion>
+
+<Accordion title="Database connection failures at startup">
+  **Symptom:** The container exits shortly after starting, or queries return errors. Logs mention a database connection failure.
+
+  **Steps:**
+
+  1. For the embedded Postgres, inspect the container logs for PostgreSQL startup errors:
+     ```shell
+     docker logs lumescope
+     ```
+
+  2. For an external database, verify your `DB_DSN` connection string:
+     ```shell
+     psql "postgres://user:pass@host:5432/lumescope?sslmode=disable" -c "\dt"
+     ```
+
+  3. Ensure the database user has `CREATE TABLE` and `CREATE INDEX` privileges — LumeScope runs schema migrations automatically on startup.
+</Accordion>
+
+</AccordionGroup>

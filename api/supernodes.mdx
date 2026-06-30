@@ -1,0 +1,480 @@
+---
+title: "LumeScope SuperNodes API: Metrics, Status, and Payments"
+sidebarTitle: "SuperNodes API"
+description: "Query SuperNode hardware metrics, payment statistics, version matrix, and availability status using the LumeScope read-only API."
+---
+
+The LumeScope SuperNodes API aggregates hardware telemetry, payment statistics, availability probes, and version compatibility data for every SuperNode registered on the Lumera network. LumeScope probes each SuperNode on a configurable interval and stores the results so your application can query current status, rank individual nodes by resources, and identify nodes that are temporarily unreachable — without needing direct access to each operator's machine.
+
+<Note>
+  All SuperNodes API endpoints are read-only and require no authentication. The base URL for Mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for Testnet.
+</Note>
+
+---
+
+## GET /v1/supernodes/metrics
+
+Returns hardware and network metrics for all SuperNodes. Use query parameters to filter by status, version, or failure threshold, and to paginate large result sets.
+
+### Query Parameters
+
+<ParamField query="status" type="string">
+  Filter by probe status. Common values: `available`, `unavailable`.
+</ParamField>
+
+<ParamField query="currentState" type="string">
+  Filter by the node's on-chain validator state.
+</ParamField>
+
+<ParamField query="version" type="string">
+  Filter to nodes running a specific software version string.
+</ParamField>
+
+<ParamField query="minFailedProbeCounter" type="integer">
+  Return only nodes whose consecutive probe failure count is at or above this threshold. Useful for identifying persistently offline nodes.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Maximum number of SuperNodes to return per page.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Opaque pagination cursor returned by the previous response. Pass this value to retrieve the next page.
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```shell All supernodes
+curl https://api.lumera.io/v1/supernodes/metrics
+```
+
+```shell Available nodes only
+curl "https://api.lumera.io/v1/supernodes/metrics?status=available&limit=10"
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "supernodes": [
+    {
+      "id": "lumera15abc...",
+      "ip": "192.0.2.10",
+      "status": "available",
+      "rank": 1,
+      "version": "1.2.0",
+      "registered_services": ["cascade", "sense"],
+      "peer_count": 42,
+      "cpu_cores": 16,
+      "cpu_usage_percent": 23.4,
+      "memory_total_gb": 64,
+      "memory_used_gb": 18.2,
+      "storage_total_gb": 2000,
+      "storage_used_gb": 450,
+      "failed_probe_counter": 0
+    }
+  ],
+  "cursor": "eyJpZCI6Imx1bWVyYTE1YWJjIn0="
+}
+```
+
+### Response Fields
+
+<ResponseField name="supernodes" type="array">
+  Array of SuperNode metric objects.
+
+  <Expandable title="SuperNode metric fields">
+    <ResponseField name="id" type="string">
+      Bech32 operator address of the SuperNode.
+    </ResponseField>
+    <ResponseField name="ip" type="string">
+      Public IP address of the node.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Probe status: `available` or `unavailable`.
+    </ResponseField>
+    <ResponseField name="rank" type="integer">
+      Relative ranking among all SuperNodes (lower is better).
+    </ResponseField>
+    <ResponseField name="version" type="string">
+      Software version string reported by the node.
+    </ResponseField>
+    <ResponseField name="registered_services" type="array">
+      List of services the node has registered, e.g. `cascade`, `sense`.
+    </ResponseField>
+    <ResponseField name="peer_count" type="integer">
+      Number of active peer connections at the time of the last probe.
+    </ResponseField>
+    <ResponseField name="cpu_cores" type="integer">
+      Total CPU core count on the node.
+    </ResponseField>
+    <ResponseField name="cpu_usage_percent" type="number">
+      CPU utilization percentage at the time of the last probe.
+    </ResponseField>
+    <ResponseField name="memory_total_gb" type="number">
+      Total installed RAM in gigabytes.
+    </ResponseField>
+    <ResponseField name="memory_used_gb" type="number">
+      RAM in use at the time of the last probe.
+    </ResponseField>
+    <ResponseField name="storage_total_gb" type="number">
+      Total storage capacity in gigabytes.
+    </ResponseField>
+    <ResponseField name="storage_used_gb" type="number">
+      Storage consumed at the time of the last probe.
+    </ResponseField>
+    <ResponseField name="failed_probe_counter" type="integer">
+      Number of consecutive failed probes since the last successful contact.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="cursor" type="string">
+  Pagination cursor. Pass this as the `cursor` query parameter to retrieve the next page. Absent when there are no more results.
+</ResponseField>
+
+---
+
+## GET /v1/supernodes/\{id\}/metrics
+
+Returns the current hardware and network metrics for a single SuperNode identified by its operator address.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The Bech32 operator address of the SuperNode (e.g. `lumera15abc...`).
+</ParamField>
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/supernodes/lumera15abc.../metrics
+```
+
+### Example Response
+
+```json
+{
+  "id": "lumera15abc...",
+  "ip": "192.0.2.10",
+  "status": "available",
+  "rank": 1,
+  "version": "1.2.0",
+  "registered_services": ["cascade", "sense"],
+  "peer_count": 42,
+  "cpu_cores": 16,
+  "cpu_usage_percent": 23.4,
+  "memory_total_gb": 64,
+  "memory_used_gb": 18.2,
+  "storage_total_gb": 2000,
+  "storage_used_gb": 450,
+  "failed_probe_counter": 0
+}
+```
+
+The response object uses the same field schema as the individual entries in `GET /v1/supernodes/metrics`.
+
+---
+
+## GET /v1/supernodes/\{id\}/paymentInfo
+
+Returns payment statistics broken down by denomination for a specific SuperNode. Use this endpoint to audit reward distribution or inspect historical payment totals.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The Bech32 operator address of the SuperNode.
+</ParamField>
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/supernodes/lumera15abc.../paymentInfo
+```
+
+### Example Response
+
+```json
+{
+  "id": "lumera15abc...",
+  "payments": [
+    {
+      "denom": "ulume",
+      "total_amount": "1500000000",
+      "payment_count": 3200
+    }
+  ]
+}
+```
+
+### Response Fields
+
+<ResponseField name="id" type="string">
+  Bech32 operator address of the SuperNode.
+</ResponseField>
+
+<ResponseField name="payments" type="array">
+  List of payment totals, one entry per denomination.
+
+  <Expandable title="Payment entry fields">
+    <ResponseField name="denom" type="string">
+      Token denomination (e.g. `ulume`).
+    </ResponseField>
+    <ResponseField name="total_amount" type="string">
+      Cumulative payment amount in the smallest unit of the denomination.
+    </ResponseField>
+    <ResponseField name="payment_count" type="integer">
+      Number of individual payment transactions included in this total.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /v1/supernodes/stats
+
+Returns aggregated hardware statistics across all SuperNodes — network-wide totals and averages for CPU, memory, and storage. Use this endpoint for capacity-planning dashboards and fleet health snapshots.
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/supernodes/stats
+```
+
+### Example Response
+
+```json
+{
+  "total_supernodes": 120,
+  "available_count": 115,
+  "unavailable_count": 5,
+  "avg_cpu_usage_percent": 21.8,
+  "total_storage_tb": 240,
+  "total_memory_gb": 7680
+}
+```
+
+### Response Fields
+
+<ResponseField name="total_supernodes" type="integer">
+  Total number of SuperNodes tracked by LumeScope.
+</ResponseField>
+
+<ResponseField name="available_count" type="integer">
+  Number of SuperNodes with a passing probe status.
+</ResponseField>
+
+<ResponseField name="unavailable_count" type="integer">
+  Number of SuperNodes that failed their most recent probe.
+</ResponseField>
+
+<ResponseField name="avg_cpu_usage_percent" type="number">
+  Fleet-wide average CPU utilization percentage.
+</ResponseField>
+
+<ResponseField name="total_storage_tb" type="number">
+  Combined storage capacity across all available SuperNodes, in terabytes.
+</ResponseField>
+
+<ResponseField name="total_memory_gb" type="number">
+  Combined RAM across all available SuperNodes, in gigabytes.
+</ResponseField>
+
+---
+
+## GET /v1/supernodes/action-stats
+
+Returns per-SuperNode action statistics — how many Cascade and Sense actions each node has participated in. Use this endpoint to identify the most active nodes or detect imbalanced workload distribution.
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/supernodes/action-stats
+```
+
+### Example Response
+
+```json
+{
+  "supernodes": [
+    {
+      "id": "lumera15abc...",
+      "cascade_count": 420,
+      "sense_count": 180,
+      "total_count": 600
+    }
+  ]
+}
+```
+
+### Response Fields
+
+<ResponseField name="supernodes" type="array">
+  Array of per-SuperNode action count objects.
+
+  <Expandable title="Action stats fields">
+    <ResponseField name="id" type="string">
+      Bech32 operator address of the SuperNode.
+    </ResponseField>
+    <ResponseField name="cascade_count" type="integer">
+      Number of Cascade actions this node has been involved in.
+    </ResponseField>
+    <ResponseField name="sense_count" type="integer">
+      Number of Sense actions this node has been involved in.
+    </ResponseField>
+    <ResponseField name="total_count" type="integer">
+      Combined Cascade and Sense action count.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /v1/supernodes/unavailable
+
+Returns the list of SuperNodes whose most recent probe reported an unavailable status. This endpoint is the quickest way to triage connectivity or operator issues without filtering the full metrics list.
+
+### Query Parameters
+
+<ParamField query="currentState" type="string">
+  Filter by on-chain validator state, e.g. `active`, `jailed`.
+</ParamField>
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/supernodes/unavailable
+```
+
+### Example Response
+
+```json
+{
+  "supernodes": [
+    {
+      "id": "lumera1xyz...",
+      "ip": "192.0.2.99",
+      "failed_probe_counter": 12,
+      "last_seen_at": "2024-01-14T08:00:00Z"
+    }
+  ]
+}
+```
+
+### Response Fields
+
+<ResponseField name="supernodes" type="array">
+  Array of unavailable SuperNode objects.
+
+  <Expandable title="Unavailable supernode fields">
+    <ResponseField name="id" type="string">
+      Bech32 operator address.
+    </ResponseField>
+    <ResponseField name="ip" type="string">
+      Public IP address of the node.
+    </ResponseField>
+    <ResponseField name="failed_probe_counter" type="integer">
+      Consecutive probe failures since the node was last reachable.
+    </ResponseField>
+    <ResponseField name="last_seen_at" type="string">
+      RFC 3339 timestamp of the last successful probe.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## POST /v1/supernodes/sync
+
+Triggers an immediate, out-of-schedule sync and probe of all SuperNodes. Under normal operation LumeScope syncs automatically on the configured `SUPERNODES_SYNC_INTERVAL`; use this endpoint when you need fresh data immediately after an operator change or network event.
+
+<Warning>
+  Manual sync is only available when the LumeScope instance is configured to allow it. On the public Mainnet and Testnet endpoints this endpoint may return `403 Forbidden`.
+</Warning>
+
+### Example Request
+
+```shell
+curl -X POST https://api.lumera.io/v1/supernodes/sync
+```
+
+### Example Response
+
+```json
+{
+  "status": "sync triggered",
+  "triggered_at": "2024-01-15T11:00:00Z"
+}
+```
+
+### Response Fields
+
+<ResponseField name="status" type="string">
+  Confirmation message indicating the sync was accepted.
+</ResponseField>
+
+<ResponseField name="triggered_at" type="string">
+  RFC 3339 timestamp at which the sync was initiated.
+</ResponseField>
+
+---
+
+## GET /v1/version/matrix
+
+Returns the version compatibility matrix for SuperNode software, implementing a partial view of the Lumera Enhancement Proposal 2 (LEP2) versioning scheme. Use this endpoint to determine which node versions are compatible with the current network state.
+
+### Example Request
+
+```shell
+curl https://api.lumera.io/v1/version/matrix
+```
+
+### Example Response
+
+```json
+{
+  "matrix": [
+    {
+      "node_version": "1.2.0",
+      "compatible_versions": ["1.1.0", "1.2.0"],
+      "deprecated": false
+    },
+    {
+      "node_version": "1.1.0",
+      "compatible_versions": ["1.1.0"],
+      "deprecated": true
+    }
+  ],
+  "current_recommended": "1.2.0"
+}
+```
+
+### Response Fields
+
+<ResponseField name="matrix" type="array">
+  Array of version compatibility entries.
+
+  <Expandable title="Version matrix entry fields">
+    <ResponseField name="node_version" type="string">
+      The SuperNode software version this entry describes.
+    </ResponseField>
+    <ResponseField name="compatible_versions" type="array">
+      List of other software versions that this version can inter-operate with.
+    </ResponseField>
+    <ResponseField name="deprecated" type="boolean">
+      `true` if this version is end-of-life and operators should upgrade.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="current_recommended" type="string">
+  The latest recommended SuperNode software version according to the compatibility matrix.
+</ResponseField>
+
+---
+
+<Tip>
+  Poll `GET /v1/supernodes/unavailable` on a schedule and alert your team when `failed_probe_counter` exceeds a threshold. This gives you early warning of persistent connectivity issues before they affect action processing.
+</Tip>

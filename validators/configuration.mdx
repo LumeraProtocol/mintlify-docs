@@ -1,0 +1,201 @@
+---
+title: "Configure Your Lumera Validator Node"
+sidebarTitle: "Configuration"
+description: "Key configuration options for lumerad nodes: app.toml, config.toml, client.toml settings for gas prices, peers, pruning, and more."
+---
+
+After `lumerad init` runs, three configuration files live under `~/.lumera/config/`. Each file controls a different layer of the node: `config.toml` governs the CometBFT engine and networking, `app.toml` controls the Cosmos SDK application layer, and `client.toml` sets defaults for the `lumerad` CLI. This page covers the most important settings in each file and explains when to change them.
+
+<Note>
+Always restart `lumerad` after editing any configuration file. Changes do not take effect until the process reloads. If you are running `lumerad` as a `systemd` service, use `sudo systemctl restart lumerad` after saving your edits.
+</Note>
+
+## config.toml
+
+`~/.lumera/config/config.toml` is the CometBFT configuration file. It controls how your node discovers peers, manages its mempool, and exposes its RPC interface.
+
+### Peer Discovery
+
+```toml
+# Comma-separated list of seed nodes used for initial peer discovery.
+# Seeds are contacted once at startup; they are not kept as permanent peers.
+seeds = "f64b9efc5747cc3556bdc281dab930a716dd63af@seeds.lumera.io:26656"
+
+# Comma-separated list of peers that your node will always try to maintain
+# a connection with. Use this for your own sentry nodes in a sentry architecture.
+persistent_peers = ""
+```
+
+In a sentry node architecture, set `seeds` and `persistent_peers` to empty on your **validator** node and populate `persistent_peers` with your sentry node addresses only. On **sentry** nodes, use the public `seeds` value and leave `persistent_peers` pointing at your validator's internal address.
+
+### Connection Limits
+
+```toml
+# Maximum number of inbound peer connections.
+# Increase on sentry nodes that serve many peers; keep lower on the validator.
+max_num_inbound_peers = 40
+
+# Maximum number of outbound peer connections.
+max_num_outbound_peers = 10
+```
+
+<Tip>
+Sentry nodes benefit from higher `max_num_inbound_peers` (100+) because they serve as the public face of your validator infrastructure. Your validator itself should have strict limits to conserve bandwidth and reduce attack surface.
+</Tip>
+
+### RPC Configuration
+
+```toml
+[rpc]
+# Bind address for the Tendermint RPC server.
+# Set to "tcp://127.0.0.1:26657" to prevent external access.
+laddr = "tcp://127.0.0.1:26657"
+```
+
+Never expose the RPC port of your validator node to the public internet. Restrict it to `127.0.0.1` or a private network interface.
+
+## app.toml
+
+`~/.lumera/config/app.toml` controls the Cosmos SDK application layer, including gas prices, the API servers, and state pruning.
+
+### Gas Price
+
+```toml
+# Minimum gas price your node accepts for transactions.
+# Transactions offering less are rejected at the mempool level.
+minimum-gas-prices = "0.025ulume"
+```
+
+### Pruning
+
+Pruning controls how much historical state your node retains. Less history means less disk usage but limits your ability to serve historical queries.
+
+```toml
+# Pruning strategy. Options: default | nothing | everything | custom
+pruning = "default"
+
+# Used only when pruning = "custom"
+# Keep this many recent state snapshots.
+pruning-keep-recent = "100"
+
+# Used only when pruning = "custom"
+# Prune every N blocks.
+pruning-interval = "10"
+```
+
+| Strategy | Description | Disk Usage |
+|----------|-------------|------------|
+| `default` | Keep the last 362,880 states (~21 days) and every 10,000th state | Medium |
+| `nothing` | Keep all states — full archive node | Very high |
+| `everything` | Keep only the last 2 states | Lowest |
+| `custom` | You define `pruning-keep-recent` and `pruning-interval` | Configurable |
+
+<Note>
+Archive nodes (`pruning = "nothing"`) are useful for indexers and explorers but require several times more storage than a standard validator. Do not run an archive node on your validator unless you have the storage capacity to match.
+</Note>
+
+### Snapshot Interval
+
+```toml
+# Offer state-sync snapshots to peers every N blocks. 0 disables snapshots.
+snapshot-interval = 1000
+
+# Keep this many recent snapshots available.
+snapshot-keep-recent = 2
+```
+
+Enabling snapshots allows other nodes to state-sync against yours, which is useful for the ecosystem. On a validator with limited I/O headroom, you can disable this with `snapshot-interval = 0`.
+
+### API Servers
+
+```toml
+[api]
+# Enable the REST API (LCD).
+enable = true
+# Bind address.
+address = "tcp://0.0.0.0:1317"
+
+[grpc]
+# Enable the gRPC server.
+enable = true
+address = "0.0.0.0:9090"
+
+[json-rpc]
+# Enable the EVM JSON-RPC HTTP endpoint.
+enable = true
+address = "0.0.0.0:8545"
+
+# Enable the EVM JSON-RPC WebSocket endpoint.
+ws-address = "0.0.0.0:8546"
+```
+
+Restrict or disable any endpoints you do not intend to expose publicly. For a pure validator, disabling all external API servers and exposing only the P2P port reduces your attack surface significantly.
+
+## client.toml
+
+`~/.lumera/config/client.toml` sets default values for the `lumerad` CLI, so you do not have to pass `--chain-id` and `--node` on every command.
+
+```toml
+# Default chain ID for CLI commands.
+chain-id = "lumera-mainnet-1"
+
+# Default node to connect to for queries and broadcasts.
+node = "tcp://localhost:26657"
+
+# Output format: text | json
+output = "json"
+
+# Key ring backend: os | file | test
+keyring-backend = "os"
+```
+
+<Tip>
+Setting `output = "json"` makes it easy to pipe `lumerad` output through `jq` for scripting and monitoring. Switch to `output = "text"` if you prefer human-readable output during interactive sessions.
+</Tip>
+
+## Port Reference
+
+The following table lists every network port that `lumerad` may listen on, along with its protocol, function, and the configuration key that controls its address.
+
+| Port | Protocol | Service | Config Key |
+|------|----------|---------|-----------|
+| 26656 | TCP | P2P (peer communication) | `config.toml` → `[p2p].laddr` |
+| 26657 | TCP | RPC (Tendermint RPC) | `config.toml` → `[rpc].laddr` |
+| 1317 | TCP | REST API (LCD) | `app.toml` → `[api].address` |
+| 9090 | TCP | gRPC | `app.toml` → `[grpc].address` |
+| 8545 | TCP | EVM JSON-RPC (HTTP) | `app.toml` → `[json-rpc].address` |
+| 8546 | TCP | EVM JSON-RPC (WebSocket) | `app.toml` → `[json-rpc].ws-address` |
+
+On a validator node, only port **26656** (P2P) typically needs to be publicly reachable. All other ports should be firewalled or bound to `127.0.0.1` unless you are explicitly offering those services to the network.
+
+## State Sync vs. Snapshot Sync
+
+Two accelerated sync methods let you avoid replaying the entire chain from block 1:
+
+**State Sync** uses CometBFT's built-in state-sync protocol. Your node fetches a state snapshot from trusted RPC nodes, verifies it against a trusted block hash, and then catches up with recent blocks. Configure it in `config.toml`:
+
+```toml
+[statesync]
+enable = true
+rpc_servers = "https://rpc1.lumera.io:443,https://rpc2.lumera.io:443"
+trust_height = 1500000
+trust_hash = "<block-hash-at-trust-height>"
+trust_period = "168h"
+```
+
+**Snapshot Sync** downloads a compressed database snapshot from an S3 bucket (requires the AWS CLI) and places it directly under `~/.lumera/data/`. This approach is often faster than state sync for large chains but requires trusting the snapshot provider.
+
+<Note>
+Regardless of which sync method you use, always verify the `genesis.json` SHA-256 hash against the value published in the [lumera-networks repository](https://github.com/LumeraProtocol/lumera-networks) before starting your node.
+</Note>
+
+## Protecting Your Private Keys
+
+<Note>
+`~/.lumera/config/priv_validator_key.json` contains the consensus private key your validator uses to sign blocks. If an attacker obtains this key, they can double-sign on your behalf, causing you to be tombstoned — permanently removed from the validator set with a severe slash penalty. Protect it accordingly:
+
+- Store the file on an encrypted volume.
+- Restrict file permissions: `chmod 600 ~/.lumera/config/priv_validator_key.json`
+- Consider using a remote signer (e.g., [Horcrux](https://github.com/strangelove-ventures/horcrux)) for high-value validators to keep the key off the validator machine entirely.
+- Back up the key offline (hardware wallet, encrypted USB, paper backup) and test restoration before you go live.
+</Note>

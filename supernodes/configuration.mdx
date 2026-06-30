@@ -1,0 +1,170 @@
+---
+title: "SuperNode Configuration Reference (config.yml)"
+sidebarTitle: "Configuration"
+description: "Complete reference for ~/.supernode/config.yml: supernode identity, keyring backend, P2P networking, Lumera chain connection, and RaptorQ storage settings."
+---
+
+After running `supernode init`, all runtime parameters are stored in `~/.supernode/config.yml`. You can inspect the current values at any time with `supernode config list` and update them interactively with `supernode config update`. This page documents every configuration section and field so you know exactly what each setting controls and when you might need to change it.
+
+<Note>
+**Relative vs absolute paths:** any path value that does not begin with `/` is resolved relative to the SuperNode base directory (`~/.supernode` by default, or the value passed to `--basedir`). Absolute paths are used as-is. This applies to `keyring.dir`, `p2p.data_dir`, and `raptorq.files_dir`.
+</Note>
+
+---
+
+## `supernode` — Identity and Service Binding
+
+This section identifies your SuperNode on-chain and controls where the gRPC service listens.
+
+```yaml
+supernode:
+  key_name: "mykey"
+  identity: "lumera15t2e8gjgmuqtj..."
+  host: "0.0.0.0"
+  port: 4444
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `key_name` | string | Name of the key in the keyring that the SuperNode uses to sign transactions. Must match a key present in the keyring directory. Set during `init` via `--key-name`. |
+| `identity` | string | The Lumera address (`lumera1...`) derived from `key_name`. Populated automatically by `init` after the key is created or recovered. This address must match your registered on-chain validator identity. |
+| `host` | string | IP address the gRPC service binds to. Use `0.0.0.0` to accept connections on all network interfaces, or specify a particular IP to restrict access. |
+| `port` | integer | Port the SuperNode gRPC service listens on (default: `4444`). Clients and the HTTP gateway connect to this port. |
+
+---
+
+## `keyring` — Key Storage Backend
+
+This section controls how your signing key is stored and unlocked at startup.
+
+```yaml
+keyring:
+  backend: "os"
+  dir: "keys"
+  passphrase_plain: ""
+  passphrase_env: ""
+  passphrase_file: ""
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `backend` | string | Key storage backend. Accepted values: `os` (system keychain — recommended for desktop/interactive use), `file` (encrypted file — recommended for servers), `test` (plaintext, no passphrase — **never use in production**). |
+| `dir` | string | Directory where keyring files are stored when `backend` is `file`. Relative to the base directory. Default: `keys`. |
+| `passphrase_plain` | string | Plain text passphrase used to unlock the `file` keyring. **For testing only.** Anyone who can read `config.yml` can see this value. Leave empty in production. |
+| `passphrase_env` | string | Name of an environment variable that holds the keyring passphrase. The SuperNode reads this variable at startup. Preferred approach for server deployments. |
+| `passphrase_file` | string | Path to a file whose contents are the keyring passphrase. Ensure the file is owned by the process user and has `600` permissions. |
+
+<Warning>
+Never set `passphrase_plain` to a real passphrase in a production environment. Use `passphrase_env` or `passphrase_file` instead. If `passphrase_plain` is set, it takes precedence over the other two fields.
+</Warning>
+
+<Tip>
+For the most secure server setup, use `backend: file` with `passphrase_env` pointing to an environment variable injected by your secrets manager (e.g., HashiCorp Vault Agent, AWS Secrets Manager). This keeps the passphrase out of the filesystem entirely.
+</Tip>
+
+---
+
+## `p2p` — Peer-to-Peer Networking
+
+This section configures the SuperNode's participation in the Lumera P2P data network.
+
+```yaml
+p2p:
+  port: 4445
+  data_dir: "data/p2p"
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `port` | integer | Port the P2P layer listens on for connections from other SuperNodes. Default: `4445`. |
+| `data_dir` | string | Directory where P2P data (DHT records, peer metadata) is stored. Relative to the base directory. Default: `data/p2p`. |
+
+<Warning>
+Do not change `port` from the default value of `4445`. The Lumera SuperNode network expects all nodes to communicate on this port. Changing it will prevent your node from connecting to peers, which will cause action fulfillment failures and reduce your rewards.
+</Warning>
+
+---
+
+## `lumera` — Chain Connection
+
+This section tells the SuperNode which Lumera chain to connect to and where to reach its gRPC endpoint.
+
+```yaml
+lumera:
+  grpc_addr: "localhost:9090"
+  chain_id: "lumera-mainnet-1"
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `grpc_addr` | string | gRPC endpoint of the Lumera full node (format: `host:port`). If your SuperNode runs on the same machine as your validator, use `localhost:9090`. For a remote validator, use the appropriate hostname or IP. |
+| `chain_id` | string | Chain ID of the Lumera network you are joining. Must exactly match the chain's genesis chain ID. |
+
+**Network values reference:**
+
+| Network | `grpc_addr` | `chain_id` |
+|---------|-------------|------------|
+| Mainnet | `grpc.lumera.io:9090` | `lumera-mainnet-1` |
+| Testnet | `grpc.testnet.lumera.io:9090` | `lumera-testnet-2` |
+
+<Note>
+If you run your own Lumera validator on the same server, point `grpc_addr` at `localhost:9090` rather than the public endpoint. This avoids unnecessary network round-trips and keeps your gRPC port off the public internet.
+</Note>
+
+---
+
+## `raptorq` — Erasure Coding Storage
+
+This section controls where the SuperNode stores intermediate RaptorQ-encoded files during Cascade operations.
+
+```yaml
+raptorq:
+  files_dir: "raptorq_files"
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `files_dir` | string | Directory used to store temporary and persistent RaptorQ-encoded file chunks. Relative to the base directory. Default: `raptorq_files`. |
+
+<Tip>
+If your server has a dedicated high-throughput disk (e.g., a separate NVMe volume), point `files_dir` at an absolute path on that volume to improve Cascade encode/decode performance:
+
+```yaml
+raptorq:
+  files_dir: "/mnt/fast-disk/supernode/raptorq_files"
+```
+</Tip>
+
+---
+
+## Complete Example
+
+Below is a complete `config.yml` for a mainnet SuperNode running on a dedicated server with the `file` keyring backend and passphrase supplied via environment variable:
+
+```yaml
+supernode:
+  key_name: "mykey"
+  identity: "lumera15t2e8gjgmuqtj..."
+  host: "0.0.0.0"
+  port: 4444
+
+keyring:
+  backend: "file"
+  dir: "keys"
+  passphrase_plain: ""
+  passphrase_env: "KEYRING_PASS"
+  passphrase_file: ""
+
+p2p:
+  port: 4445
+  data_dir: "data/p2p"
+
+lumera:
+  grpc_addr: "localhost:9090"
+  chain_id: "lumera-mainnet-1"
+
+raptorq:
+  files_dir: "raptorq_files"
+```
+
+After editing `config.yml` directly, run `supernode config list` to confirm all values were parsed correctly, then restart the SuperNode.

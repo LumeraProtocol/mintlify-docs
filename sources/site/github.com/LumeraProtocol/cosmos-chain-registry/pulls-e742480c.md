@@ -1,0 +1,106 @@
+# Source: https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+[LumeraProtocol](https://github.com/LumeraProtocol) / **[cosmos-chain-registry](https://github.com/LumeraProtocol/cosmos-chain-registry)** Public
+
+forked from [cosmos/chain-registry](https://github.com/cosmos/chain-registry)
+
+- [Notifications](https://github.com/login?return_to=%2FLumeraProtocol%2Fcosmos-chain-registry) You must be signed in to change notification settings
+- [Fork 0](https://github.com/login?return_to=%2FLumeraProtocol%2Fcosmos-chain-registry)
+- [Star 0](https://github.com/login?return_to=%2FLumeraProtocol%2Fcosmos-chain-registry)
+ 
+
+# Pull requests: LumeraProtocol/cosmos-chain-registry
+
+[New pull request New](https://github.com/LumeraProtocol/cosmos-chain-registry/compare)
+
+[Clear current search query, filters, and sorts](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen)
+
+[5 Open](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+sort%3Areactions-%2B1-desc+is%3Aopen) [0 Closed](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+sort%3Areactions-%2B1-desc+is%3Aclosed)
+
+[5 Open](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+sort%3Areactions-%2B1-desc+is%3Aopen) [0 Closed](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+sort%3Areactions-%2B1-desc+is%3Aclosed)
+
+Author
+
+Loading
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+author:
+
+Filter by this user
+
+Label
+
+Loading
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+Projects
+
+Loading
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+Milestones
+
+Loading
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+Reviews
+
+[No reviews](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+review%3Anone) [Review required](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+review%3Arequired) [Approved review](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+review%3Aapproved) [Changes requested](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+review%3Achanges-requested)
+
+Assignee
+
+[**Assigned to nobody**](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+no%3Aassignee) Loading
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page]().
+
+assignee:
+
+Filter by this user
+
+Sort[Newest](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Acreated-desc) [Oldest](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Acreated-asc) [Most commented](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Acomments-desc) [Least commented](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Acomments-asc) [Recently updated](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc) [Least recently updated](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-asc) [Best match](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Arelevance-desc)
+
+Most reactions
+
+ [![+1](https://github.githubassets.com/assets/1f44d-41cb66fe1e22.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Aopen+is%3Apr) [![-1](https://github.githubassets.com/assets/1f44e-ce91733aae25.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions--1-desc) [![smile](https://github.githubassets.com/assets/1f604-7528822fb4c5.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-smile-desc) [![tada](https://github.githubassets.com/assets/1f389-36899a2cb781.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-tada-desc) [![thinking_face](https://github.githubassets.com/assets/1f615-4bb1369c4251.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-thinking_face-desc) [![heart](https://github.githubassets.com/assets/2764-982dc91ea48a.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-heart-desc) [![rocket](https://github.githubassets.com/assets/1f680-d0ef47fdb515.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-rocket-desc) [![eyes](https://github.githubassets.com/assets/1f440-ee44e91e92a7.png)](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-eyes-desc) 
+
+## Pull requests list
+
+[Bump flatted from 3.3.1 to 3.4.2](https://github.com/LumeraProtocol/cosmos-chain-registry/pull/1) [dependencies](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Adependencies) Pull requests that update a dependency file [javascript](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Ajavascript) Pull requests that update javascript code
+
+#1 opened Jun 17, 2026 by [dependabot](https://github.com/LumeraProtocol/cosmos-chain-registry/issues?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot 'Open pull requests created by dependabot[bot]') Bot Loading…
+
+[Bump lodash from 4.17.21 to 4.18.1](https://github.com/LumeraProtocol/cosmos-chain-registry/pull/2) [dependencies](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Adependencies) Pull requests that update a dependency file [javascript](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Ajavascript) Pull requests that update javascript code
+
+#2 opened Jun 17, 2026 by [dependabot](https://github.com/LumeraProtocol/cosmos-chain-registry/issues?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot 'Open pull requests created by dependabot[bot]') Bot Loading…
+
+[Bump js-yaml from 4.1.0 to 4.2.0](https://github.com/LumeraProtocol/cosmos-chain-registry/pull/3) [dependencies](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Adependencies) Pull requests that update a dependency file [javascript](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Ajavascript) Pull requests that update javascript code
+
+#3 opened Jun 17, 2026 by [dependabot](https://github.com/LumeraProtocol/cosmos-chain-registry/issues?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot 'Open pull requests created by dependabot[bot]') Bot Loading…
+
+[Bump lycheeverse/lychee-action from 1.6.1 to 2.0.2 in /.github/workflows](https://github.com/LumeraProtocol/cosmos-chain-registry/pull/4) [dependencies](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Adependencies) Pull requests that update a dependency file [github\_actions](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Agithub_actions) Pull requests that update GitHub Actions code
+
+#4 opened Jun 17, 2026 by [dependabot](https://github.com/LumeraProtocol/cosmos-chain-registry/issues?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot 'Open pull requests created by dependabot[bot]') Bot Loading…
+
+[Bump minimatch from 3.1.2 to 3.1.5](https://github.com/LumeraProtocol/cosmos-chain-registry/pull/5) [dependencies](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Adependencies) Pull requests that update a dependency file [javascript](https://github.com/LumeraProtocol/cosmos-chain-registry/pulls?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+label%3Ajavascript) Pull requests that update javascript code
+
+#5 opened Jun 17, 2026 by [dependabot](https://github.com/LumeraProtocol/cosmos-chain-registry/issues?q=is%3Apr+is%3Aopen+author%3Aapp%2Fdependabot 'Open pull requests created by dependabot[bot]') Bot Loading…
+
+**ProTip!** Find all pull requests that aren't related to any open issues with [\-linked:issue](https://github.com/LumeraProtocol/cosmos-chain-registry/issues?q=is%3Apr+is%3Aopen+sort%3Areactions-%2B1-desc+-linked%3Aissue).

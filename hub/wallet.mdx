@@ -1,0 +1,179 @@
+---
+title: "Set Up and Use Your Lumera Wallet in Lumera Hub"
+sidebarTitle: "Wallet"
+description: "Create or import a Lumera wallet in Lumera Hub, manage your LUME balance, send tokens, stake to validators, and participate in governance."
+---
+
+Your Lumera wallet is your identity on the network. It holds your LUME tokens, controls your staking positions and governance votes, and authorizes every action you take through Lumera Hub. This page walks you through creating or importing a wallet, then covers all the day-to-day operations you can perform — from checking your balance and sending tokens to staking, claiming rewards, and voting on proposals.
+
+<Warning>
+  **Your seed phrase is the master key to your wallet.** Anyone who obtains your 24-word mnemonic can take full, permanent control of your funds. Never share it with anyone — including support staff — and never enter it on any website other than an application you have independently verified as authentic. Lumera Protocol support will never ask for your seed phrase.
+</Warning>
+
+## Wallet Setup
+
+<Steps>
+  <Step title="Access Lumera Hub">
+    Open Lumera Hub on whichever platform you prefer:
+
+    - **Web**: Navigate to [hub.lumera.io](https://hub.lumera.io) in your browser.
+    - **Desktop**: Launch the Lumera Hub application you installed on Windows, macOS, or Linux.
+    - **Mobile**: Open the Lumera Hub app on your iOS or Android device.
+
+    You will land on the wallet setup screen the first time you open the app.
+  </Step>
+
+  <Step title="Create a new wallet">
+    Select **Create New Wallet** to generate a brand-new Lumera account.
+
+    Lumera Hub generates a **24-word mnemonic seed phrase** unique to your wallet. This is the only backup of your account — there is no account recovery without it.
+
+    Write down every word in order on paper (or stamp them into a metal backup plate). Once you have recorded the phrase:
+
+    1. Click **Continue** to proceed to the verification step.
+    2. Confirm your seed phrase by selecting the words in the correct order when prompted.
+    3. Set a local password or PIN to protect the app on this device.
+
+    After verification, your wallet address (beginning with `lumera1...`) is created and ready to use.
+  </Step>
+
+  <Step title="Import an existing wallet">
+    If you already have a Lumera wallet — or are migrating from a compatible Cosmos wallet — select **Import Wallet** instead.
+
+    <Tabs>
+      <Tab title="Mnemonic Phrase">
+        Enter your 24-word (or 12-word) seed phrase, one word per field. Lumera Hub derives your wallet address from the phrase and restores full access to your account.
+      </Tab>
+      <Tab title="Ledger Hardware Wallet">
+        Connect your Ledger device via USB or Bluetooth, unlock it, and open the **Cosmos** app on the device. Select **Connect Ledger** in Lumera Hub and follow the on-screen pairing steps. Your private key never leaves the hardware device.
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Fund your wallet">
+    Your new wallet starts with a zero balance. To acquire LUME:
+
+    - **From an exchange**: Withdraw LUME to your `lumera1...` address.
+    - **From another wallet**: Ask the sender to transfer LUME to your address.
+    - **From testnet faucet**: If you are on **lumera-testnet-2**, use the community faucet to request test tokens at no cost.
+
+    Copy your wallet address from the **Receive** panel in Lumera Hub and share it with the sender.
+  </Step>
+
+  <Step title="Connect to the correct network">
+    Lumera Hub supports both available networks. Select the appropriate one from the network switcher in the app settings or the top navigation bar.
+
+    | Network | Chain ID | Use For |
+    |---|---|---|
+    | Mainnet | `lumera-mainnet-1` | Real LUME, live transactions |
+    | Testnet | `lumera-testnet-2` | Practice, development, testing |
+
+    Confirm the active network before signing any transaction. Transactions submitted to the wrong network cannot be reversed.
+  </Step>
+</Steps>
+
+## Wallet Features
+
+### Checking Your LUME Balance
+
+Your balance appears on the **Portfolio** or **Dashboard** screen as soon as your wallet is loaded. Lumera Hub displays:
+
+- **Available balance** — LUME you can freely send or delegate.
+- **Staked balance** — LUME currently delegated to validators.
+- **Unbonding balance** — LUME that has been undelegated and is still in the unbonding period.
+- **Claimable rewards** — staking rewards ready to withdraw.
+
+### Sending LUME
+
+1. Open the **Send** panel.
+2. Enter the recipient's `lumera1...` address.
+3. Enter the amount of LUME to send.
+4. Review the transaction details — recipient, amount, and estimated gas fee.
+5. Confirm and sign the transaction.
+
+<Tip>
+  Double-check the recipient address before confirming. Cosmos transactions are irreversible; LUME sent to a wrong address cannot be recovered.
+</Tip>
+
+### Staking and Delegating LUME {#staking}
+
+Staking locks your LUME with a validator to help secure the network and earn you a share of block rewards.
+
+1. Go to the **Staking** section.
+2. Browse the validator list and select a validator to delegate to. Consider the validator's commission rate, uptime, and community reputation.
+3. Enter the amount of LUME to delegate.
+4. Confirm and sign the delegation transaction.
+
+<Note>
+  **Unbonding period**: When you undelegate LUME, it enters a **21-day unbonding period** during which it earns no rewards and cannot be transferred. Plan your liquidity needs accordingly.
+</Note>
+
+You can delegate to multiple validators to spread risk across the active set.
+
+### Claiming Staking Rewards
+
+Staking rewards accumulate continuously but are not automatically credited to your available balance. To claim them:
+
+1. Go to the **Staking** section and find your active delegations.
+2. Click **Claim Rewards** next to a validator, or use **Claim All** to collect rewards from every delegation in a single transaction.
+3. Confirm and sign the transaction. Rewards are added to your available balance immediately.
+
+You can also **restake** (compound) rewards by delegating them back to the same validator in one step.
+
+### IBC Transfers
+
+IBC lets you send LUME to other Cosmos chains (such as Osmosis or Cosmos Hub) or receive tokens from them.
+
+1. Open the **IBC Transfer** panel.
+2. Select the destination chain from the dropdown.
+3. Enter the recipient address on the destination chain.
+4. Enter the amount and the channel ID for the route you want to use.
+5. Confirm and sign the transaction.
+
+<Note>
+  IBC transfers require an active relayer between Lumera and the destination chain. If a transfer appears stuck, it may be waiting for a relayer to relay the packet. Funds are not lost — they will either complete or time out and be refunded.
+</Note>
+
+### Voting on Governance Proposals
+
+LUME holders can vote on on-chain governance proposals that shape the future of the network, including parameter changes, software upgrades, and community spending.
+
+1. Go to the **Governance** section.
+2. Browse open proposals and click one to read its full description.
+3. Choose your vote: **Yes**, **No**, **No With Veto**, or **Abstain**.
+4. Confirm and sign the vote transaction.
+
+Voting power is proportional to your total staked LUME at the time the proposal's voting period ends.
+
+## Security Best Practices
+
+<Accordion title="Mnemonic backup: paper and metal, never digital">
+  Write your 24-word seed phrase on paper immediately after generating it. For long-term storage, consider stamping or engraving the words on a metal plate that is resistant to fire and water.
+
+  **Never** save your seed phrase in a text file, screenshot, cloud note, email, or messaging app. Any digital copy is a potential attack surface. Keep physical backups in secure, separate locations.
+</Accordion>
+
+<Accordion title="Hardware wallet support (Ledger)">
+  For large holdings, use a Ledger hardware wallet. Lumera Hub supports Ledger devices — your private key is generated and stored on the hardware device and never exposed to your computer or phone. Every transaction must be physically confirmed on the device.
+
+  Make sure you are running the latest Ledger firmware and the Cosmos app. Purchase Ledger devices only from the official Ledger website to avoid supply-chain attacks.
+</Accordion>
+
+<Accordion title="Verify transaction details before signing">
+  Always read the full transaction summary before tapping **Confirm**. Check the recipient address, the amount, and the network. Attackers sometimes use clipboard hijacking to silently replace copied addresses with their own.
+
+  On Ledger devices, verify the transaction details on the hardware screen — not just in the app — before approving.
+</Accordion>
+
+<Accordion title="Mainnet vs. testnet: always confirm your network">
+  Lumera Hub clearly displays the active network. Before performing any transaction, confirm you are on the correct network:
+
+  - Use **lumera-mainnet-1** for real LUME and live operations.
+  - Use **lumera-testnet-2** for experimentation and development.
+
+  Gas fees and token balances are separate between networks. Testnet tokens have no monetary value.
+</Accordion>
+
+<Note>
+  **Keplr wallet integration**: If you already use Keplr to manage Cosmos accounts, you can add the Lumera mainnet or testnet to Keplr and import your existing Lumera address. Use the same seed phrase you used when setting up your Lumera Hub wallet to access the same account across both applications.
+</Note>

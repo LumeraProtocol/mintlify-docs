@@ -1,0 +1,104 @@
+---
+title: "LumeraID: Decentralized Identity on Lumera Protocol"
+sidebarTitle: "LumeraID"
+description: "LumeraID is Lumera's on-chain decentralized identity system. Register a verifiable identity, sign data, and prove ownership without a central authority."
+---
+
+LumeraID is Lumera Protocol's on-chain decentralized identity system. Rather than relying on a centralized registry or third-party identity provider, LumeraID lets you anchor a verifiable identity record directly to the Lumera blockchain. Once registered, your LumeraID links a Lumera address to a set of cryptographic keys and metadata, giving you a portable, tamper-proof identity that you control — and that the rest of the protocol uses for access control, ownership proofs, and SuperNode verification.
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Cascade Asset Ownership" icon="database">
+    Prove ownership of a Cascade-stored file. Download requests require a valid signature from the LumeraID associated with the registering address.
+  </Card>
+  <Card title="Sense Provenance" icon="magnifying-glass">
+    Attach a verifiable identity to Sense results, establishing an immutable link between a content creator and their registered digital assets.
+  </Card>
+  <Card title="SuperNode Operator Identity" icon="server">
+    SuperNode operators register their node identity through LumeraID, giving each SuperNode a verifiable on-chain presence that the `x/supernode` module can reference.
+  </Card>
+  <Card title="Off-chain Data Signing" icon="pen-nib">
+    Sign arbitrary off-chain data — messages, contracts, attestations — with your LumeraID key and let anyone on-chain verify the signature against your registered identity.
+  </Card>
+</CardGroup>
+
+## Registering a LumeraID
+
+<Steps>
+  <Step title="Ensure you have a funded Lumera address">
+    You need a Lumera address with enough `ulume` to cover the transaction fee. If you are setting up a new address, see the [wallet setup guide](/hub/wallet).
+  </Step>
+  <Step title="Submit the registration transaction">
+    Broadcast a `MsgRegisterID` transaction from the address you want to associate with a LumeraID.
+
+    ```shell
+    # Create a new LumeraID
+    lumerad tx lumeraid register-id \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1 \
+      --fees 5000ulume
+    ```
+
+    The transaction links your Lumera address to a new on-chain identity record. The record is created in the `x/lumeraid` state and is immediately queryable.
+  </Step>
+  <Step title="Verify your registration">
+    Query the chain to confirm your LumeraID was created successfully.
+
+    ```shell
+    lumerad query lumeraid get-id <lumera-address>
+    ```
+  </Step>
+</Steps>
+
+## Querying an Identity
+
+You can look up any registered LumeraID by its associated Lumera address:
+
+```shell
+lumerad query lumeraid get-id <lumera-address>
+```
+
+The response includes the identity record metadata, the associated public keys, and the block height at which the identity was registered.
+
+## Signing Data with Your LumeraID
+
+Your LumeraID is backed by the same private key that controls your Lumera address. You can use the `lumerad` CLI to produce a cryptographic signature over any data:
+
+```shell
+# Sign an arbitrary message with your LumeraID key
+lumerad tx lumeraid sign-data \
+  --data "<base64-encoded-payload>" \
+  --from <key-name> \
+  --chain-id lumera-mainnet-1 \
+  --fees 5000ulume
+```
+
+The resulting signature can be submitted alongside an on-chain message or shared off-chain. Any verifier can check the signature against the public key stored in your on-chain LumeraID record — without trusting a central authority.
+
+## LumeraID and Cascade / Sense Access Control
+
+LumeraID is the foundation of Lumera's access control model for stored assets:
+
+<Accordion title="Cascade download authorization">
+When you register a Cascade action, the `x/action` module records your Lumera address as the owner. To download the stored file, you (or someone you have delegated to) must present a valid signature from the LumeraID key associated with that address.
+
+The SuperNode's `CascadeService.Download` endpoint verifies this signature before streaming any data:
+
+```shell
+# The signature field in DownloadRequest is checked against the LumeraID record
+# DownloadRequest { action_id: "...", signature: "..." }
+```
+
+This means your files are private by default — only you (or an authorized delegate) can retrieve them, even though the encoded symbols are distributed across the public SuperNode network.
+</Accordion>
+
+<Accordion title="Sense result ownership">
+Sense results are similarly tied to the registering address. The on-chain record establishes a permanent, timestamped link between your LumeraID and the uniqueness score for your digital asset — useful for proving provenance in disputes.
+</Accordion>
+
+## LumeraID and Cosmos Addresses
+
+<Note>
+Your LumeraID is not a separate identifier — it is an on-chain record tied directly to your Cosmos-format Lumera address (e.g., `lumera1...`). You do not need a separate username or account. Every Lumera address can register exactly one LumeraID, and the LumeraID record is controlled by the private key of that address. If you rotate or recover your key, update your LumeraID record accordingly to maintain uninterrupted access to your assets.
+</Note>

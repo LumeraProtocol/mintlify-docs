@@ -1,0 +1,79 @@
+---
+title: "Lumera Protocol: Next-Gen Decentralized Infrastructure"
+sidebarTitle: "Introduction"
+description: "Lumera Protocol is a Cosmos SDK L1 blockchain evolved from Pastel Network, offering permanent storage, AI tooling, and Cosmos/EVM interoperability."
+---
+
+Lumera Protocol represents the next evolution of Pastel Network—a cutting-edge Layer 1 blockchain re-architected on the Cosmos SDK to power decentralized infrastructure for Web3, permanent storage, and AI tooling. By joining the Cosmos ecosystem, Lumera gains unmatched scalability, native interoperability with hundreds of other chains, and a developer-friendly smart contract environment, all while preserving the core decentralized storage and AI capabilities that made Pastel Network unique.
+
+## What Is Lumera Protocol?
+
+Lumera is a sovereign Layer 1 blockchain built on **Cosmos SDK v0.53.6**. It combines the battle-tested security and modularity of the Cosmos stack with a purpose-built SuperNode network for permanent file storage and AI-driven content analysis. The native token, **LUME** (denomination: `ulume`), is used for staking, transaction fees, and service payments across the network.
+
+<Note>
+  Lumera Protocol evolved from Pastel Network. If you previously held PSL tokens, the `x/claim` module enables you to migrate your balance to LUME on the new chain.
+</Note>
+
+## Key Capabilities
+
+### CosmWasm Smart Contracts
+
+Lumera supports **CosmWasm**, the industry-standard Rust-based smart contract engine for Cosmos chains. You can deploy permissionless contracts, interact with on-chain modules, and build complex decentralized applications—all with the security guarantees of a formal execution environment.
+
+### IBC Cross-Chain Messaging
+
+The **Inter-Blockchain Communication (IBC)** protocol is natively integrated, allowing you to transfer tokens and pass arbitrary messages between Lumera and any other IBC-enabled chain. This positions Lumera as a first-class citizen in the broader Cosmos interchain ecosystem.
+
+### Cosmos EVM
+
+Lumera runs a **Cosmos EVM** layer, giving Ethereum-native developers a familiar execution environment. You can deploy Solidity smart contracts, use MetaMask, and reuse existing EVM tooling—without leaving the Lumera network.
+
+### SuperNode Network
+
+The **SuperNode network** is Lumera's signature layer. SuperNodes are high-performance nodes operated alongside validators that provide two core services:
+
+- **Cascade** — Permanent, decentralized file storage. Files are encoded with RaptorQ erasure coding, distributed across the SuperNode network, and retrievable indefinitely.
+- **Sense** — AI-powered near-duplicate detection for digital media. Sense analyzes files and produces a fingerprint that identifies near-duplicate content across the network.
+
+SuperNode operators register on-chain via the `x/supernode` module and earn rewards for fulfilling Cascade and Sense action requests.
+
+## Custom Modules
+
+Lumera ships four custom Cosmos SDK modules that extend the base chain with protocol-specific functionality.
+
+| Module | Purpose |
+|---|---|
+| `x/action` | Manages the full lifecycle of Cascade and Sense actions—from registration through finalization and approval |
+| `x/claim` | Facilitates token migration from Pastel Network, allowing PSL holders to claim LUME |
+| `x/lumeraid` | Provides decentralized identity (LumeraID) infrastructure for on-chain identity management |
+| `x/supernode` | Handles SuperNode registration, status tracking, top-list selection, and reward distribution |
+
+<Tip>
+  Each module exposes its own gRPC and REST query/transaction endpoints. Refer to the API Reference section for full endpoint documentation.
+</Tip>
+
+## How Lumera Fits into the Cosmos Ecosystem
+
+Lumera is a fully sovereign Cosmos chain with its own validator set, governance, and tokenomics. At the same time, it is deeply integrated with the broader ecosystem:
+
+- **IBC** connects Lumera to Osmosis, Cosmos Hub, and every other IBC-enabled chain for liquidity and messaging.
+- **Keplr wallet** support is available via the official Lumera chain registry entry, so users can interact with the chain using familiar Cosmos tooling.
+- **CosmWasm** and **Cosmos EVM** mean developers can bring existing contracts and dApps to Lumera without rewriting them.
+- **LumeScope**, the read-only API aggregator, lets lightweight clients query network state without running a full node.
+
+## Where to Go Next
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Understand the layered architecture of Lumera: base chain, custom modules, SuperNode layer, and client applications.
+  </Card>
+  <Card title="Networks" icon="network-wired" href="/networks">
+    Get the chain IDs, genesis files, seeds, and explorer links for mainnet and testnet.
+  </Card>
+  <Card title="Validators" icon="shield-check" href="/validators">
+    Follow the step-by-step guide to set up a Lumera validator node and join the active set.
+  </Card>
+  <Card title="SuperNodes" icon="server" href="/supernodes">
+    Learn how to register and operate a SuperNode to provide Cascade and Sense services.
+  </Card>
+</CardGroup>

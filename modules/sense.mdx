@@ -1,0 +1,129 @@
+---
+title: "Sense: AI-Powered Duplication Detection on Lumera"
+sidebarTitle: "Sense"
+description: "Sense is Lumera's duplication detection service. Submit a file to the SuperNode network for near-duplicate analysis and receive a uniqueness score."
+---
+
+Sense is Lumera's on-chain duplication and near-duplicate detection service. When you submit a file through Sense, a set of top-ranked SuperNodes independently runs ML-based fingerprint analysis on it, compares the result against a network-wide database of previously registered assets, and returns a verifiable uniqueness score anchored in the `x/action` module. The result is not a simple hash comparison — Sense detects perceptually similar content even when images, audio, or other media have been slightly altered.
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="NFT Uniqueness Verification" icon="image">
+    Prove that a digital artwork or collectible is not a near-duplicate of an existing registered asset before minting.
+  </Card>
+  <Card title="Content Originality Checks" icon="file-check">
+    Verify the originality of written, visual, or audio content before publishing or licensing it.
+  </Card>
+  <Card title="Digital Asset Provenance" icon="link">
+    Establish a timestamped, on-chain record that a specific file existed in a unique form at a specific block height.
+  </Card>
+  <Card title="Duplicate Prevention" icon="shield">
+    Prevent duplicate or near-duplicate assets from flooding marketplaces and diluting the value of originals.
+  </Card>
+</CardGroup>
+
+## How Sense Works
+
+<Steps>
+  <Step title="Register the Sense action on-chain">
+    You submit a `MsgRegisterAction` transaction specifying the SHA-256 hash of your file. The `x/action` module records this as a new Sense action in the `registered` state and assigns a unique action ID.
+  </Step>
+  <Step title="SuperNodes run fingerprint analysis">
+    A set of top-ranked SuperNodes (selected by `x/supernode`) retrieves the action and processes the file. Each SuperNode independently runs ML-based perceptual fingerprinting — generating a feature vector that captures the semantic content of the file rather than a simple cryptographic hash.
+  </Step>
+  <Step title="Results are aggregated and recorded">
+    The SuperNodes compare the fingerprint against the existing database of registered assets across the network. They compute a **similarity score** and identify any **duplicate candidates** — files that score above the near-duplicate threshold. The lead SuperNode submits a `MsgFinalizeAction` with the aggregated results, moving the action to `finalized`.
+  </Step>
+  <Step title="Network approves and results are stored on-chain">
+    Other SuperNodes verify the results and submit approval. The action moves to `approved` state. The uniqueness score and any duplicate candidates become part of the permanent on-chain record — queryable by anyone, forever.
+  </Step>
+</Steps>
+
+## Action Lifecycle
+
+Sense actions follow the same three-state lifecycle as Cascade actions:
+
+```
+registered → finalized → approved
+```
+
+| State | Description |
+|-------|-------------|
+| `registered` | Action submitted on-chain; SuperNodes beginning fingerprint analysis |
+| `finalized` | Lead SuperNode submitted aggregated similarity results |
+| `approved` | Network confirmed results; uniqueness score permanently recorded on-chain |
+
+## Submitting a Sense Action
+
+<Tabs>
+  <Tab title="CLI">
+    Use `lumerad` to register a Sense action from the command line.
+
+    ```shell
+    # Register a Sense action
+    lumerad tx action register-sense \
+      --data-hash <sha256-of-file> \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1 \
+      --fees 5000ulume
+    ```
+
+    Replace `<sha256-of-file>` with the hex-encoded SHA-256 hash of the file you want to analyse. Unlike Cascade, you do not need to specify the file size — Sense only requires the hash for on-chain registration.
+
+    After broadcasting, note the `action_id` returned in the transaction response.
+  </Tab>
+  <Tab title="LumeScope API">
+    You can track Sense action status and retrieve results via the LumeScope REST API.
+
+    ```shell
+    # List recent Sense actions
+    curl 'https://api.lumescope.io/v1/actions?type=sense&limit=10'
+
+    # Get a specific Sense action result (similarity score, duplicates)
+    curl 'https://api.lumescope.io/v1/actions/<action-id>'
+    ```
+  </Tab>
+</Tabs>
+
+## Querying Sense Results
+
+Once a Sense action reaches `approved` state, its results — including the similarity score and any identified near-duplicate candidates — are stored in the on-chain action record.
+
+```shell
+# Get the full result for a specific Sense action
+lumerad query action get-action <action-id>
+```
+
+The response includes the action metadata, current state, and the encoded Sense result payload. Use the LumeScope API for a decoded, human-readable representation:
+
+```shell
+# Decoded Sense metadata via LumeScope
+curl 'https://api.lumescope.io/v1/actions/<action-id>'
+```
+
+## Sense Result Fields
+
+<Accordion title="Understanding the Sense result payload">
+The Sense result attached to an approved action contains:
+
+- **Similarity score** — A value between 0.0 and 1.0. Values close to 0 indicate high uniqueness; values close to 1 indicate near-duplication of an existing registered asset.
+- **Duplicate candidates** — A list of action IDs for previously registered files that exceeded the near-duplicate threshold against your submission.
+- **Fingerprint hash** — The hash of the perceptual fingerprint vector, which can be used to independently verify the result.
+- **Block height** — The block at which the result was finalized, establishing a tamper-proof timestamp.
+</Accordion>
+
+<Note>
+Sense results are stored permanently on-chain as part of the approved action record. Anyone can query the result, verify the similarity score, and audit the list of duplicate candidates — providing a fully transparent and tamper-proof provenance trail for your digital assets.
+</Note>
+
+## Pricing
+
+Sense fees follow the same two-component structure as Cascade:
+
+- **On-chain gas fees** — Standard `ulume` transaction fees for the `register-sense` message.
+- **SuperNode service fees** — Fees paid to the SuperNodes that perform fingerprint analysis, distributed automatically upon action approval.
+
+<Tip>
+Sense is typically less expensive than Cascade because it does not require storing file data across the SuperNode network — only the fingerprint analysis result is recorded on-chain.
+</Tip>

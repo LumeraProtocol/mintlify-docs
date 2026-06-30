@@ -1,0 +1,250 @@
+---
+title: "Set Up a Lumera Protocol Validator Node"
+sidebarTitle: "Setup"
+description: "Install lumerad, join the Lumera mainnet or testnet, sync your node, and register as a validator in step-by-step instructions."
+---
+
+This guide walks you through everything needed to go from a fresh server to an active validator on Lumera Protocol. Follow the steps in order — each step assumes the previous one has been completed successfully. If you are joining testnet instead of mainnet, refer to the [Testnet tab](#network-specific-parameters) wherever network-specific values appear.
+
+<Steps>
+
+### Install Prerequisites
+
+Before building `lumerad`, make sure your server has Go 1.21 or later, `make`, `git`, and the C toolchain that CGO needs to compile `libwasmvm`.
+
+```shell
+# Ubuntu / Debian
+sudo apt-get update
+sudo apt-get install -y build-essential git curl jq
+
+# Install Go (replace with the version matching go.mod)
+GO_VERSION=1.22.4
+curl -OL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.profile
+source ~/.profile
+go version
+```
+
+Confirm Go reports the version you installed before continuing.
+
+<Note>
+`libwasmvm` is compiled automatically as part of `make build`. If the build fails with a missing shared library at runtime, download the correct `.so` from the [CosmWasm/wasmvm releases](https://github.com/CosmWasm/wasmvm/releases) page and place it in `/usr/lib/`.
+</Note>
+
+### Build lumerad
+
+Clone the Lumera repository, compile the binary with `make build`, and move it onto your `$PATH`.
+
+```shell
+git clone https://github.com/LumeraProtocol/lumera
+cd lumera
+make build
+# Binary is written to build/lumerad
+sudo mv build/lumerad /usr/local/bin/
+lumerad version
+```
+
+Verify the output shows the version string of the binary you just built. If you see `command not found`, confirm `/usr/local/bin` is in your `$PATH`.
+
+<Tip>
+To build with debug symbols (useful for profiling or crash analysis) run `make build-debug` instead. Do not use the debug binary in production — it is significantly larger and slower.
+</Tip>
+
+### Initialize Your Node
+
+`lumerad init` creates the home directory at `~/.lumera`, generates your node key and private validator key, and writes default `config.toml` and `app.toml` files.
+
+<Tabs>
+  <Tab title="Mainnet">
+    ```shell
+    lumerad init <moniker> --chain-id lumera-mainnet-1
+    ```
+  </Tab>
+  <Tab title="Testnet">
+    ```shell
+    lumerad init <moniker> --chain-id lumera-testnet-2
+    ```
+  </Tab>
+</Tabs>
+
+Replace `<moniker>` with a human-readable name for your node (e.g., `my-validator`). This name appears in block explorers and peer lists.
+
+<Warning>
+`lumerad init` generates `~/.lumera/config/priv_validator_key.json` and `~/.lumera/config/node_key.json`. Back up these files securely before you go any further. Losing `priv_validator_key.json` means you can no longer sign blocks and will be slashed for downtime.
+</Warning>
+
+### Download the Genesis File
+
+Replace the default `genesis.json` scaffold with the official network genesis.
+
+<Tabs>
+  <Tab title="Mainnet">
+    ```shell
+    curl -o ~/.lumera/config/genesis.json \
+      https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/refs/heads/master/mainnet/genesis.json
+    ```
+  </Tab>
+  <Tab title="Testnet">
+    ```shell
+    curl -o ~/.lumera/config/genesis.json \
+      https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/refs/heads/master/testnet-2/genesis.json
+    ```
+  </Tab>
+</Tabs>
+
+Verify the genesis hash once downloaded:
+
+```shell
+sha256sum ~/.lumera/config/genesis.json
+```
+
+Compare the output against the hash published in the [lumera-networks repository](https://github.com/LumeraProtocol/lumera-networks) to confirm you have the right file.
+
+### Configure Seeds
+
+Open `~/.lumera/config/config.toml` in your editor and set the `seeds` field so your node can discover peers on startup.
+
+<Tabs>
+  <Tab title="Mainnet">
+    ```toml
+    seeds = "f64b9efc5747cc3556bdc281dab930a716dd63af@seeds.lumera.io:26656"
+    ```
+  </Tab>
+  <Tab title="Testnet">
+    ```toml
+    seeds = "faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"
+    ```
+  </Tab>
+</Tabs>
+
+If you are using a sentry node architecture, leave `seeds` empty on your validator and instead populate `persistent_peers` with your own sentry node addresses. See the [Configuration](/validators/configuration) page for details.
+
+### Set Minimum Gas Price
+
+Open `~/.lumera/config/app.toml` and set the minimum gas price your node accepts. Transactions that offer less than this price are rejected at the mempool level.
+
+```toml
+minimum-gas-prices = "0.025ulume"
+```
+
+This value is identical on both mainnet and testnet. Setting it too low makes your mempool a target for spam; setting it too high may cause your node to reject legitimate transactions.
+
+### Start the Node and Sync
+
+Start `lumerad` and watch it begin syncing blocks. On a fresh node, this can take hours to days depending on chain height and your hardware.
+
+```shell
+lumerad start
+```
+
+In a second terminal, check sync progress:
+
+```shell
+lumerad status 2>&1 | jq .SyncInfo
+```
+
+Wait until `"catching_up": false` before proceeding. Your node must be fully synced before you submit a `create-validator` transaction.
+
+<Tip>
+Consider running `lumerad` as a `systemd` service so it restarts automatically after a reboot or crash. See the [Operations](/validators/operations) page for a sample unit file.
+</Tip>
+
+### Create a Validator Key
+
+Generate the key that will sign your `create-validator` transaction and hold your self-delegation.
+
+```shell
+lumerad keys add <key-name>
+```
+
+The command prints your address and mnemonic. **Write down the mnemonic and store it offline.** It is the only way to recover this key if your server is lost.
+
+```shell
+# Confirm the key was created
+lumerad keys list
+```
+
+### Fund Your Validator Address
+
+Your key needs enough LUME to cover both the self-delegation amount and the transaction fee.
+
+<Tabs>
+  <Tab title="Mainnet">
+    Transfer LUME to the address shown by `lumerad keys list`. You need at least **1 LUME** (1,000,000 ulume) for the minimum self-delegation plus a small amount for fees.
+  </Tab>
+  <Tab title="Testnet">
+    Request testnet tokens from the faucet at [portal.testnet.lumera.io](https://portal.testnet.lumera.io/lumera-testnet-2) or ask in the [Lumera Discord](https://discord.gg/lumeraprotocol).
+  </Tab>
+</Tabs>
+
+Confirm the balance arrived before continuing:
+
+```shell
+lumerad query bank balances <your-address>
+```
+
+### Submit the create-validator Transaction
+
+Once your node is synced and your key is funded, submit the transaction that registers you as a validator.
+
+<Tabs>
+  <Tab title="Mainnet">
+    ```shell
+    lumerad tx staking create-validator \
+      --amount=1000000ulume \
+      --pubkey=$(lumerad tendermint show-validator) \
+      --moniker="<your-moniker>" \
+      --chain-id=lumera-mainnet-1 \
+      --commission-rate="0.10" \
+      --commission-max-rate="0.20" \
+      --commission-max-change-rate="0.01" \
+      --min-self-delegation="1" \
+      --from=<key-name> \
+      --gas=auto \
+      --fees=5000ulume
+    ```
+  </Tab>
+  <Tab title="Testnet">
+    ```shell
+    lumerad tx staking create-validator \
+      --amount=1000000ulume \
+      --pubkey=$(lumerad tendermint show-validator) \
+      --moniker="<your-moniker>" \
+      --chain-id=lumera-testnet-2 \
+      --commission-rate="0.10" \
+      --commission-max-rate="0.20" \
+      --commission-max-change-rate="0.01" \
+      --min-self-delegation="1" \
+      --from=<key-name> \
+      --gas=auto \
+      --fees=5000ulume
+    ```
+  </Tab>
+</Tabs>
+
+**Parameter guide:**
+
+| Flag | Description |
+|------|-------------|
+| `--amount` | Your initial self-delegation in `ulume`. 1,000,000 ulume = 1 LUME. |
+| `--pubkey` | Your validator's consensus public key. The `show-validator` subcommand reads it from disk. |
+| `--commission-rate` | The percentage of delegator rewards you take as commission (0.10 = 10%). |
+| `--commission-max-rate` | The hard ceiling on your commission rate — you can never set it above this. |
+| `--commission-max-change-rate` | The maximum you can change your commission in a 24-hour period. |
+| `--min-self-delegation` | The minimum amount of `ulume` you must keep self-delegated. Dropping below this unbonds you. |
+
+After the transaction is broadcast, query the result:
+
+```shell
+lumerad query staking validator $(lumerad keys show <key-name> --bech val -a)
+```
+
+A `status: BOND_STATUS_BONDED` response confirms you are in the active set.
+
+</Steps>
+
+## What's Next
+
+Your validator is live. Move on to the [Configuration](/validators/configuration) reference to tune pruning, peers, and ports, then read the [Operations](/validators/operations) guide to learn how to monitor uptime, unjail, and apply chain upgrades safely.

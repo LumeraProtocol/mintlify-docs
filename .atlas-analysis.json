@@ -1,0 +1,118 @@
+{
+  "projectType": "infrastructure",
+  "projectName": "Lumera Protocol",
+  "projectDescription": "Lumera Protocol is a Cosmos SDK Layer 1 blockchain featuring CosmWasm smart contracts, IBC cross-chain messaging, Cosmos EVM, and a decentralized SuperNode network for permanent storage and AI tooling.",
+  "theme": "aspen",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "architecture",
+              "networks"
+            ]
+          },
+          {
+            "group": "Validators",
+            "pages": [
+              "validators/overview",
+              "validators/setup",
+              "validators/configuration",
+              "validators/operations"
+            ]
+          },
+          {
+            "group": "SuperNodes",
+            "pages": [
+              "supernodes/overview",
+              "supernodes/setup",
+              "supernodes/cli-reference",
+              "supernodes/configuration"
+            ]
+          },
+          {
+            "group": "Core Modules",
+            "pages": [
+              "modules/overview",
+              "modules/cascade",
+              "modules/sense",
+              "modules/lumeraid",
+              "modules/claims"
+            ]
+          },
+          {
+            "group": "Lumera Hub",
+            "pages": [
+              "hub/overview",
+              "hub/wallet"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "REST API",
+            "pages": [
+              "api/overview",
+              "api/actions",
+              "api/supernodes",
+              "api/lumescope"
+            ]
+          },
+          {
+            "group": "gRPC API",
+            "pages": [
+              "api/grpc/supernode-service",
+              "api/grpc/cascade-service"
+            ]
+          },
+          {
+            "group": "SDKs & Libraries",
+            "pages": [
+              "sdk/raptorq",
+              "sdk/lumerad-cli"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Cosmos SDK L1 blockchain with CosmWasm smart contracts",
+    "IBC cross-chain interoperability",
+    "Cosmos EVM for Ethereum-compatible smart contracts",
+    "Decentralized SuperNode network for cascade (permanent storage) and sense (duplication detection)",
+    "LumeraID decentralized identity module",
+    "Token claims migration from Pastel Network",
+    "RaptorQ erasure coding for fault-tolerant data storage",
+    "LumeScope — read-only API aggregator for network metrics and actions",
+    "Lumera Hub — cross-platform wallet and dApp interface (web, desktop, mobile)"
+  ],
+  "publicApiSurface": [
+    "lumerad CLI (init, start, keys, tx, query)",
+    "supernode CLI (init, start, keys, config)",
+    "GET /v1/actions — list decoded Cascade/Sense actions",
+    "GET /v1/actions/{id} — action details with transactions",
+    "GET /v1/actions/stats — aggregated action statistics",
+    "GET /v1/supernodes/metrics — list supernode hardware metrics",
+    "GET /v1/supernodes/{id}/metrics — single supernode metrics",
+    "GET /v1/supernodes/{id}/paymentInfo — payment statistics",
+    "GET /v1/supernodes/stats — aggregated hardware statistics",
+    "GET /v1/supernodes/action-stats — action stats per supernode",
+    "GET /v1/supernodes/unavailable — unavailable supernodes",
+    "GET /v1/version/matrix — version compatibility matrix",
+    "SupernodeService.GetStatus gRPC",
+    "CascadeService.Register gRPC (streaming)",
+    "CascadeService.Download gRPC (streaming)",
+    "rq-go: NewDefaultRaptorQProcessor(), EncodeFile(), DecodeSymbols(), CreateMetadata()"
+  ]
+}
