@@ -1,56 +1,140 @@
 ---
-title: "Lumera Validator Operations: Monitoring and Upgrades"
+title: "Validator configuration and operations"
 sidebarTitle: "Operations"
-description: "Day-to-day Lumera validator operations: monitoring status, unjailing, updating commission, withdrawing rewards, and upgrading lumerad."
+description: "Tune your node configuration, monitor health, withdraw rewards, unjail, and upgrade safely."
 ---
 
-Running a validator is an ongoing commitment, not a one-time setup. This page covers the operational tasks you will perform regularly: checking your node's health, collecting rewards, responding to a jail event, keeping your metadata current, voting on governance proposals, and applying chain upgrades safely.
+Running a validator is an ongoing commitment. This page is your day-two reference. It covers the configuration files, health monitoring, rewards, jail recovery, metadata changes, governance, and safe upgrades.
 
 <Warning>
-**Double-signing is catastrophic.** If two instances of your validator sign conflicting blocks at the same height — for example, because you started a second instance without stopping the first — the network detects the equivocation and permanently **tombstones** your validator. A tombstoned validator is slashed a fixed percentage of its stake and can never re-enter the active set. Always confirm the old `lumerad` process has fully stopped before starting a new one, especially during upgrades or server migrations.
+Double signing is catastrophic. If two instances of your validator sign conflicting blocks at the same height, the network permanently tombstones your validator and slashes its stake. Always confirm the old `lumerad` process has fully stopped before starting a new one, especially during upgrades or migrations.
 </Warning>
 
-## Querying Validator Status
+## Configuration files
 
-Check your validator's bonding status, voting power, and commission parameters at any time with the staking query:
+After `lumerad init`, three files live under `~/.lumera/config/`. Each controls a different layer.
 
-```shell
-lumerad query staking validator <validator-address>
+| File | Layer |
+|---|---|
+| `config.toml` | CometBFT engine, peers, mempool, RPC |
+| `app.toml` | Cosmos SDK application, gas, APIs, pruning |
+| `client.toml` | Defaults for the `lumerad` CLI |
+
+Restart `lumerad` after editing any of them. Changes only take effect when the process reloads.
+
+### Peers in config.toml
+
+```toml
+# Seed nodes for initial peer discovery. Contacted once at startup.
+seeds = "f64b9efc5747cc3556bdc281dab930a716dd63af@seeds.lumera.io:26656"
+
+# Peers your node always keeps connected. Use for your own sentries.
+persistent_peers = ""
+
+# Connection limits
+max_num_inbound_peers = 40
+max_num_outbound_peers = 10
 ```
 
-`<validator-address>` is your `lumeravaloper…` address. Retrieve it with:
+In a sentry architecture the validator leaves `seeds` empty and lists only its sentries in `persistent_peers`. The sentries use the public seeds and point `persistent_peers` at the validator's internal address. Sentries benefit from a higher inbound limit (100 or more) since they are the public face of your setup.
 
-```shell
-lumerad keys show <key-name> --bech val -a
+### RPC binding in config.toml
+
+```toml
+[rpc]
+laddr = "tcp://127.0.0.1:26657"
 ```
 
-To check whether your node is synced and which block height it has reached:
+Never expose the RPC port of a validator to the public internet. Bind it to `127.0.0.1` or a private interface.
 
-```shell
-lumerad status 2>&1 | jq .SyncInfo
+### Gas, pruning, and APIs in app.toml
+
+```toml
+# Reject transactions below this gas price
+minimum-gas-prices = "0.025ulume"
+
+# Pruning strategy. Options are default, nothing, everything, custom
+pruning = "default"
+pruning-keep-recent = "100"   # custom only
+pruning-interval = "10"       # custom only
+
+# State sync snapshots offered to peers. 0 disables.
+snapshot-interval = 1000
+snapshot-keep-recent = 2
 ```
 
-A healthy, fully synced node returns `"catching_up": false`. The `latest_block_height` field should match the current chain tip shown in the block explorer.
+| Pruning strategy | What it keeps | Disk usage |
+|---|---|---|
+| `default` | The last 362,880 states (about 21 days) plus every 10,000th state | Medium |
+| `nothing` | Everything, a full archive node | Very high |
+| `everything` | Only the last 2 states | Lowest |
+| `custom` | Whatever your two custom keys say | Configurable |
 
-### Useful Status Queries
+Archive nodes serve indexers and explorers well but need several times more disk. Do not run one on your validator unless you have the capacity.
 
-```shell
-# Check missed blocks in the current signing window
-lumerad query slashing signing-info $(lumerad tendermint show-validator)
+```toml
+[api]
+enable = true
+address = "tcp://0.0.0.0:1317"
 
-# List all active validators sorted by voting power
-lumerad query staking validators --status BOND_STATUS_BONDED -o json | jq '.validators | sort_by(-.tokens)'
+[grpc]
+enable = true
+address = "0.0.0.0:9090"
 
-# Check your node's peer count
-lumerad net_info 2>&1 | jq '.result.n_peers'
+[json-rpc]
+enable = true
+address = "0.0.0.0:8545"
+ws-address = "0.0.0.0:8546"
 ```
 
-## Running lumerad as a systemd Service
+The `[json-rpc]` section is the EVM endpoint added by the v1.20.0 upgrade. The [node EVM config guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/node-evm-config-guide.md) documents every EVM key in depth. A pure validator can disable all external API servers. Fewer open ports mean less attack surface.
 
-The easiest way to ensure `lumerad` stays running and restarts after a crash or reboot is to manage it with `systemd`.
+### CLI defaults in client.toml
 
-```ini
-# /etc/systemd/system/lumerad.service
+```toml
+chain-id = "lumera-mainnet-1"
+node = "tcp://localhost:26657"
+output = "json"
+keyring-backend = "os"
+```
+
+Setting `output = "json"` makes `lumerad` easy to pipe through `jq` in scripts.
+
+### Ports
+
+| Port | Service | Config key |
+|------|---------|-----------|
+| 26656 | P2P peer communication | `config.toml` `[p2p].laddr` |
+| 26657 | CometBFT RPC | `config.toml` `[rpc].laddr` |
+| 1317 | REST API (LCD) | `app.toml` `[api].address` |
+| 9090 | gRPC | `app.toml` `[grpc].address` |
+| 8545 | EVM JSON-RPC over HTTP | `app.toml` `[json-rpc].address` |
+| 8546 | EVM JSON-RPC over WebSocket | `app.toml` `[json-rpc].ws-address` |
+
+On a validator only port 26656 normally needs to be publicly reachable. Firewall the rest or bind them to `127.0.0.1`.
+
+## Faster sync options
+
+Two methods avoid replaying the whole chain from block 1.
+
+State sync uses the built in CometBFT protocol. The node fetches a verified state snapshot from trusted RPC servers and then catches up on recent blocks.
+
+```toml
+[statesync]
+enable = true
+rpc_servers = "https://rpc1.lumera.io:443,https://rpc2.lumera.io:443"
+trust_height = 1500000
+trust_hash = "<block-hash-at-trust-height>"
+trust_period = "168h"
+```
+
+Snapshot sync downloads a compressed database snapshot and places it under `~/.lumera/data/`. It is often faster for large chains but requires trusting the snapshot provider. Whichever method you use, always verify the `genesis.json` SHA-256 hash against the [lumera-networks repository](https://github.com/LumeraProtocol/lumera-networks) first.
+
+## Run as a systemd service
+
+A `systemd` unit keeps `lumerad` running through crashes and reboots.
+
+```ini /etc/systemd/system/lumerad.service
 [Unit]
 Description=Lumera Protocol Node
 After=network-online.target
@@ -67,19 +151,57 @@ LimitNOFILE=65535
 WantedBy=multi-user.target
 ```
 
-Enable and start the service:
-
 ```shell
 sudo systemctl daemon-reload
 sudo systemctl enable lumerad
 sudo systemctl start lumerad
-# Tail the logs
 sudo journalctl -u lumerad -f
 ```
 
-## Withdrawing Staking Rewards
+## Check validator health
 
-Rewards accumulate in the distribution module and are not automatically sent to your wallet. Withdraw your validator's commission and self-delegation rewards with a single transaction:
+Query bonding status, voting power, and commission at any time.
+
+```shell
+lumerad query staking validator $(lumerad keys show <key-name> --bech val -a)
+```
+
+Check sync state and block height.
+
+```shell
+lumerad status 2>&1 | jq .SyncInfo
+```
+
+A healthy node reports `"catching_up": false` with a height matching the chain tip on the [Lumera Portal](https://portal.lumera.io/lumera-mainnet-1).
+
+```shell
+# Missed blocks in the current signing window
+lumerad query slashing signing-info $(lumerad tendermint show-validator)
+
+# Active validators sorted by voting power
+lumerad query staking validators --status BOND_STATUS_BONDED -o json | jq '.validators | sort_by(-.tokens)'
+
+# Peer count
+lumerad net_info 2>&1 | jq '.result.n_peers'
+```
+
+### Metrics worth alerting on
+
+| Metric | Alert when |
+|--------|-----------|
+| Block signing rate | Below 95 percent of the window |
+| Sync status | `catching_up` is true for more than 5 minutes |
+| Peer count | Below 5 |
+| Free disk | Below 20 percent |
+| Memory usage | Above 90 percent |
+| Missed blocks counter | Trending upward |
+| Process uptime | Any unexpected restart |
+
+Grafana with Prometheus plus [tenderduty](https://github.com/blockpane/tenderduty) or [cosmos-validator-watcher](https://github.com/kilnfi/cosmos-validator-watcher) covers dashboards and paging. At minimum, alert on missed blocks. Catching downtime early is the difference between a small penalty and a jail event.
+
+## Withdraw rewards
+
+Rewards accumulate in the distribution module until you withdraw them.
 
 ```shell
 lumerad tx distribution withdraw-rewards <validator-address> \
@@ -89,15 +211,11 @@ lumerad tx distribution withdraw-rewards <validator-address> \
   --fees=5000ulume
 ```
 
-The `--commission` flag includes your operator commission in the same transaction. Without it, only the self-delegation rewards are withdrawn.
+The `--commission` flag includes your operator commission. Without it only self delegation rewards are withdrawn. Leave enough LUME in the account for future fees.
 
-<Tip>
-Consider scripting periodic reward withdrawals and re-delegating them back to your validator to compound your voting power over time. Make sure to leave enough LUME in your account to cover future transaction fees.
-</Tip>
+## Unjail after downtime
 
-## Unjailing a Validator
-
-Validators are **jailed** automatically when they miss too many blocks within the slashing window (downtime slashing) or when the network detects a double-sign. A jailed validator does not earn rewards and is removed from the proposer rotation. After you fix the underlying issue (e.g., restart a crashed node, resolve a connectivity problem), submit the unjail transaction:
+The chain jails a validator that misses too many blocks in the slashing window. A jailed validator earns nothing and leaves the proposer rotation. Fix the root cause first, then submit the unjail transaction.
 
 ```shell
 lumerad tx slashing unjail \
@@ -107,14 +225,14 @@ lumerad tx slashing unjail \
 ```
 
 <Warning>
-You cannot unjail a **tombstoned** validator. Tombstoning is permanent and results from double-signing. Before unjailing, always verify the root cause was downtime and not equivocation. Run `lumerad query slashing signing-info $(lumerad tendermint show-validator)` and check the `tombstoned` field.
+A tombstoned validator cannot unjail. Tombstoning comes from double signing and is permanent. Check the `tombstoned` field in `lumerad query slashing signing-info` before assuming downtime was the cause.
 </Warning>
 
-After unjailing, monitor your block-signing rate closely for the next several hours to confirm the issue is resolved.
+Watch your signing rate closely for several hours after unjailing.
 
-## Editing Validator Metadata
+## Edit validator metadata
 
-Update your validator's human-readable information — moniker, website, identity, security contact, or description — with the `edit-validator` transaction. You can also use this transaction to adjust your commission rate, subject to the `commission-max-change-rate` you set at creation.
+Update your public information or adjust commission with `edit-validator`. Include only the flags you want to change.
 
 ```shell
 lumerad tx staking edit-validator \
@@ -128,39 +246,38 @@ lumerad tx staking edit-validator \
   --fees=5000ulume
 ```
 
-You can include any subset of these flags — omit the ones you do not want to change. To update only your commission rate:
+Commission changes are capped by the `commission-max-change-rate` you set at creation, per 24 hour period. A larger change fails.
+
+## Vote on governance
+
+Your vote carries your total delegated stake, and delegators who do not vote inherit it. Voting is part of the job.
 
 ```shell
-lumerad tx staking edit-validator \
-  --commission-rate="0.08" \
+lumerad tx gov vote <proposal-id> yes \
   --from=<key-name> \
   --chain-id=lumera-mainnet-1 \
   --fees=5000ulume
+
+# Other options are no, abstain, no_with_veto
+lumerad query gov vote <proposal-id> <your-address>
 ```
 
-<Note>
-Commission rate changes are limited by your `commission-max-change-rate` per 24-hour period. If you try to change by more than that amount in one day, the transaction will fail.
-</Note>
+## Upgrade lumerad
 
-## Upgrading lumerad
-
-Chain upgrades are coordinated through on-chain governance proposals. When a software upgrade proposal passes, the chain halts at the specified block height and waits for validators to update their binaries. Missing an upgrade causes your node to halt and, eventually, to miss enough blocks to be jailed.
+Upgrades are coordinated through governance. When a software upgrade proposal passes, the chain halts at the planned height and waits for new binaries. The current release is `v1.20.1-hotfix`. If your validator predates v1.20.0, read the [EVM upgrade page](/upgrades/evm-upgrade) first, because the operator key migration is separate from the binary upgrade.
 
 <Steps>
 
-### Watch for Upgrade Proposals
+### Watch for upgrade proposals
 
 ```shell
-# List active governance proposals
 lumerad query gov proposals --status voting_period
-
-# Check a specific proposal
 lumerad query gov proposal <proposal-id>
 ```
 
-Note the `plan.height` field in a `SoftwareUpgrade` proposal — that is the block at which the chain will halt.
+The `plan.height` field of a software upgrade proposal is the halt height.
 
-### Pull the New Release
+### Pull the new release
 
 ```shell
 cd ~/lumera
@@ -168,7 +285,7 @@ git fetch --tags
 git checkout v<new-version>
 ```
 
-### Rebuild and Install
+### Rebuild and install
 
 ```shell
 make build
@@ -177,60 +294,36 @@ sudo mv build/lumerad /usr/local/bin/lumerad
 lumerad version
 ```
 
-### Restart the Node
+### Restart and watch
 
 ```shell
 sudo systemctl start lumerad
 sudo journalctl -u lumerad -f
 ```
 
-Watch the logs to confirm the node resumes producing blocks at the upgrade height without errors.
+Confirm the node resumes signing at the upgrade height without errors.
 
 </Steps>
 
 <Warning>
-Stop the running `lumerad` process **before** replacing the binary on disk. Swapping the binary while the process is running can corrupt state or cause the old process to continue signing with a stale binary. Always follow the stop → replace → start sequence.
+Stop the running process before replacing the binary. Follow stop, replace, start. Swapping the binary under a live process risks state corruption.
 </Warning>
 
-## Governance Voting
+## Protect your keys
 
-As a validator, you are expected to participate in on-chain governance. Your vote carries weight proportional to your total delegated stake. Delegators who have not voted inherit your vote, so participating in governance is both a duty and an influence multiplier.
+`~/.lumera/config/priv_validator_key.json` is the consensus key that signs blocks. An attacker holding it can double sign as you and get you tombstoned.
 
-```shell
-# Vote yes on a proposal
-lumerad tx gov vote <proposal-id> yes \
-  --from=<key-name> \
-  --chain-id=lumera-mainnet-1 \
-  --fees=5000ulume
+- Store it on an encrypted volume and set `chmod 600` on the file.
+- Keep an offline backup and test restoring it before going live.
+- High value validators should consider a remote signer such as [Horcrux](https://github.com/strangelove-ventures/horcrux) to keep the key off the node entirely.
 
-# Other valid vote options: no | abstain | no_with_veto
-lumerad tx gov vote <proposal-id> no_with_veto \
-  --from=<key-name> \
-  --chain-id=lumera-mainnet-1 \
-  --fees=5000ulume
-```
+## Next steps
 
-Check your vote was recorded:
-
-```shell
-lumerad query gov vote <proposal-id> <your-validator-address>
-```
-
-## Key Monitoring Metrics
-
-Proactive monitoring prevents surprises. Below are the most important signals to watch on a production validator:
-
-| Metric | What to Watch | Alert Threshold |
-|--------|--------------|-----------------|
-| **Block signing rate** | Percentage of blocks signed in the slashing window | Below 95% |
-| **Node sync status** | `catching_up` in `lumerad status` | `true` for more than 5 minutes |
-| **Peer count** | Number of connected peers | Below 5 |
-| **Disk usage** | Free space on the data volume | Below 20% |
-| **Memory usage** | RAM available to `lumerad` | Above 90% |
-| **Missed blocks counter** | `missed_blocks_counter` in slashing signing info | Trending upward |
-| **Latest block time** | Gap between system clock and latest block time | More than 30 seconds |
-| **Process uptime** | Whether `lumerad` is running | Any restart |
-
-<Tip>
-Tools like **Grafana + Prometheus** with the [cosmos-validator-watcher](https://github.com/kilnfi/cosmos-validator-watcher) or [tenderduty](https://github.com/blockpane/tenderduty) make it easy to build dashboards and PagerDuty/Slack alerts for these metrics. At minimum, set up an alert on missed blocks — catching a downtime event early can mean the difference between a small penalty and a jail event.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="v1.20.0 EVM upgrade" icon="arrow-up-right-dots" href="/upgrades/evm-upgrade">
+    Migrate a pre-upgrade operator account.
+  </Card>
+  <Card title="Run a SuperNode" icon="server" href="/supernodes/overview">
+    Add storage services to your validator for extra rewards.
+  </Card>
+</CardGroup>

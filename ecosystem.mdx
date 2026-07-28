@@ -1,0 +1,75 @@
+---
+title: "The Lumera ecosystem"
+sidebarTitle: "Ecosystem"
+description: "Find the apps, developer tools, infrastructure, and wallets built around Lumera Protocol."
+---
+
+This page maps the ecosystem around Lumera Protocol. Every entry links to the app or the repository behind it.
+
+## Apps
+
+<CardGroup cols={3}>
+  <Card title="Lumera Hub" icon="browser" href="https://hub.lumera.io">
+    Web, desktop, and mobile client to manage tokens, interact with SuperNodes, and store data.
+  </Card>
+  <Card title="Lumera Portal mainnet" icon="chart-line" href="https://portal.lumera.io/lumera-mainnet-1">
+    Explorer and dashboards for `lumera-mainnet-1` with staking and governance.
+  </Card>
+  <Card title="Lumera Portal testnet" icon="flask" href="https://portal.testnet.lumera.io/lumera-testnet-2">
+    Explorer and dashboards for `lumera-testnet-2`, including the testnet faucet.
+  </Card>
+</CardGroup>
+
+## Developer tools
+
+| Tool | Description |
+|---|---|
+| [`@lumera-protocol/sdk-js`](https://www.npmjs.com/package/@lumera-protocol/sdk-js) | TypeScript SDK for Node.js and browsers, published on npm. |
+| [`sdk-go`](https://github.com/LumeraProtocol/sdk-go) | Go SDK covering gRPC queries, transactions, and Cascade uploads and downloads. |
+| [`lumerad`](https://github.com/LumeraProtocol/lumera) | Full node and wallet CLI that ships with the chain. |
+| [`rq-go`](https://github.com/LumeraProtocol/rq-go) | Official Go library for RaptorQ (RFC 6330) erasure coding. |
+| [LumeScope](https://github.com/LumeraProtocol/lumescope) | Read-only REST API aggregator serving decoded action metadata, Cascade previews, and SuperNode metrics. |
+
+Start with the [JavaScript SDK](/sdk/javascript) or [Go SDK](/sdk/go) docs. LumeScope endpoints are covered in the [API reference](/api/overview).
+
+## Infrastructure
+
+| Repository | Description |
+|---|---|
+| [`supernode`](https://github.com/LumeraProtocol/supernode) | Companion daemon that validators run to provide Cascade and Sense services. |
+| [`lumera-networks`](https://github.com/LumeraProtocol/lumera-networks) | Genesis files, seeds, network configs, and operator manuals. |
+
+## Wallets
+
+| Wallet | Description |
+|---|---|
+| Keplr | Cosmos wallet that uses bech32 `lumera1...` addresses. |
+| Leap | Cosmos wallet supported by the JavaScript SDK. |
+| MetaMask | Ethereum wallet that uses hex `0x...` addresses once an account completes [EVM migration](/upgrades/evm-upgrade). |
+
+See the [Hub wallet guide](/hub/wallet) for setup.
+
+## Community
+
+<CardGroup cols={3}>
+  <Card title="GitHub" icon="github" href="https://github.com/LumeraProtocol">
+    Read the source for the chain, the SuperNode daemon, and the SDKs.
+  </Card>
+  <Card title="X" icon="x-twitter" href="https://x.com/lumera">
+    Follow protocol announcements and upgrade notices.
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.com/invite/lumeraprotocol">
+    Ask questions and get support from the team and other builders.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Upload your first file to Cascade from TypeScript.
+  </Card>
+  <Card title="Networks" icon="network-wired" href="/networks">
+    Find chain IDs, endpoints, seeds, and genesis files.
+  </Card>
+</CardGroup>

@@ -1,10 +1,10 @@
 ---
-title: "rq-go: RaptorQ Forward Error Correction Library for Go"
+title: "rq-go RaptorQ library"
 sidebarTitle: "rq-go"
-description: "rq-go provides Go bindings for RaptorQ forward error correction. Encode files into fault-tolerant symbols and reconstruct them, even with missing data."
+description: "Use the rq-go library to encode files into fault-tolerant RaptorQ symbols and reconstruct them even with missing data."
 ---
 
-`rq-go` is a Go library that wraps the RaptorQ Forward Error Correction (FEC) algorithm. Lumera's Cascade service uses it to split files into redundant, independently-retrievable symbols before distributing them across the SuperNode P2P network. Because RaptorQ is an erasure code, the original file can be reconstructed even if a subset of the symbols is lost or unavailable — making Cascade storage resilient to node churn and partial network failures.
+`rq-go` is a Go library that wraps the RaptorQ Forward Error Correction (FEC) algorithm. Lumera's Cascade service uses it to split files into redundant, independently-retrievable symbols before distributing them across the SuperNode P2P network. Because RaptorQ is an erasure code, the original file can be reconstructed even if a subset of the symbols is lost or unavailable. This makes Cascade storage resilient to node churn and partial network failures.
 
 Most developers interact with Cascade through the [SuperNode gRPC API](/api/grpc/cascade-service) or the `lumerad` CLI rather than calling `rq-go` directly. This page documents the library for developers who need low-level encoding control or who are building tooling on top of Cascade's storage layer.
 
@@ -12,7 +12,7 @@ Most developers interact with Cascade through the [SuperNode gRPC API](/api/grpc
 
 ## Platform support
 
-`rq-go` ships pre-built static libraries for the following targets. No external shared libraries or C toolchains are required at runtime — the final binary is fully self-contained.
+`rq-go` ships pre-built static libraries for the following targets. No external shared libraries or C toolchains are required at runtime. The final binary is fully self-contained.
 
 | Platform | Architecture |
 |----------|--------------|
@@ -26,13 +26,13 @@ Most developers interact with Cascade through the [SuperNode gRPC API](/api/grpc
 
 ## Installation
 
-Add `rq-go` to your Go module:
+Add `rq-go` to your Go module.
 
 ```shell
 go get github.com/LumeraProtocol/rq-go
 ```
 
-Then import it in your source files:
+Then import it in your source files.
 
 ```go
 import "github.com/LumeraProtocol/rq-go"
@@ -42,7 +42,7 @@ import "github.com/LumeraProtocol/rq-go"
 
 ## Quick start
 
-The example below shows the complete encode → decode round-trip using the library's default configuration:
+The example below shows the complete encode and decode round trip using the library's default configuration.
 
 ```go raptorq_example.go
 package main
@@ -98,7 +98,7 @@ func main() {
 
 ## Custom configuration
 
-Use `NewRaptorQProcessor` when you need to tune symbol size, redundancy, memory limits, or concurrency:
+Use `NewRaptorQProcessor` when you need to tune symbol size, redundancy, memory limits, or concurrency.
 
 ```go
 // NewRaptorQProcessor(symbolSize, redundancyFactor, maxMemoryMB, concurrencyLimit)
@@ -136,10 +136,10 @@ Returns the recommended block size (in bytes) for the given file, taking into ac
 
 ### `processor.EncodeFile(inputPath, outputDir string, blockSize uint64) (*EncodeResult, error)`
 
-Encodes the file at `inputPath` into RaptorQ symbols written to `outputDir`. The layout metadata file (`_raptorq_layout.json`) is also written to `outputDir`. Returns an `EncodeResult` with:
+Encodes the file at `inputPath` into RaptorQ symbols written to `outputDir`. The layout metadata file (`_raptorq_layout.json`) is also written to `outputDir`. Returns an `EncodeResult` with two fields.
 
-- `TotalSymbolsCount` — total number of symbols generated across all blocks
-- `LayoutFilePath` — absolute path to the generated layout file
+- `TotalSymbolsCount` is the total number of symbols generated across all blocks.
+- `LayoutFilePath` is the absolute path to the generated layout file.
 
 ### `processor.DecodeSymbols(symbolsDir, outputPath, layoutPath string) error`
 
@@ -157,7 +157,7 @@ Releases all memory held by the processor. Must be called when the processor is 
 
 ## Block processing and memory management
 
-`rq-go` processes files in blocks to bound peak memory usage:
+`rq-go` processes files in blocks to bound peak memory usage.
 
 <Steps>
   <Step title="Split">

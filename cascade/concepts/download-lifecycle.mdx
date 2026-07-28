@@ -1,0 +1,138 @@
+---
+title: "Cascade download lifecycle"
+sidebarTitle: "Download lifecycle"
+description: "How the SDK authenticates, tracks, and streams a file download from SuperNodes."
+---
+
+To retrieve a file from Cascade, Lumera Protocol's permanent storage service, you only need the `action_id` returned during upload. Knowing the four steps behind a download helps you show progress in your app and handle failures cleanly.
+
+<Steps>
+  <Step title="Authenticate">
+    Every download request is authenticated with an [ADR-036](https://docs.cosmos.network/main/build/architecture/adr-036) signature. ADR-036 is the Cosmos standard for signing arbitrary data outside a transaction. The SDK signs the `action_id` string with the connected wallet.
+
+    ```ts
+    const signature = await signer.signArbitrary(chainId, address, actionId);
+    ```
+
+    This proves the requester holds the private key for their Lumera address. Any wallet can download a public file. Only authorized wallets can download a private file.
+  </Step>
+  <Step title="Request the download">
+    The SDK sends a download request to the SN-API, the HTTP API served by SuperNodes.
+
+    ```text
+    POST /api/v1/actions/cascade/{action_id}/downloads
+    Content-Type: application/json
+
+    {
+      "signature": "base64-encoded ADR-036 signature"
+    }
+    ```
+
+    The SN-API responds with a `task_id` that tracks the download preparation. The SDK retries this request up to 3 times on transient server errors (HTTP 500). SuperNodes may need time to locate and gather the required chunks.
+  </Step>
+  <Step title="Monitor progress">
+    The SDK monitors download progress over Server-Sent Events (SSE), a one-way HTTP stream of status updates.
+
+    ```text
+    GET /api/v1/downloads/cascade/{task_id}/status
+
+    data: {"status": "processing", "progress": 45}
+    data: {"status": "processing", "progress": 80}
+    data: {"status": "completed", "progress": 100}
+    ```
+
+    In browsers the SDK uses the native `EventSource` API. In Node.js it uses a custom fetch-based SSE parser.
+  </Step>
+  <Step title="Stream the file">
+    Once the task completes, the file is available as a binary stream.
+
+    ```text
+    GET /api/v1/downloads/cascade/{task_id}/file
+    Content-Type: application/octet-stream
+    ```
+
+    The SDK returns a `ReadableStream<Uint8Array>` that your application consumes.
+
+    ```ts
+    const stream = await client.Cascade.downloader.download(actionId);
+
+    // Read the stream
+    const reader = stream.getReader();
+    const chunks: Uint8Array[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+
+    // Reassemble into a single buffer
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Decode as text (if applicable)
+    const text = new TextDecoder().decode(result);
+    ```
+  </Step>
+</Steps>
+
+## Download task states
+
+| Status | Meaning |
+|--------|---------|
+| `sdk:download_completed` | File ready for streaming |
+| `sdk:completed` | Generic success |
+| `sdk:download_failure` | Reconstruction failed |
+| `sdk:failed` | Generic failure |
+
+## Convenience methods
+
+### Basic download
+
+```ts
+// Returns a ReadableStream
+const stream = await client.Cascade.downloader.download(actionId);
+```
+
+### Download with options
+
+```ts
+const stream = await client.Cascade.downloader.downloadFile({
+  actionId: "your-action-id",
+  taskOptions: {
+    pollInterval: 2000,
+    timeout: 120000,
+  },
+});
+```
+
+### Private download
+
+The call is identical for private files. The auth signature restricts who can download.
+
+```ts
+const stream = await client.Cascade.downloader.downloadPrivate(actionId);
+```
+
+## SN-API fallback
+
+The SN-API client tries versioned endpoints first (`/api/v1/...`). On a 404 response it falls back to legacy paths (`/api/...`). This keeps the SDK compatible across SN-API versions.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Upload lifecycle" icon="upload" href="/cascade/concepts/upload-lifecycle">
+    What happens between selecting a file and permanent storage.
+  </Card>
+  <Card title="Erasure coding" icon="shield-halved" href="/cascade/concepts/erasure-coding">
+    How SuperNodes reconstruct your file from a subset of symbols.
+  </Card>
+  <Card title="JavaScript SDK reference" icon="code" href="/sdk/javascript-reference">
+    Full method reference for uploads, downloads, and task options.
+  </Card>
+</CardGroup>

@@ -1,57 +1,54 @@
 ---
-title: "Lumera SuperNodes: Earn Rewards for Decentralized Services"
+title: "Run a SuperNode on Lumera"
 sidebarTitle: "Overview"
-description: "SuperNodes are validator companion apps on Lumera that provide Cascade storage and Sense duplication detection services in exchange for LUME rewards."
+description: "SuperNodes provide Cascade storage and Sense detection services alongside a validator and earn LUME rewards."
 ---
 
-A SuperNode is a companion application that runs alongside your Lumera validator node. By operating a SuperNode, you extend your validator's role beyond block production to actively serve the Lumera network's decentralized storage and data-integrity layer — and earn LUME rewards for doing so. Every SuperNode is cryptographically tied to a registered Lumera validator identity, meaning you must already be a validator before you can run one.
+A SuperNode is a companion application that runs alongside your Lumera Protocol validator. It extends your role beyond block production. Your SuperNode stores files for Cascade, evaluates content for Sense, and earns LUME rewards for the work. Every SuperNode is tied to a registered validator identity, so you need an active validator first.
 
-## Services
+<Note>
+Existing operators. The `v1.20.0` EVM upgrade changed account key derivation. The daemon can migrate your account for you once `evm_key_name` is set in `config.yml`, or you can migrate first yourself. See the [EVM upgrade page](/upgrades/evm-upgrade).
+</Note>
 
-SuperNodes provide two complementary services to the Lumera network:
+## Services you provide
 
-### Cascade — Permanent, Redundant File Storage
+SuperNodes run two complementary services.
 
-Cascade lets users store files permanently on the Lumera network. When a user submits a Cascade action, the SuperNode encodes the file using **RaptorQ erasure coding**, splits it into redundant chunks, and distributes those chunks across the P2P network. RaptorQ ensures that the original file can be reconstructed even if a subset of chunks is lost, giving Cascade strong durability guarantees without requiring every node to hold a full copy.
+**Cascade** is permanent, redundant file storage. When a user submits a Cascade action, your SuperNode encodes the file with RaptorQ erasure coding, splits it into redundant symbols, and distributes them across the P2P network. The original file can be rebuilt even when a subset of symbols is lost. No node needs to hold a full copy.
 
-### Sense — AI-Powered Duplication Detection
+**Sense** protects content integrity. Participating SuperNodes independently evaluate submitted media for near duplicates and reach a consensus backed verdict. This stops the same content from being registered repeatedly under different identities.
 
-Sense protects the integrity of content registered on Lumera by detecting near-duplicate files before they are stored. When a user submits a Sense action, participating SuperNodes independently evaluate the submission and reach a consensus-backed verdict. This prevents the same content from being registered multiple times under different identities, keeping the network's data layer trustworthy.
+## How rewards work
 
-## How Reward Earning Works
+The protocol selects a set of top ranked SuperNodes for each action, based on stake and performance. If your SuperNode is selected and fulfills the action correctly, you receive a share of the action fee. This is proof of service income, separate from validator staking rewards. Higher stake and reliable uptime improve your rank and your earning opportunities.
 
-Lumera distributes LUME rewards to SuperNodes that successfully complete Cascade and Sense actions. The protocol selects a set of **top-ranked SuperNodes** for each action based on stake and performance metrics. If your SuperNode is in the selected set and correctly fulfills the action — storing data, generating RQ identifiers, or returning a Sense verdict — you receive a share of the action fee. Higher stake and reliable uptime improve your ranking and therefore your earning opportunities.
-
-## Network Roles
-
-Two roles interact within the SuperNode layer:
+## Roles
 
 | Role | Description |
 |------|-------------|
-| **SuperNode Operator** | A registered Lumera validator who runs the SuperNode binary, provides Cascade and Sense services, and earns LUME rewards for fulfilling actions. |
-| **User** | Any account that submits a Cascade or Sense action to the Lumera chain, paying an action fee to have the request processed by the top-ranked SuperNodes. |
+| SuperNode operator | A registered validator who runs the `supernode` binary, serves Cascade and Sense actions, and earns rewards |
+| User | Any account that submits a Cascade or Sense action and pays the action fee |
 
 ## Requirements
 
-Before you can run a SuperNode, you must meet the following conditions:
-
-- **Active Lumera validator** — Your node must be registered on-chain as a validator with sufficient stake to appear in the active set. The SuperNode uses your validator's key identity to sign transactions and authenticate with peers.
-- **Go installed** — The SuperNode binary is distributed as a pre-built release, but Go is required if you plan to build from source or run tooling.
-- **Open network ports** — Port `4444` (gRPC service) and port `4445` (P2P) must be reachable by peers and clients on the network.
-- **Lumera node reachable via gRPC** — Your SuperNode connects to your Lumera full node's gRPC endpoint (default `localhost:9090`) to read chain state and submit transactions.
+- An active Lumera validator in the bonded set. The SuperNode signs with an account tied to your validator identity.
+- Combined stake that meets the on-chain minimum. Registration uses a dual source model that adds your validator self delegation and the SuperNode account delegation. Check the current minimum with `lumerad query supernode params`.
+- Recommended hardware of 8 or more CPU cores, 64 GB RAM, 2 TB or more SSD storage, and a high bandwidth connection.
+- Open ports `4444` (gRPC service) and `4445` (P2P).
+- A reachable Lumera gRPC endpoint, `localhost:9090` when the validator runs on the same machine.
 
 ## Architecture
 
-The SuperNode connects to the Lumera chain through its gRPC endpoint to read action requests, verify fees, and submit finalization transactions. It communicates with other SuperNodes over a **peer-to-peer (P2P) network** on port `4445`, using a distributed hash table (DHT) to store and retrieve RaptorQ-encoded data chunks. Clients — such as wallets or applications — interact with the SuperNode's own **gRPC API** on port `4444` to initiate Cascade registrations and downloads.
+The SuperNode reads action requests and submits transactions through your node's gRPC endpoint. It exchanges RaptorQ symbols with other SuperNodes over a distributed hash table on port `4445`. Clients reach its own gRPC API on port `4444`.
 
 ```
- Client Application
+ Client application
         │
         │ gRPC (port 4444)
         ▼
  ┌─────────────┐        gRPC (port 9090)      ┌──────────────────┐
- │  SuperNode  │ ◄──────────────────────────► │  Lumera Full Node│
- │             │                              │  (your validator)│
+ │  SuperNode  │ ◄──────────────────────────► │ Lumera full node │
+ │             │                              │ (your validator) │
  └──────┬──────┘                              └──────────────────┘
         │
         │ P2P DHT (port 4445)
@@ -59,11 +56,13 @@ The SuperNode connects to the Lumera chain through its gRPC endpoint to read act
  Other SuperNodes
 ```
 
+## Next steps
+
 <CardGroup cols={2}>
-  <Card title="Set Up a SuperNode" icon="server" href="/supernodes/setup">
-    Install the SuperNode binary, initialize your identity, and connect to the Lumera chain.
+  <Card title="Setup and registration" icon="server" href="/supernodes/setup">
+    Install the binary, initialize your identity, and register on chain.
   </Card>
-  <Card title="CLI Reference" icon="terminal" href="/supernodes/cli-reference">
-    Complete reference for every `supernode` command, flag, and configuration option.
+  <Card title="Operations" icon="wrench" href="/supernodes/operations">
+    CLI commands, configuration reference, and monitoring.
   </Card>
 </CardGroup>

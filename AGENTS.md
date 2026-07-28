@@ -1,33 +1,41 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
-
 # Documentation project instructions
 
 ## About this project
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
-- Pages are MDX files with YAML frontmatter
-- Configuration lives in `docs.json`
-- Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
-- Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
+- This is the developer documentation for Lumera Protocol, built on [Mintlify](https://mintlify.com).
+- Pages are MDX files with YAML frontmatter. Configuration lives in `docs.json`.
+- This site is the first place developers meet Lumera. Keep it accurate and easy to read.
 
 ## Terminology
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+- "Lumera Protocol" on first mention of a page, then "Lumera".
+- "Cascade" is the permanent storage service. "Sense" is the content authentication service.
+- "SuperNode" in prose (capital S and N). The binary is `supernode` in code formatting.
+- Token symbol is LUME. Base denom is `ulume` (1 LUME = 1,000,000 ulume). EVM denom is `alume` (18 decimals).
+- Chain IDs in code formatting. `lumera-mainnet-1` and `lumera-testnet-2`.
+- "Lumera Portal" is the explorer at portal.lumera.io. "Lumera Hub" is the app at hub.lumera.io.
+- "LumeScope" is a read-only REST API aggregator. Never call it an explorer.
+- `lumerad` is the node binary, always in code formatting.
 
 ## Style preferences
 
-{/* Add any project-specific style rules below */}
-
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
-- Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
+- Simple sentences. One idea per sentence. Aim for under 20 words.
+- Use active voice and second person ("you").
+- Never use em dashes or en dashes in prose. Rewrite the sentence instead.
+- Never use semicolons in prose. Split into two sentences.
+- Avoid colons in prose, page titles, headings, and descriptions. Rephrase instead. Colons are fine in YAML syntax, URLs, code, and table cells.
+- Use sentence case for headings.
+- Code formatting for file names, commands, paths, denoms, and code references.
+- Every page needs frontmatter with title (3 to 7 words, no colon), sidebarTitle (1 to 3 words), and description (one sentence, no colon).
+- Prefer Steps for procedures, Tabs for mainnet and testnet variants, CodeGroup for multi language snippets. At most two callouts per page.
+- End developer pages with a "Next steps" CardGroup.
 
 ## Content boundaries
 
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+- Every command, version, endpoint, and number must be verified against the official LumeraProtocol GitHub repos or live endpoints. Never invent values.
+- The JS SDK is `@lumera-protocol/sdk-js` on npm. Never reference `@0xkaleab/sdk-js`.
+- Do not document per module x/ reference pages, LEPs, or a Rust SDK.
+- Smart contracts get one overview page only. Deep EVM guides live in the lumera repo on GitHub, link to them.
+- Do not document the Pastel claims or legacy migration flow yet. Open decisions are unresolved. Related drafts live in `drafts/`.
+- Network upgrade details belong in the Network upgrades section, not in the validator or SuperNode sections.
+- When quoting fee numbers or parameters, note that governance can change them.

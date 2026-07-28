@@ -1,0 +1,284 @@
+---
+title: "Store encrypted files on Cascade"
+sidebarTitle: "Encrypted storage"
+description: "Encrypt files client-side with wallet-derived keys before uploading them to Cascade."
+---
+
+Cascade, the permanent storage service of Lumera Protocol, stores files publicly by default. Any wallet can download a file if it knows the action ID. For private data, encrypt files client-side before you upload them. This guide implements wallet-based encryption with libsodium, so users only need their wallet and never a separate password.
+
+You need a browser app with a connected Cascade client and a signer that supports `signArbitrary` (ADR-036). Follow [Build a browser app](/cascade/guides/browser-app) first if you are starting fresh. The [Research Archive](/cascade/guides/research-archive) uses this exact pattern for encrypted drafts with secure collaboration.
+
+## How it works
+
+The scheme uses two keys. The wallet key is re-derived from a wallet signature whenever needed. A random document key encrypts the file itself.
+
+```text
+wallet signs a fixed message (ADR-036)
+        |
+        v  BLAKE2b hash of the signature
+wallet key (256 bit, re-derived on demand, never stored)
+        |
+        v  encrypts
+document key (random, generated once per file)
+        |
+        v  encrypts
+file bytes
+        |
+        v
+manifest JSON (ciphertext, nonces, wrapped document key)
+        |
+        v
+upload to Cascade (public but unreadable without the keys)
+```
+
+## Implement the pattern
+
+<Steps>
+<Step title="Install libsodium">
+
+<CodeGroup>
+
+```bash npm
+npm install libsodium-wrappers-sumo
+```
+
+```bash yarn
+yarn add libsodium-wrappers-sumo
+```
+
+```bash pnpm
+pnpm add libsodium-wrappers-sumo
+```
+
+</CodeGroup>
+
+If you use Vite, exclude libsodium from dependency optimization.
+
+```ts vite.config.ts
+export default defineConfig({
+  // ... other config
+  optimizeDeps: {
+    exclude: ["libsodium-sumo", "libsodium-wrappers-sumo"],
+  },
+  resolve: {
+    alias: {
+      "libsodium-sumo": "libsodium-sumo/dist/modules/libsodium-sumo.js",
+    },
+  },
+});
+```
+
+</Step>
+
+<Step title="Derive a key from the wallet">
+
+Instead of asking users to manage separate encryption passwords, derive a deterministic key from a wallet signature.
+
+```ts src/crypto.ts
+import sodium from "libsodium-wrappers-sumo";
+
+await sodium.ready;
+
+const DERIVE_MESSAGE = "Lumera App: Derive encryption key";
+
+export async function deriveKeyFromWallet(
+  chainId: string,
+  address: string,
+  signArbitrary: (chainId: string, address: string, data: string) => Promise<any>
+): Promise<Uint8Array> {
+  // Sign a fixed message with ADR-036
+  const signResult = await signArbitrary(chainId, address, DERIVE_MESSAGE);
+  const signatureBytes = Uint8Array.from(
+    atob(signResult.signature),
+    (c) => c.charCodeAt(0)
+  );
+
+  // Hash the signature with BLAKE2b to produce a 256-bit key
+  const key = sodium.crypto_generichash(
+    sodium.crypto_secretbox_KEYBYTES,
+    signatureBytes
+  );
+
+  return key;
+}
+```
+
+<Note>
+**Why ADR-036?** Signing a fixed message means the same wallet always produces the same signature, which derives the same encryption key. The key is never stored. It is re-derived on demand, so users only need their wallet to decrypt.
+</Note>
+
+</Step>
+
+<Step title="Add encrypt and decrypt helpers">
+
+The helpers wrap libsodium's `crypto_secretbox` authenticated encryption.
+
+```ts src/crypto.ts
+export function encrypt(
+  plaintext: Uint8Array,
+  key: Uint8Array
+): { ciphertext: Uint8Array; nonce: Uint8Array } {
+  const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+  const ciphertext = sodium.crypto_secretbox_easy(plaintext, nonce, key);
+  return { ciphertext, nonce };
+}
+
+export function decrypt(
+  ciphertext: Uint8Array,
+  nonce: Uint8Array,
+  key: Uint8Array
+): Uint8Array {
+  return sodium.crypto_secretbox_open_easy(ciphertext, nonce, key);
+}
+```
+
+</Step>
+
+<Step title="Upload encrypted files">
+
+Each file gets its own random document key. The document key encrypts the file. The wallet key encrypts the document key so the owner can recover it later. Everything travels inside one JSON manifest.
+
+```ts src/encrypted-cascade.ts
+import { encrypt, deriveKeyFromWallet } from "./crypto";
+
+export async function uploadEncrypted(
+  client: any,
+  file: Uint8Array,
+  fileName: string,
+  walletKey: Uint8Array
+): Promise<{ actionId: string; documentKey: string }> {
+  // Generate a random document key (not the wallet key)
+  const documentKey = sodium.crypto_secretbox_keygen();
+
+  // Encrypt the file with the document key
+  const { ciphertext, nonce } = encrypt(file, documentKey);
+
+  // Build a manifest with metadata + encrypted content
+  const manifest = {
+    version: 1,
+    fileName,
+    encrypted: true,
+    nonce: sodium.to_base64(nonce),
+    ciphertext: sodium.to_base64(ciphertext),
+    // Encrypt the document key with the wallet key for recovery
+    encryptedDocumentKey: sodium.to_base64(
+      encrypt(documentKey, walletKey).ciphertext
+    ),
+    encryptedDocumentKeyNonce: sodium.to_base64(
+      encrypt(documentKey, walletKey).nonce
+    ),
+  };
+
+  const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest));
+
+  const result = await client.Cascade.uploader.uploadFile(manifestBytes, {
+    fileName: `${fileName}.encrypted.json`,
+    isPublic: true, // The encryption handles confidentiality
+    taskOptions: { pollInterval: 2000, timeout: 300000 },
+  });
+
+  return {
+    actionId: (result as any).action_id || result.taskId,
+    documentKey: sodium.to_base64(documentKey),
+  };
+}
+```
+
+<Warning>
+Files are uploaded as `isPublic: true` even when encrypted. The `isPublic` flag controls access at the SuperNode API level, but client-side encryption is the real confidentiality mechanism. This keeps the encrypted blob available to any collaborator you share the key with.
+</Warning>
+
+</Step>
+
+<Step title="Download and decrypt">
+
+Download the manifest, recover the document key with the wallet key, then decrypt the file.
+
+```ts src/encrypted-cascade.ts
+export async function downloadDecrypted(
+  client: any,
+  actionId: string,
+  walletKey: Uint8Array
+): Promise<{ plaintext: Uint8Array; fileName: string }> {
+  // Download the encrypted manifest
+  const stream = await client.Cascade.downloader.download(actionId);
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) chunks.push(value);
+  }
+
+  const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+  const bytes = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  const manifest = JSON.parse(new TextDecoder().decode(bytes));
+
+  // Recover the document key using the wallet key
+  const documentKey = decrypt(
+    sodium.from_base64(manifest.encryptedDocumentKey),
+    sodium.from_base64(manifest.encryptedDocumentKeyNonce),
+    walletKey
+  );
+
+  // Decrypt the file with the document key
+  const plaintext = decrypt(
+    sodium.from_base64(manifest.ciphertext),
+    sodium.from_base64(manifest.nonce),
+    documentKey
+  );
+
+  return { plaintext, fileName: manifest.fileName };
+}
+```
+
+</Step>
+
+<Step title="Share with collaborators">
+
+To share an encrypted file, re-encrypt the document key under the collaborator's wallet-derived key.
+
+```ts
+// Owner creates a share invitation
+// collaboratorKey is the collaborator's wallet-derived key
+const { ciphertext, nonce } = encrypt(documentKey, collaboratorKey);
+
+const invitation = {
+  draftId: actionId,
+  encryptedDocumentKey: sodium.to_base64(ciphertext),
+  nonce: sodium.to_base64(nonce),
+};
+
+// Upload the invitation to Cascade
+await client.Cascade.uploader.uploadFile(
+  new TextEncoder().encode(JSON.stringify(invitation)),
+  { fileName: `invitation_${collaboratorAddress}_${actionId}.json`, isPublic: true }
+);
+```
+
+The collaborator downloads the invitation, decrypts the document key with their wallet, and uses it to decrypt the file.
+
+For a complete implementation of this pattern, see the [Research Archive example](/cascade/guides/research-archive).
+
+</Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Research Archive example" icon="graduation-cap" href="/cascade/guides/research-archive">
+    See this encryption pattern inside a full application.
+  </Card>
+  <Card title="Upload lifecycle" icon="arrows-rotate" href="/cascade/concepts/upload-lifecycle">
+    Follow an upload from registration to completion.
+  </Card>
+  <Card title="JavaScript SDK reference" icon="book" href="/sdk/javascript-reference">
+    Look up the uploadFile and download options.
+  </Card>
+</CardGroup>

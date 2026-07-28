@@ -1,0 +1,222 @@
+---
+title: "Cascade upload lifecycle"
+sidebarTitle: "Upload lifecycle"
+description: "Phase by phase internals of a Cascade upload from file hash to permanent storage."
+---
+
+Knowing what happens inside a Cascade upload helps you debug failed uploads and build custom flows on Lumera Protocol. This page walks through each phase, the on-chain action states, and the task states the SDK reports.
+
+A Cascade upload has three phases. The `uploadFile` method in the JavaScript SDK (`@lumera-protocol/sdk-js`) runs all three for you. You can also run them individually for fine-grained control.
+
+| Phase | SDK method |
+|-------|------------|
+| Prepare | `prepareFile` |
+| Register | `registerAction` |
+| Send | `sendFileToSupernodes` |
+
+## Prepare the file
+
+```ts
+const { fileBytes, dataHash } = await client.Cascade.uploader.prepareFile(file);
+```
+
+The prepare phase does two things.
+
+1. It converts the input file (a `Uint8Array`, `File`, or `Blob`) to a `Uint8Array`.
+2. It computes a BLAKE3 hash over the file bytes. This hash becomes the permanent content identifier stored on-chain.
+
+## Register the action on-chain
+
+```ts
+const { actionId, authSignature } = await client.Cascade.uploader.registerAction(
+  { fileBytes, dataHash },
+  {
+    fileName: "paper.pdf",
+    isPublic: true,
+    taskOptions: { pollInterval: 2000, timeout: 300000 },
+  }
+);
+```
+
+Registration runs seven sub-steps.
+
+### Fetch action parameters
+
+The SDK queries the chain for the current action parameters.
+
+```ts
+const actionParams = await client.Blockchain.getActionParams();
+// Returns: { max_raptor_q_symbols, ... }
+```
+
+These parameters determine the RaptorQ encoding configuration. The SDK caches the result for 5 minutes.
+
+### Generate the RaptorQ layout
+
+The SDK runs the file through the RaptorQ WASM module to generate an erasure coding layout.
+
+- `rq_ids_ic` is a random counter seed in `[0, max_raptor_q_symbols)`.
+- The layout contains block-level encoding metadata that SuperNodes need to store and reconstruct the file.
+- The layout JSON is compacted (no whitespace) to match the Go reference implementation.
+
+See [erasure coding](/cascade/concepts/erasure-coding) for how the layout works.
+
+### Sign the layout with ADR-036
+
+The compacted layout bytes are signed with [ADR-036](https://docs.cosmos.network/main/build/architecture/adr-036) `signArbitrary`. ADR-036 is the Cosmos standard for signing arbitrary data outside a transaction.
+
+```ts
+signer.signArbitrary(chainId, address, layoutBytes)
+```
+
+This signature proves the layout was created by the account that registered the action.
+
+### Derive layout IDs
+
+Layout IDs are deterministic identifiers derived from the layout and its signature. The algorithm must match the on-chain Go implementation exactly.
+
+```text
+For each i in [0, rq_ids_max):
+  counter = rq_ids_ic + i
+  input   = Base64(layout) + "." + Base64(signature) + "." + decimal(counter)
+  compressed = zstd(input, level=3)
+  hash    = BLAKE3(compressed)
+  id      = Base58(hash)
+```
+
+These IDs are included in the on-chain action. SuperNodes use them to verify data integrity.
+
+### Build the LEP-1 index file
+
+LEP-1 (Lumera Enhancement Proposal 1) defines a compact index that aggregates the layout IDs and the layout signature.
+
+```json
+{
+  "version": 1,
+  "layout_ids": ["7K9x...", "3Jm2...", "..."],
+  "layout_signature": "base64..."
+}
+```
+
+The index file is signed with ADR-036 and included in the on-chain registration.
+
+### Create the auth signature
+
+The SDK creates a separate signature over the `dataHash`. This auth signature later authenticates the file upload to the SN-API, the HTTP API served by SuperNodes.
+
+### Broadcast MsgRequestAction
+
+The SDK simulates the transaction to estimate gas, then signs and broadcasts it.
+
+```ts
+// Simplified. The SDK builds this internally.
+const msg = {
+  typeUrl: "/lumera.action.v1.MsgRequestAction",
+  value: {
+    creator: address,
+    actionType: "ACTION_TYPE_CASCADE",
+    dataHash: dataHash,
+    rqIds: layoutIds,
+    // ... other fields
+  },
+};
+```
+
+The chain validates the message, escrows the storage fee, and emits an `action_registered` event. The SDK extracts the `action_id` from the event attributes. The `action_id` is your permanent reference to the stored file.
+
+## Send the file to SuperNodes
+
+```ts
+const uploadResult = await client.Cascade.uploader.sendFileToSupernodes(
+  actionId,
+  authSignature,
+  fileBytes,
+  { taskOptions: { pollInterval: 2000, timeout: 300000 } }
+);
+```
+
+The send phase has four steps.
+
+1. The SDK sends the file as multipart form data to `POST /api/v1/actions/cascade`.
+2. The SN-API distributes chunks to the SuperNode mesh.
+3. The SDK polls `GET /api/v1/actions/cascade/tasks/{task_id}` at the configured interval.
+4. The upload completes when the task reaches a terminal status.
+
+The multipart request carries three fields.
+
+```text
+FormData {
+  action_id: string
+  signature: string (auth signature)
+  file: Blob
+}
+```
+
+## Upload in one call
+
+For most use cases, call `uploadFile` to run all three phases.
+
+```ts
+const result = await client.Cascade.uploader.uploadFile(fileBytes, {
+  fileName: "document.pdf",
+  isPublic: true,
+  taskOptions: {
+    pollInterval: 2000,  // Check every 2 seconds
+    timeout: 300000,     // Fail after 5 minutes
+  },
+});
+
+console.log(result.action_id); // Use this to download later
+```
+
+## Action states on chain
+
+After registration, the on-chain action moves through four states.
+
+```text
+PENDING --> PROCESSING --> DONE
+                |
+                +--> FAILED
+```
+
+| State | Meaning |
+|-------|---------|
+| `PENDING` | Action registered and fee escrowed, waiting for the file |
+| `PROCESSING` | SuperNodes encode the file and distribute symbols |
+| `DONE` | Symbols stored, the file is permanently available |
+| `FAILED` | The upload failed or expired |
+
+The storage fee is escrowed at registration. If the action fails or expires, the fee is refunded. The current fee is a 10000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.02 LUME. Fee parameters can change through governance.
+
+## SDK task states
+
+The SDK reports progress through task statuses.
+
+| Status | Phase | Meaning |
+|--------|-------|---------|
+| `sdk:completed` | Upload | File successfully stored |
+| `sdk:upload_completed` | Upload | Upload confirmed |
+| `sdk:failed` | Upload | Generic failure |
+| `sdk:supernodes_unavailable` | Upload | No SuperNode accepted the task |
+| `sdk:registration_failure` | Register | On-chain registration failed |
+| `sdk:upload_failed` | Upload | File transfer to the SN-API failed |
+| `sdk:processing_failed` | Upload | The SN-API could not process the file |
+| `sdk:processing_timeout` | Upload | Processing exceeded the timeout |
+
+## Retry behavior
+
+The SDK retries the SN-API upload up to 5 times with a 3-second delay between attempts. This covers the window where a SuperNode has not yet indexed the on-chain action. The chain and the SN-API are eventually consistent.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Download lifecycle" icon="download" href="/cascade/concepts/download-lifecycle">
+    How authenticated downloads stream files back from SuperNodes.
+  </Card>
+  <Card title="Erasure coding" icon="shield-halved" href="/cascade/concepts/erasure-coding">
+    How RaptorQ encoding and LEP-1 layout IDs work.
+  </Card>
+  <Card title="Error handling" icon="triangle-exclamation" href="/cascade/error-handling">
+    Handle failed task states and retries in production.
+  </Card>
+</CardGroup>

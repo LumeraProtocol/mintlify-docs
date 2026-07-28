@@ -1,55 +1,46 @@
 ---
-title: "Lumera Protocol: Cosmos SDK L1 Blockchain Documentation"
-sidebarTitle: "Home"
-description: "Official documentation for Lumera Protocol, a Cosmos SDK Layer 1 blockchain for decentralized storage, AI tooling, and IBC interoperability."
+title: "What is Lumera Protocol"
+sidebarTitle: "Introduction"
+description: "Lumera Protocol is a Cosmos SDK Layer 1 blockchain for permanent storage and AI powered content services."
 ---
 
-Welcome to the official Lumera Protocol documentation. Lumera is a Cosmos SDK Layer 1 blockchain evolved from Pastel Network, purpose-built for decentralized permanent storage, AI tooling, and seamless cross-chain interoperability. Whether you are running a validator, operating a SuperNode, building applications with the API, or bridging assets across chains, this documentation guides you through every step.
+Lumera Protocol is a Layer 1 blockchain built on the Cosmos SDK. It makes permanent file storage and AI powered content services native features of the chain. The LUME token pays for staking, transaction fees, and storage.
 
-## Explore the Docs
+The chain also ships CosmWasm smart contracts, IBC connections to the wider Cosmos ecosystem, and EVM support.
+
+## Cascade
+
+Cascade is Lumera's permanent storage service with a pay once, store forever model. Your file is encoded with RaptorQ erasure coding and spread across the network, and any large enough subset of the pieces can rebuild it.
+
+## Sense
+
+Sense is Lumera's AI powered content authentication service. It detects near-duplicate media and manipulated content across the network.
+
+## How the network runs
+
+Validators secure the chain through delegated proof of stake. Validators can also run a SuperNode, a companion daemon that provides Cascade and Sense services and earns proof of service rewards. Since `v1.20.0` the chain includes EVM support, so Solidity contracts deploy with standard [EVM tooling](/smart-contracts).
+
+Lumera is the evolution of Pastel Network, rebuilt as a Cosmos chain.
+
+## Start here
 
 <CardGroup cols={2}>
-  <Card title="Introduction" icon="book-open" href="/introduction">
-    Learn what Lumera Protocol is, where it came from, and what makes it uniquely suited for decentralized storage and AI infrastructure.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Upload your first file to Cascade from TypeScript in a few minutes.
   </Card>
-  <Card title="Networks" icon="network-wired" href="/networks">
-    Connect to Lumera mainnet (`lumera-mainnet-1`) or testnet (`lumera-testnet-2`). Find genesis files, seeds, and explorer links.
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    Learn the actions, fees, and lifecycle behind permanent storage.
   </Card>
-  <Card title="Validators" icon="shield-check" href="/validators/overview">
-    Set up and operate a Lumera validator node. Covers hardware requirements, key management, and joining the active set.
+  <Card title="SDKs" icon="code" href="/sdk/javascript">
+    Build in TypeScript or Go with the official SDKs.
   </Card>
-  <Card title="SuperNodes" icon="server" href="/supernodes/overview">
-    Register and run a SuperNode to provide Cascade permanent storage and Sense duplication-detection services—and earn rewards.
+  <Card title="Run a validator" icon="shield-check" href="/validators/overview">
+    Secure the network and earn staking rewards in LUME.
   </Card>
-  <Card title="API Reference" icon="code" href="/api/overview">
-    Explore the LumeScope REST API: 16 read-only endpoints for actions, SuperNode metrics, version compatibility, and more.
+  <Card title="Run a SuperNode" icon="server" href="/supernodes/overview">
+    Provide Cascade and Sense services and earn proof of service rewards.
   </Card>
-  <Card title="Lumera Hub" icon="browser" href="/hub/overview">
-    Use the Lumera Hub web, desktop, and mobile client to manage tokens, interact with SuperNodes, and store data permanently.
-  </Card>
-</CardGroup>
-
-## What You Can Do
-
-Lumera Protocol gives you a full toolkit for building and participating in decentralized infrastructure. Here is a quick overview of what is possible.
-
-<CardGroup cols={3}>
-  <Card title="Run a Validator" icon="circle-nodes" href="/validators/overview">
-    Secure the network by running a Cosmos SDK validator and earning staking rewards in LUME.
-  </Card>
-  <Card title="Operate a SuperNode" icon="hard-drive" href="/supernodes/overview">
-    Provide Cascade storage and Sense detection services on the SuperNode layer and collect service fees.
-  </Card>
-  <Card title="Build with the API" icon="plug" href="/api/overview">
-    Query decoded Action metadata, SuperNode health, and payment stats via the lightweight LumeScope API aggregator.
-  </Card>
-  <Card title="Use Cascade Storage" icon="database" href="/modules/cascade">
-    Store files permanently on the Lumera network using the Cascade protocol—resilient, decentralized, and content-addressed.
-  </Card>
-  <Card title="Bridge via IBC" icon="arrow-right-arrow-left" href="/networks">
-    Transfer tokens and pass messages across any IBC-enabled Cosmos chain using Lumera's native inter-blockchain communication.
-  </Card>
-  <Card title="Use Lumera Hub" icon="window" href="/hub/overview">
-    Access all network features through the official Lumera Hub interface—available in your browser, on desktop, and on mobile.
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    See how the base chain, custom modules, and SuperNode layer fit together.
   </Card>
 </CardGroup>

@@ -1,0 +1,134 @@
+---
+title: "Install the Cascade SDKs"
+sidebarTitle: "Installation"
+description: "Install the JavaScript and Go SDKs and prepare your bundler for the browser."
+---
+
+Lumera Protocol ships official SDKs for JavaScript and Go. This page installs both, explains the peer dependencies, and covers the bundler configuration that browser apps sometimes need.
+
+## Requirements
+
+| SDK | Requirement |
+| --- | --- |
+| JavaScript | Node.js 18 or later |
+| Go | Go 1.26 |
+
+You also need two things before you upload.
+
+- A Lumera wallet. Use a mnemonic for programmatic signing, or [Keplr](https://www.keplr.app/) or [Leap](https://www.leapwallet.io/) in the browser.
+- Testnet `ulume` from the [faucet](/faucet).
+
+## Install the JavaScript SDK
+
+The JavaScript and TypeScript SDK is the main way to use Cascade from web and Node.js applications.
+
+<CodeGroup>
+
+```bash npm
+npm install @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+```
+
+```bash yarn
+yarn add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+```
+
+```bash pnpm
+pnpm add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+```
+
+</CodeGroup>
+
+`@cosmjs/proto-signing` and `@cosmjs/stargate` are peer dependencies. The SDK uses them for wallet and transaction handling. For a full walkthrough, see [JavaScript SDK](/sdk/javascript).
+
+## Browser bundler configuration
+
+If you use Vite, you may need polyfills for Node.js globals.
+
+<CodeGroup>
+
+```bash npm
+npm install vite-plugin-node-polyfills vite-plugin-wasm vite-plugin-top-level-await
+```
+
+```bash yarn
+yarn add vite-plugin-node-polyfills vite-plugin-wasm vite-plugin-top-level-await
+```
+
+```bash pnpm
+pnpm add vite-plugin-node-polyfills vite-plugin-wasm vite-plugin-top-level-await
+```
+
+</CodeGroup>
+
+```ts vite.config.ts
+import { defineConfig } from "vite";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
+import wasm from "vite-plugin-wasm";
+import topLevelAwait from "vite-plugin-top-level-await";
+
+export default defineConfig({
+  plugins: [
+    wasm(),
+    topLevelAwait(),
+    nodePolyfills({
+      include: ["buffer", "process"],
+      globals: { Buffer: true, global: true, process: true },
+    }),
+  ],
+  optimizeDeps: {
+    exclude: ["undici", "@bokuweb/zstd-wasm"],
+  },
+  define: {
+    "process.env": "{}",
+  },
+});
+```
+
+For webpack in Next.js, add fallbacks in `next.config.js`.
+
+```js next.config.js
+/** @type {import('next').NextConfig} */
+module.exports = {
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      crypto: false,
+    };
+    return config;
+  },
+};
+```
+
+## Install the Go SDK
+
+The Go SDK targets server-side applications, CLI tools, and backend services. It queries the chain over gRPC and connects to SuperNodes directly. Add it inside a Go module.
+
+```bash
+# Initialize a module if you don't have one yet
+go mod init your-project
+
+# Add the SDK
+go get github.com/LumeraProtocol/sdk-go@latest
+```
+
+For a full walkthrough, see [Go SDK](/sdk/go).
+
+## Verify the installation
+
+Follow the [Quickstart](/quickstart) to confirm everything works. It creates a client, connects to testnet, and uploads a file in under 50 lines.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Client setup" icon="plug" href="/cascade/client-setup">
+    Create a client with presets, custom endpoints, and a signer.
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdk/javascript">
+    Walk through the JavaScript SDK from setup to upload.
+  </Card>
+  <Card title="Go SDK" icon="golang" href="/sdk/go">
+    Build server-side uploads with the Go SDK.
+  </Card>
+</CardGroup>

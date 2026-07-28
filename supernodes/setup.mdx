@@ -1,67 +1,56 @@
 ---
-title: "Lumera SuperNode Installation and Setup for Validators"
+title: "SuperNode setup and registration"
 sidebarTitle: "Setup"
-description: "Install and configure the Lumera SuperNode binary, initialize your identity, connect to the Lumera chain, and start earning rewards."
+description: "Install the supernode binary, initialize your identity, register on chain, and start serving actions."
 ---
 
-This guide walks you through everything you need to go from a bare validator server to a fully running SuperNode. By the end you will have the `supernode` binary installed, your validator key configured in the keyring, a `config.yml` that points to the right network, and the service running and ready to earn rewards.
+This guide takes you from an active validator to a registered, running SuperNode. You install the `supernode` binary, initialize it with your key, fund and delegate the SuperNode account, register on chain, and verify everything works.
+
+## Ports
+
+Open these ports before you start. The gRPC port serves clients. The P2P port connects you to other SuperNodes.
+
+| Port | Protocol | Purpose | Exposure |
+|------|----------|---------|----------|
+| 4444 | TCP | SuperNode gRPC service | Public, clients connect here |
+| 4445 | TCP | SuperNode P2P network | Public, peers connect here |
+| 9090 | TCP | Your node's gRPC endpoint | Private, only the SuperNode process needs it |
+
+<Warning>
+Do not change the P2P port from `4445`. The network expects all SuperNodes on this port. A different port prevents peer connections and causes action failures.
+</Warning>
 
 <Steps>
 
-### Confirm Prerequisites
+### Confirm prerequisites
 
-Before installing the SuperNode, make sure the following are in place on your server:
+- Your validator is bonded and synced. See the [validator setup guide](/validators/setup) if not.
+- Your firewall allows inbound traffic on `4444` and `4445`.
+- You know your validator operator address. Retrieve it on the validator host with `lumerad keys show <key-name> --bech val -a`.
 
-- **Running Lumera validator node** — your validator must be active and synced. The SuperNode reads chain state and submits transactions through your validator's gRPC endpoint.
-- **Go installed** — required if you intend to build from source. Pre-built binaries are available for Linux amd64 and do not require Go at runtime.
-- **Ports open** — ensure your firewall allows inbound and outbound traffic on:
-  - `4444/tcp` — SuperNode gRPC service (clients connect here)
-  - `4445/tcp` — SuperNode P2P network (peers connect here)
+### Install the binary
 
-<Note>
-Your Lumera validator's gRPC port (`9090` by default) only needs to be accessible from your SuperNode process itself — it does not need to be exposed publicly.
-</Note>
-
-### Download the Latest SuperNode Release
-
-Download the latest pre-built binary from the [SuperNode releases page](https://github.com/LumeraProtocol/supernode/releases). Replace `<version>` and `<platform>` with the values that match your system.
+Download the latest release from the [SuperNode releases page](https://github.com/LumeraProtocol/supernode/releases). The latest stable release is `v2.5.2`, with `v2.6.1-testnet` available for testnet.
 
 ```shell
-# Example: download and install v2.5.2 for Linux amd64
 curl -L https://github.com/LumeraProtocol/supernode/releases/download/v2.5.2/supernode-linux-amd64 \
   -o /usr/local/bin/supernode
 
 chmod +x /usr/local/bin/supernode
-```
-
-Confirm the binary is accessible:
-
-```shell
 supernode version
 ```
 
-### Initialize the SuperNode (Interactive)
+### Initialize the SuperNode
 
-Run the interactive setup wizard. It prompts you for each required value — keyring backend, key name, network address, gRPC endpoint, and chain ID — and writes `~/.supernode/config.yml`.
-
-```shell
-supernode init
-```
-
-The wizard is the easiest path for a first-time setup. If you are scripting a production deployment or running in a CI/CD pipeline, use the non-interactive approach in the next step instead.
-
-### Initialize the SuperNode (Non-Interactive / Production)
-
-For production deployments, pass all values as flags and read the keyring passphrase from an environment variable rather than embedding it in your shell history.
+`supernode init` writes `~/.supernode/config.yml` and sets up the keyring. The interactive wizard prompts for every value. For production and scripted deployments, pass flags and keep the passphrase in an environment variable.
 
 <Warning>
-Never pass `--mnemonic` directly on a command line in production. Shell history logs the full command, exposing your mnemonic to anyone with access to the server. Use a secrets manager or a file with restricted permissions to supply the mnemonic, and clear your shell history after initialization.
+Never pass `--mnemonic` on a command line in production. Shell history records it. Supply the mnemonic from a secrets manager or a file with `600` permissions, and clear your history after initialization.
 </Warning>
 
 <Tabs>
   <Tab title="Mainnet">
     ```shell
-    # Read passphrase from environment variable (recommended)
     export KEYRING_PASS="your-secure-passphrase"
 
     supernode init -y \
@@ -72,13 +61,12 @@ Never pass `--mnemonic` directly on a command line in production. Shell history 
       --mnemonic "word1 word2 ... word24" \
       --supernode-addr 0.0.0.0 \
       --supernode-port 4444 \
-      --lumera-grpc grpc.lumera.io:9090 \
+      --lumera-grpc localhost:9090 \
       --chain-id lumera-mainnet-1
     ```
   </Tab>
   <Tab title="Testnet">
     ```shell
-    # Read passphrase from environment variable (recommended)
     export KEYRING_PASS="your-secure-passphrase"
 
     supernode init -y \
@@ -89,67 +77,127 @@ Never pass `--mnemonic` directly on a command line in production. Shell history 
       --mnemonic "word1 word2 ... word24" \
       --supernode-addr 0.0.0.0 \
       --supernode-port 4444 \
-      --lumera-grpc grpc.testnet.lumera.io:9090 \
+      --lumera-grpc localhost:9090 \
       --chain-id lumera-testnet-2
     ```
   </Tab>
 </Tabs>
 
-**What `--recover` does:** instead of generating a new key, `supernode init` imports the key from the mnemonic you provide. Use the same mnemonic as your validator key so that your SuperNode identity matches your on-chain validator registration.
+The `--recover` flag imports a key from your mnemonic instead of generating a new one. Point `--lumera-grpc` at `localhost:9090` when the SuperNode shares a machine with your node, or at your node's address otherwise.
 
-<Tip>
-You can supply the passphrase from a file instead of an environment variable using `--keyring-passphrase-file /path/to/passphrase.txt`. Make sure the file has `600` permissions so only your process user can read it.
-</Tip>
+### Note your SuperNode account address
 
-### Verify the Configuration
-
-After initialization, confirm that `config.yml` was written correctly and all expected fields are present:
+The registration steps need the SuperNode account address. Read it from the config.
 
 ```shell
 supernode config list
 ```
 
-Check that `lumera.grpc_addr` and `lumera.chain_id` match the network you intend to join, and that `supernode.identity` shows your validator's Lumera address.
+The `identity` field under the `supernode` section shows the `lumera1...` address. This page calls it the SN account. You can also print it with `lumerad` on the SuperNode host.
+
+```shell
+lumerad keys show mykey -a --keyring-backend file --keyring-dir ~/.supernode/keys
+```
+
+<Note>
+On the SuperNode host, every `lumerad` command needs both `--keyring-backend file` and `--keyring-dir ~/.supernode/keys`. The SuperNode keyring lives there, not in the default `lumerad` location.
+</Note>
+
+### Fund the SuperNode account
+
+Registration uses a dual source stake model. Your validator self delegation and the SN account delegation add together, and the combined total must meet the on-chain minimum. Check the current minimum, because governance can change it.
+
+```shell
+lumerad query supernode params
+```
+
+Send LUME to the SN account from your validator wallet, or use the [faucet](/faucet) on testnet.
+
+```shell
+lumerad tx bank send <validator-key> <SN_ACCOUNT> <amount>ulume \
+  --chain-id lumera-mainnet-1 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 5000ulume -y
+```
+
+### Delegate from the SuperNode account
+
+Run this on the SuperNode host. It links the SN account stake to your validator. If the SuperNode host has no local chain node, point `--node` at your validator's RPC or a public endpoint.
+
+```shell
+VALOPER="lumeravaloper1..."   # your validator operator address
+
+lumerad tx staking delegate "$VALOPER" <amount>ulume \
+  --from mykey \
+  --keyring-backend file \
+  --keyring-dir ~/.supernode/keys \
+  --chain-id lumera-mainnet-1 \
+  --node tcp://<VALIDATOR_IP>:26657 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 7000ulume -y
+```
+
+Verify the delegation exists.
+
+```shell
+lumerad query staking delegations <SN_ACCOUNT> --node tcp://<VALIDATOR_IP>:26657
+```
+
+### Register on chain
+
+Run this on the validator host, signed by the validator operator key. It cannot run from the SuperNode server.
+
+```shell
+VALOPER=$(lumerad keys show <validator-key> --bech val -a)
+SN_ENDPOINT="<SN_PUBLIC_IP>:4444"
+SN_ACCOUNT="lumera1..."
+
+lumerad tx supernode register-supernode \
+  "$VALOPER" \
+  "$SN_ENDPOINT" \
+  "$SN_ACCOUNT" \
+  --from <validator-key> \
+  --chain-id lumera-mainnet-1 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 5000ulume -y
+```
+
+A successful broadcast prints `code: 0`.
 
 ### Start the SuperNode
-
-Start the service using the default base directory (`~/.supernode`):
 
 ```shell
 supernode start
 ```
 
-To use a custom base directory — for example, if you manage multiple SuperNode instances on the same server — pass the `-d` flag:
+For production, wrap the process in a `systemd` unit with `Restart=always` so it survives crashes and reboots. Pass `-d /path/to/dir` to run from a custom base directory.
+
+### Verify everything
+
+Check the on-chain record from the validator host.
 
 ```shell
-supernode start -d /path/to/custom/dir
+lumerad query supernode get-supernode "$VALOPER"
 ```
 
-<Note>
-For production deployments, run the SuperNode as a systemd service so it restarts automatically on failure and survives server reboots. Create a unit file that calls `supernode start` with your chosen flags and set `Restart=always`.
-</Note>
+The state should read `SUPERNODE_STATE_ACTIVE`. If the query returns nothing right after registration, wait a few blocks.
 
-### Verify the SuperNode Is Running
-
-Check the version and confirm the process started without errors:
+Confirm the ports are reachable from an external machine.
 
 ```shell
-supernode version
+nc -zv <SN_PUBLIC_IP> 4444
+nc -zv <SN_PUBLIC_IP> 4445
 ```
-
-For a full health check including P2P peer count, resource usage, and registered services, call the gRPC status endpoint directly or use a monitoring tool that queries the `SupernodeService.GetStatus` method.
 
 </Steps>
 
-## Network Connection Reference
+## Next steps
 
-Use the table below when configuring `--lumera-grpc` and `--chain-id` during initialization:
-
-| Network | `--lumera-grpc` | `--chain-id` |
-|---------|-----------------|--------------|
-| Mainnet | `grpc.lumera.io:9090` | `lumera-mainnet-1` |
-| Testnet | `grpc.testnet.lumera.io:9090` | `lumera-testnet-2` |
-
-<Warning>
-Do not change the P2P port from its default value of `4445`. The Lumera P2P network expects all SuperNodes to communicate on this port. Changing it will prevent your node from connecting to peers and will cause action failures.
-</Warning>
+<CardGroup cols={2}>
+  <Card title="Operations" icon="wrench" href="/supernodes/operations">
+    CLI reference, config.yml settings, and monitoring.
+  </Card>
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The storage flow your SuperNode serves.
+  </Card>
+</CardGroup>

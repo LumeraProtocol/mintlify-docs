@@ -1,0 +1,188 @@
+---
+title: "Use the SDK in Node.js"
+sidebarTitle: "Node.js"
+description: "Run the Lumera JavaScript SDK on a server with a programmatic signer."
+---
+
+The JavaScript SDK for Lumera Protocol works in both browsers and Node.js. This guide covers the Node.js setup for server-side applications, CLI tools, and backend services. In this environment a programmatic `DirectSecp256k1HdWallet` signer replaces browser wallet extensions.
+
+You build two small scripts. One uploads a file to Cascade and prints its action ID, the permanent on-chain reference for the file. The other downloads the file again.
+
+## What you need
+
+- [Node.js](https://nodejs.org/) 18 or later
+- A testnet account mnemonic with LUME for fees. Request tokens from the [faucet](/faucet).
+
+## Build the scripts
+
+<Steps>
+<Step title="Install dependencies">
+
+<CodeGroup>
+
+```bash npm
+npm install @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate @cosmjs/amino
+```
+
+```bash yarn
+yarn add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate @cosmjs/amino
+```
+
+```bash pnpm
+pnpm add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate @cosmjs/amino
+```
+
+</CodeGroup>
+
+The scripts below use top-level await, so set `"type": "module"` in your `package.json`.
+
+</Step>
+
+<Step title="Create a programmatic signer">
+
+In Node.js there is no Keplr or Leap wallet. Use `DirectSecp256k1HdWallet` for transaction signing and build a custom signer that adds `signArbitrary` (ADR-036) for Cascade's off-chain signatures.
+
+```ts signer.ts
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { Secp256k1HdWallet, makeSignDoc as makeAminoSignDoc } from "@cosmjs/amino";
+
+export async function createNodeSigner(mnemonic: string) {
+  const directWallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "lumera" });
+  const aminoWallet = await Secp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "lumera" });
+  const [account] = await directWallet.getAccounts();
+
+  const signer = {
+    getAccounts: () => directWallet.getAccounts(),
+    signDirect: (addr: string, doc: any) => directWallet.signDirect(addr, doc),
+    signAmino: (addr: string, doc: any) => aminoWallet.signAmino(addr, doc),
+    async signArbitrary(chainId: string, signerAddress: string, data: string) {
+      const signDoc = makeAminoSignDoc(
+        [{
+          type: "sign/MsgSignData",
+          value: {
+            signer: signerAddress,
+            data: Buffer.from(data).toString("base64"),
+          },
+        }],
+        { gas: "0", amount: [] },
+        "",
+        "",
+        0,
+        0
+      );
+      const { signature } = await aminoWallet.signAmino(signerAddress, signDoc);
+      return { signed: data, signature: signature.signature, pub_key: signature.pub_key };
+    },
+  };
+
+  return { signer, account };
+}
+```
+
+</Step>
+
+<Step title="Set your mnemonic">
+
+The scripts read the account mnemonic from the `LUMERA_MNEMONIC` environment variable.
+
+```bash
+export LUMERA_MNEMONIC="your twelve word mnemonic goes here"
+```
+
+<Warning>
+Treat the mnemonic like a private key. Load it from an environment variable or a secrets manager and keep it out of source control.
+</Warning>
+
+</Step>
+
+<Step title="Upload a file">
+
+The upload registers an action on chain, escrows the storage fee, and transfers the file to a SuperNode. The optional `expirationTime` sets a deadline for the upload. If the upload fails or expires, the escrowed fee is refunded.
+
+```ts upload.ts
+import fs from "node:fs";
+import { createLumeraClient } from "@lumera-protocol/sdk-js";
+import { createNodeSigner } from "./signer";
+
+const { signer, account } = await createNodeSigner(process.env.LUMERA_MNEMONIC!);
+
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer: signer as any,
+  address: account.address,
+  gasPrice: "0.025ulume",
+});
+
+const file = await fs.promises.readFile("./my-document.pdf");
+const expirationTime = String(Math.floor(Date.now() / 1000) + 24 * 60 * 60);
+
+const result = await client.Cascade.uploader.uploadFile(new Uint8Array(file), {
+  fileName: "my-document.pdf",
+  isPublic: true,
+  expirationTime,
+  taskOptions: { pollInterval: 2000, timeout: 300000 },
+});
+
+console.log("Stored with action ID:", result.action_id);
+```
+
+</Step>
+
+<Step title="Download a file">
+
+Downloads arrive as a stream of chunks. Reassemble them and write the result to disk.
+
+```ts download.ts
+import fs from "node:fs";
+import { createLumeraClient } from "@lumera-protocol/sdk-js";
+import { createNodeSigner } from "./signer";
+
+const { signer, account } = await createNodeSigner(process.env.LUMERA_MNEMONIC!);
+
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer: signer as any,
+  address: account.address,
+  gasPrice: "0.025ulume",
+});
+
+const stream = await client.Cascade.downloader.download("your-action-id");
+const reader = stream.getReader();
+const chunks: Uint8Array[] = [];
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  if (value) chunks.push(value);
+}
+
+const fileBytes = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0));
+let offset = 0;
+for (const chunk of chunks) {
+  fileBytes.set(chunk, offset);
+  offset += chunk.length;
+}
+
+await fs.promises.writeFile("./downloaded-file.pdf", fileBytes);
+```
+
+</Step>
+</Steps>
+
+## Server-side alternatives
+
+If you prefer Go on the server, the [Go SDK](/sdk/go) covers the same Cascade upload and download operations.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Build a browser app" icon="globe" href="/cascade/guides/browser-app">
+    Run the same flows in the browser with Keplr.
+  </Card>
+  <Card title="JavaScript SDK reference" icon="book" href="/sdk/javascript-reference">
+    Look up every client method and option.
+  </Card>
+  <Card title="Error handling" icon="triangle-exclamation" href="/cascade/error-handling">
+    Handle failed uploads, timeouts, and retries.
+  </Card>
+</CardGroup>

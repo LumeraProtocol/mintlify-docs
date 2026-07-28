@@ -3,19 +3,37 @@
   "name": "Lumera Protocol",
   "theme": "aspen",
   "logo": {
-    "light": "https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg",
-    "dark": "https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   },
-  "favicon": "/favicon.png",
+  "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#848c8e",
-    "light": "#cfd0d2",
-    "dark": "#11161e"
+    "primary": "#078a8a",
+    "light": "#47c78a",
+    "dark": "#001432"
   },
   "navbar": {
+    "links": [
+      {
+        "label": "Explorer",
+        "href": "https://portal.lumera.io/lumera-mainnet-1"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/LumeraProtocol"
+      }
+    ],
     "primary": {
-      "type": "github",
-      "href": "https://github.com/LumeraProtocol"
+      "type": "button",
+      "label": "Launch Hub",
+      "href": "https://hub.lumera.io"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/LumeraProtocol",
+      "x": "https://x.com/lumera",
+      "discord": "https://discord.com/invite/lumeraprotocol"
     }
   },
   "navigation": {
@@ -24,43 +42,97 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Get started",
+            "icon": "rocket",
             "pages": [
-              "introduction",
-              "architecture",
-              "networks"
+              "index",
+              "quickstart",
+              "faucet",
+              "networks",
+              "ecosystem"
+            ]
+          },
+          {
+            "group": "Cascade",
+            "icon": "database",
+            "pages": [
+              "cascade/how-cascade-works",
+              "cascade/installation",
+              "cascade/client-setup",
+              "cascade/error-handling",
+              {
+                "group": "Guides",
+                "pages": [
+                  "cascade/guides/browser-app",
+                  "cascade/guides/nodejs",
+                  "cascade/guides/research-archive",
+                  "cascade/guides/encrypted-storage"
+                ]
+              },
+              {
+                "group": "Concepts",
+                "pages": [
+                  "cascade/concepts/upload-lifecycle",
+                  "cascade/concepts/download-lifecycle",
+                  "cascade/concepts/erasure-coding",
+                  "cascade/concepts/interchain-accounts"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "SDKs",
+            "icon": "code",
+            "pages": [
+              "sdk/javascript",
+              "sdk/javascript-reference",
+              "sdk/go",
+              "sdk/go-reference"
+            ]
+          },
+          {
+            "group": "Smart contracts",
+            "icon": "file-code",
+            "pages": [
+              "smart-contracts"
             ]
           },
           {
             "group": "Validators",
+            "icon": "shield",
             "pages": [
               "validators/overview",
               "validators/setup",
-              "validators/configuration",
+              "validators/create-validator",
               "validators/operations"
             ]
           },
           {
             "group": "SuperNodes",
+            "icon": "server",
             "pages": [
               "supernodes/overview",
               "supernodes/setup",
-              "supernodes/cli-reference",
-              "supernodes/configuration"
+              "supernodes/operations"
             ]
           },
           {
-            "group": "Core Modules",
+            "group": "Network upgrades",
+            "icon": "arrow-up-right-dots",
             "pages": [
-              "modules/overview",
-              "modules/cascade",
-              "modules/sense",
-              "modules/lumeraid",
-              "modules/claims"
+              "upgrades/evm-upgrade"
+            ]
+          },
+          {
+            "group": "Protocol",
+            "icon": "diagram-project",
+            "pages": [
+              "architecture"
             ]
           },
           {
             "group": "Lumera Hub",
+            "icon": "wallet",
             "pages": [
               "hub/overview",
               "hub/wallet"
@@ -88,7 +160,7 @@
             ]
           },
           {
-            "group": "SDKs & Libraries",
+            "group": "Libraries and tools",
             "pages": [
               "sdk/raptorq",
               "sdk/lumerad-cli"
@@ -97,5 +169,43 @@
         ]
       }
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/introduction",
+      "destination": "/"
+    },
+    {
+      "source": "/modules/overview",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/modules/cascade",
+      "destination": "/cascade/how-cascade-works"
+    },
+    {
+      "source": "/modules/sense",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/modules/lumeraid",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/modules/claims",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/validators/configuration",
+      "destination": "/validators/operations"
+    },
+    {
+      "source": "/supernodes/cli-reference",
+      "destination": "/supernodes/operations"
+    },
+    {
+      "source": "/supernodes/configuration",
+      "destination": "/supernodes/operations"
+    }
+  ]
 }

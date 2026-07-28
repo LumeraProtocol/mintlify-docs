@@ -1,0 +1,196 @@
+---
+title: "SuperNode operations"
+sidebarTitle: "Operations"
+description: "Every supernode command, the full config.yml reference, and how to monitor a running node."
+---
+
+This page is the operating reference for a running SuperNode. It covers the CLI, the configuration file, and monitoring. For first time installation and registration, start with [setup](/supernodes/setup).
+
+## CLI commands
+
+Every command accepts a global `--basedir` flag (short `-d`, default `~/.supernode`) so you can manage several instances on one machine.
+
+### supernode init
+
+Initializes a new SuperNode. Creates the base directory, generates or imports a key, and writes `config.yml`. Run it once before the first start. Without flags it launches an interactive wizard. With `-y` it runs non-interactive and every value comes from flags.
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Override an existing installation and re-initialize |
+| `-y`, `--yes` | Skip all prompts, values come from flags |
+| `--keyring-backend` | `os`, `file`, or `test`. Never use `test` in production |
+| `--key-name` | Name of the key to create or recover |
+| `--recover` | Import an existing key from a mnemonic instead of generating one |
+| `--mnemonic` | The 24 word phrase, only with `--recover` |
+| `--supernode-addr` | IP the gRPC service binds to, `0.0.0.0` for all interfaces |
+| `--supernode-port` | gRPC service port, default `4444` |
+| `--lumera-grpc` | gRPC endpoint of your Lumera node as `host:port` |
+| `--chain-id` | `lumera-mainnet-1` or `lumera-testnet-2` |
+| `--keyring-passphrase` | Plain text passphrase, testing only |
+| `--keyring-passphrase-env` | Environment variable holding the passphrase, preferred |
+| `--keyring-passphrase-file` | File holding the passphrase, use `600` permissions |
+
+### supernode start
+
+Starts the service. The process connects to the configured Lumera gRPC endpoint, joins the P2P network, and begins serving Cascade and Sense actions. It runs in the foreground, so wrap it in a supervisor for production.
+
+```shell
+supernode start
+supernode start -d /opt/supernode-data
+```
+
+A minimal `systemd` unit looks like this.
+
+```ini /etc/systemd/system/supernode.service
+[Unit]
+Description=Lumera SuperNode
+After=network-online.target
+
+[Service]
+User=supernode
+Environment=KEYRING_PASS=changeme
+ExecStart=/usr/local/bin/supernode start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Load the passphrase from a secrets manager rather than writing it into the unit file where possible.
+
+### supernode version
+
+Prints the binary version. Use it to confirm installs and include it in bug reports.
+
+### supernode keys
+
+```shell
+# List keys and their lumera1 addresses
+supernode keys list
+
+# Recover a key from a mnemonic into the keyring
+supernode keys recover mykey
+```
+
+`keys recover` prompts for the mnemonic when you omit `--mnemonic`. Prefer the prompt. An inline mnemonic lands in shell history.
+
+### supernode config
+
+```shell
+# Print current config.yml values
+supernode config list
+
+# Interactively update individual values
+supernode config update
+```
+
+Restart the SuperNode after any configuration change. Changes only apply on process start.
+
+## Configuration reference
+
+All runtime parameters live in `~/.supernode/config.yml`. Path values that do not start with `/` resolve relative to the base directory.
+
+```yaml config.yml
+supernode:
+  key_name: "mykey"
+  identity: "lumera1..."
+  host: "0.0.0.0"
+  port: 4444
+
+keyring:
+  backend: "file"
+  dir: "keys"
+  passphrase_plain: ""
+  passphrase_env: "KEYRING_PASS"
+  passphrase_file: ""
+
+p2p:
+  port: 4445
+  data_dir: "data/p2p"
+
+lumera:
+  grpc_addr: "localhost:9090"
+  chain_id: "lumera-mainnet-1"
+
+raptorq:
+  files_dir: "raptorq_files"
+```
+
+### supernode section
+
+| Field | Description |
+|-------|-------------|
+| `key_name` | Keyring key used to sign transactions |
+| `identity` | The `lumera1...` address derived from the key. Written by `init`. Must match your registered identity |
+| `host` | Bind address for the gRPC service |
+| `port` | gRPC service port, default `4444` |
+
+### keyring section
+
+| Field | Description |
+|-------|-------------|
+| `backend` | `os` for interactive machines, `file` for servers, `test` never in production |
+| `dir` | Keyring directory for the `file` backend, default `keys` |
+| `passphrase_plain` | Plain text passphrase. Testing only, readable by anyone who can read the file |
+| `passphrase_env` | Environment variable holding the passphrase. Preferred on servers |
+| `passphrase_file` | Path to a passphrase file with `600` permissions |
+
+If `passphrase_plain` is set it takes precedence over the other two. Leave it empty in production. The strongest setup is `backend: file` with `passphrase_env` injected by a secrets manager.
+
+### p2p section
+
+| Field | Description |
+|-------|-------------|
+| `port` | P2P listen port. Keep the default `4445`, the network expects it |
+| `data_dir` | Where DHT records and peer metadata live, default `data/p2p` |
+
+### lumera section
+
+| Field | Description |
+|-------|-------------|
+| `grpc_addr` | Your node's gRPC endpoint. Use `localhost:9090` when co-located |
+| `chain_id` | `lumera-mainnet-1` or `lumera-testnet-2`, must match genesis |
+
+### raptorq section
+
+| Field | Description |
+|-------|-------------|
+| `files_dir` | Where RaptorQ encoded symbols are stored, default `raptorq_files` |
+
+<Tip>
+Cascade encode and decode are I/O heavy. If the server has a dedicated NVMe volume, point `files_dir` at an absolute path on it.
+</Tip>
+
+## Monitoring
+
+The SuperNode exposes a gRPC status service. `SupernodeService.GetStatus` returns the version, uptime, CPU, memory and storage usage, peer counts, registered services, and your rank. Wire it into your monitoring stack and alert on the same signals you watch for a validator, low peers, low disk, and unexpected restarts. The [SupernodeService gRPC reference](/api/grpc/supernode-service) documents the full response.
+
+Also watch the on-chain state from the validator host.
+
+```shell
+lumerad query supernode get-supernode <valoper-address>
+```
+
+A healthy record shows `SUPERNODE_STATE_ACTIVE`. Any other state means you are not being selected for actions and are not earning.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| No peers connect | Port `4445` blocked or changed | Open the port, restore the default value |
+| Clients cannot reach you | Port `4444` blocked or wrong `host` | Open the port, bind to `0.0.0.0` |
+| Cannot reach the chain | Wrong `grpc_addr` or closed port `9090` | Point at `localhost:9090` or open the port privately |
+| Keyring errors on start | Passphrase source missing | Set `passphrase_env` and export the variable for the service |
+| Registration not found | Query ran too early | Wait a few blocks and re-run the query |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="v1.20.0 EVM upgrade" icon="arrow-up-right-dots" href="/upgrades/evm-upgrade">
+    Migrate a pre-upgrade SuperNode account.
+  </Card>
+  <Card title="SupernodeService gRPC" icon="satellite-dish" href="/api/grpc/supernode-service">
+    The status and metrics API your monitoring can poll.
+  </Card>
+</CardGroup>

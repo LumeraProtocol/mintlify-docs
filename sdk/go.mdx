@@ -1,0 +1,142 @@
+---
+title: "Go SDK"
+sidebarTitle: "Go"
+description: "Build server-side applications and CLI tools that upload to Cascade and query the Lumera chain."
+---
+
+The [Go SDK](https://github.com/LumeraProtocol/sdk-go) is the official SDK for backend services, CLI tools, and infrastructure that talk to Lumera Protocol. It puts chain queries, transactions, and Cascade file storage behind one client. The current release is v1.2.0 and it needs Go 1.26.
+
+The SDK unifies three interfaces.
+
+| Layer | Access via | Purpose |
+|---|---|---|
+| Lumera API (gRPC) | `client.Blockchain` | Chain queries and transactions for actions, SuperNodes, and fees |
+| SuperNode SDK | `client.Cascade` | File upload, download, and event subscriptions |
+| SnApi (gRPC) | Wrapped by `client.Cascade` | Direct SuperNode communication |
+
+Unlike the [JavaScript SDK](/sdk/javascript), which routes file transfers through a REST gateway, the Go SDK talks to SuperNodes directly over gRPC on port 4444. Your machine needs network access to that port. If a firewall or NAT blocks it, run your code somewhere with direct reachability.
+
+## Install
+
+```bash
+go mod init your-project
+go get github.com/LumeraProtocol/sdk-go
+```
+
+## Create a client
+
+`lumerasdk.New` takes a config, a Cosmos SDK keyring, and options. Close the client when you are done.
+
+```go main.go
+package main
+
+import (
+	"context"
+	"log"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	lumerasdk "github.com/LumeraProtocol/sdk-go/client"
+	"go.uber.org/zap"
+)
+
+func main() {
+	ctx := context.Background()
+
+	kr, err := keyring.New("lumera", "test", "/tmp", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := lumerasdk.New(ctx, lumerasdk.Config{
+		ChainID:      "lumera-testnet-2",
+		GRPCEndpoint: "grpc.testnet.lumera.io:443",
+		RPCEndpoint:  "https://rpc.testnet.lumera.io",
+		Address:      "lumera1...",
+		KeyName:      "my-key",
+	}, kr, lumerasdk.WithLogger(zap.NewExample()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
+}
+```
+
+<Warning>
+The `test` keyring backend stores keys unencrypted. Use the `os` backend and a funded key for anything beyond local experiments. Never commit mnemonic files.
+</Warning>
+
+## Upload a file
+
+`Upload` registers the action on chain, waits for inclusion, and streams the file to one of the selected SuperNodes. The result carries the `ActionID`, the permanent on-chain reference to your file.
+
+```go
+res, err := client.Cascade.Upload(ctx, addr, nil, "./my-document.pdf")
+if err != nil {
+	log.Fatal(err)
+}
+log.Println("Stored with action ID:", res.ActionID)
+```
+
+The block height of the registration transaction seeds the deterministic selection of processing SuperNodes. The SDK tries each selected node in order and uploads to the first that responds.
+
+## Download a file
+
+`Download` fetches the file by action ID into a local directory.
+
+```go
+_, err := client.Cascade.Download(ctx, actionID, "./downloads/")
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+## Query actions
+
+`client.Blockchain` exposes the chain modules. Action queries return the on-chain state of a storage request.
+
+```go
+action, err := client.Blockchain.Action.GetAction(ctx, "action-123")
+if err != nil {
+	log.Fatal(err)
+}
+log.Printf("Action state: %s", action.State)
+```
+
+The state moves from `PENDING` to `PROCESSING` to `DONE`. A failed upload ends at `FAILED` and the escrowed fee is refunded. Subscribe to task events with `client.Cascade.SubscribeToEvents` when you need progress callbacks instead of polling.
+
+## Multiple accounts
+
+The factory pattern reuses one configuration and one set of connections across several signers.
+
+```go
+factory, _ := lumerasdk.NewFactory(lumerasdk.Config{
+	ChainID:      "lumera-testnet-2",
+	GRPCEndpoint: "grpc.testnet.lumera.io:443",
+	RPCEndpoint:  "https://rpc.testnet.lumera.io",
+}, kr)
+
+alice, _ := factory.WithSigner(ctx, aliceAddr, "alice")
+bob, _ := factory.WithSigner(ctx, bobAddr, "bob")
+defer alice.Close()
+defer bob.Close()
+```
+
+## EVM and cross-chain support
+
+The SDK is EVM ready. The keyring supports both `secp256k1` (Cosmos, coin type 118) and `eth_secp256k1` (EVM, coin type 60) key types. The repo ships examples for EVM balance reads, Ethereum format transfers, ERC20 conversion, and calling Lumera precompiles from the EVM. See the [smart contracts overview](/smart-contracts) for what the precompiles expose.
+
+Full ICS-27 interchain account support lets an app on another Cosmos chain drive Cascade through IBC. The [interchain accounts concept page](/cascade/concepts/interchain-accounts) explains the flow.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Go SDK reference" icon="list" href="/sdk/go-reference">
+    Config fields, client surfaces, and crypto helpers.
+  </Card>
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The storage flow behind Upload and Download.
+  </Card>
+  <Card title="Interchain accounts" icon="link" href="/cascade/concepts/interchain-accounts">
+    Drive Cascade from another Cosmos chain.
+  </Card>
+</CardGroup>
