@@ -32,13 +32,13 @@ The base layer handles block production, consensus, accounts, governance, and sm
 
 **IBC** connects Lumera to other Cosmos chains for token transfers and arbitrary messages. Interchain accounts (ICS-27) let external chains drive Cascade remotely. See [interchain accounts](/cascade/concepts/interchain-accounts).
 
-**Cosmos EVM** runs Solidity contracts with standard Ethereum tooling since the v1.20.0 upgrade. One private key operates both an EVM address (`0x...`) and a bech32 address (`lumera1...`). The [smart contracts overview](/smart-contracts) covers it in depth.
+**Cosmos EVM** runs Solidity contracts with standard Ethereum tooling. It arrived with the v1.20.0 upgrade and is live on testnet, with the mainnet upgrade ahead. One private key operates both an EVM address (`0x...`) and a bech32 address (`lumera1...`). The [smart contracts overview](/smart-contracts) covers it in depth.
 
 ## Two node types
 
 Lumera separates consensus from services.
 
-**Validators** secure the chain through delegated proof of stake. They propose and sign blocks with CometBFT and vote on governance. See the [validator overview](/validators/overview).
+**Validators** secure the chain through delegated proof of stake. They propose and sign blocks with CometBFT and vote on governance. See the [validator overview](/validators-mainnet/overview).
 
 **SuperNodes** are companion daemons run by validators. They store files for Cascade, analyze content for Sense, and earn proof of service rewards from action fees. This split keeps consensus light while heavy compute and storage scale independently. See the [SuperNode overview](/supernodes/overview).
 
@@ -117,7 +117,7 @@ The [SDKs](/sdk/javascript) wrap the chain APIs and the SuperNode protocol for J
   <Card title="Smart contracts" icon="file-code" href="/smart-contracts">
     The EVM environment on the base layer.
   </Card>
-  <Card title="Run a validator" icon="shield" href="/validators/overview">
+  <Card title="Run a validator" icon="shield" href="/validators-mainnet/overview">
     Join the consensus layer.
   </Card>
 </CardGroup>

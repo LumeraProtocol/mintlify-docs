@@ -168,12 +168,15 @@ Public endpoints let you query chain state without running a node. They are rate
 | Service | Mainnet | Testnet |
 |---|---|---|
 | **gRPC** | `grpc.lumera.io:443` | `grpc.testnet.lumera.io:443` |
-| **RPC** | Coming soon | Coming soon |
-| **LCD (REST)** | Coming soon | Coming soon |
+| **RPC** | `https://rpc.lumera.io` | `https://lumera-testnet-rpc.polkachu.com` |
+| **LCD (REST)** | `https://lcd.lumera.io` | `https://lumera-testnet-api.polkachu.com` |
+| **SN-API** | `https://snapi.lumera.io` | `https://snapi.testnet.lumera.io` |
+
+The official mainnet RPC and LCD hosts can be intermittent. Community providers such as [Polkachu](https://www.polkachu.com/networks/lumera) also serve public Lumera endpoints, and validator snapshots are linked from the [validator setup guides](/validators-mainnet/node-setup).
 
 ## EVM access
 
-Since `v1.20.0`, every node enables the EVM JSON-RPC server and OpenRPC discovery by default, so a node you run also serves Ethereum tooling such as Hardhat and Foundry. See [Smart contracts](/smart-contracts) for deployment guides.
+From `v1.20.0`, nodes enable the EVM JSON-RPC server and OpenRPC discovery by default, so a node you run also serves Ethereum tooling such as Hardhat and Foundry. Testnet runs the v1.20 line today. Mainnet is still on `v1.12.0` and gains EVM support with its upgrade. See [Smart contracts](/smart-contracts) for details.
 
 ## Community and support
 
@@ -200,7 +203,7 @@ Join the community for operator support and announcements.
   <Card title="Faucet" icon="faucet" href="/faucet">
     Request free testnet LUME from the Lumera Portal.
   </Card>
-  <Card title="Validator setup" icon="shield-check" href="/validators/setup">
+  <Card title="Validator setup" icon="shield-check" href="/validators-mainnet/node-setup">
     Prepare a node and join the validator set.
   </Card>
 </CardGroup>

@@ -98,13 +98,23 @@
             ]
           },
           {
-            "group": "Validators",
+            "group": "Validators (Mainnet)",
             "icon": "shield",
             "pages": [
-              "validators/overview",
-              "validators/setup",
-              "validators/create-validator",
-              "validators/operations"
+              "validators-mainnet/overview",
+              "validators-mainnet/node-setup",
+              "validators-mainnet/create-validator",
+              "validators-mainnet/operations"
+            ]
+          },
+          {
+            "group": "Validators (Testnet)",
+            "icon": "shield-halved",
+            "pages": [
+              "validators-testnet/overview",
+              "validators-testnet/node-setup",
+              "validators-testnet/create-validator",
+              "validators-testnet/operations"
             ]
           },
           {
@@ -197,7 +207,23 @@
     },
     {
       "source": "/validators/configuration",
-      "destination": "/validators/operations"
+      "destination": "/validators-mainnet/operations"
+    },
+    {
+      "source": "/validators/overview",
+      "destination": "/validators-mainnet/overview"
+    },
+    {
+      "source": "/validators/setup",
+      "destination": "/validators-mainnet/node-setup"
+    },
+    {
+      "source": "/validators/create-validator",
+      "destination": "/validators-mainnet/create-validator"
+    },
+    {
+      "source": "/validators/operations",
+      "destination": "/validators-mainnet/operations"
     },
     {
       "source": "/supernodes/cli-reference",

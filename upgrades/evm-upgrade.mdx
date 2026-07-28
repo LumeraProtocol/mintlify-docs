@@ -4,7 +4,7 @@ sidebarTitle: "v1.20.0 EVM upgrade"
 description: "The Aurora Convergence release added full EVM support and changed how account keys derive."
 ---
 
-The v1.20.0 release, named Aurora Convergence, added full EVM compatibility to Lumera Protocol. It shipped on June 25, 2026 and is live on mainnet and testnet. This page explains what changed and what existing users and operators need to do.
+The v1.20.0 release, named Aurora Convergence, added full EVM compatibility to Lumera Protocol. It shipped on June 25, 2026 and is live on testnet (`lumera-testnet-2` runs `v1.20.1`). Mainnet still runs `v1.12.0`, so the mainnet upgrade is ahead. This page explains what changed and what users and operators need to do when their network upgrades.
 
 ## What changed
 
@@ -23,7 +23,9 @@ See the [smart contracts overview](/smart-contracts) for the developer view of t
 |---|---|---|
 | `v1.20.0` | June 25, 2026 | Aurora Convergence, the EVM upgrade |
 | `v1.20.1` | July 6, 2026 | Fixes on top of v1.20.0 |
-| `v1.20.1-hotfix` | July 14, 2026 | Current release |
+| `v1.20.1-hotfix` | July 14, 2026 | Latest release |
+
+Testnet runs the v1.20 line today. Mainnet remains on `v1.12.0` until its upgrade passes governance, so mainnet accounts and operators do not need to act yet.
 
 ## Why accounts migrate
 
@@ -68,7 +70,7 @@ Hermes must re-derive the same key from your mnemonic. Its default derivation do
   <Card title="Smart contracts" icon="file-code" href="/smart-contracts">
     What you can build now that the EVM is live.
   </Card>
-  <Card title="Validator operations" icon="shield" href="/validators/operations">
+  <Card title="Validator operations" icon="shield" href="/validators-mainnet/operations">
     Day to day validator management on the current release.
   </Card>
   <Card title="SuperNode operations" icon="server" href="/supernodes/operations">

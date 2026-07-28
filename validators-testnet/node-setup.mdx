@@ -1,0 +1,432 @@
+---
+title: "Testnet node setup"
+sidebarTitle: "Node setup"
+description: "Install dependencies and lumerad, then sync your Lumera testnet node from a snapshot."
+---
+
+This guide takes a fresh Ubuntu server to a fully synced testnet node running under systemd. Follow the steps in order. When the node reports `catching_up: false`, continue to [create validator](/validators-testnet/create-validator).
+
+## Step 1. Install dependencies
+
+SSH into your server, update the system, and install the required packages.
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install build-essential jq curl git wget lz4 unzip gpg -y
+```
+
+## Step 2. Install Go
+
+Use the version pinned in the chain's [`go.mod`](https://github.com/LumeraProtocol/lumera/blob/master/go.mod), currently Go 1.26.2.
+
+```bash
+GO_VERSION=1.26.2
+curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tar.gz
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+
+echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.profile
+source ~/.profile
+go version
+
+# go version go1.26.2 linux/amd64
+```
+
+## Step 3. Install lumerad
+
+Lumera publishes a prebuilt `linux/amd64` binary for every release, so there is nothing to compile. Run the version testnet is on, currently v1.20.1.
+
+```bash
+# what testnet is running right now
+curl -fsSL https://lumera-testnet-rpc.polkachu.com/abci_info | jq -r .result.response.version
+# 1.20.1
+
+LUMERA_VERSION=v1.20.1
+
+mkdir -p ~/lumera-install && cd ~/lumera-install
+curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${LUMERA_VERSION}/release_checksum"
+
+# the archive is named differently across releases, so take the name from the checksum
+ASSET=$(awk '{print $2}' release_checksum)
+curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${LUMERA_VERSION}/${ASSET}"
+```
+
+Verify the download before you install it.
+
+```bash
+sha256sum -c release_checksum
+# Expected: <archive>: OK
+```
+
+<Warning>
+If this prints `FAILED`, stop. Delete the files and download them again. Do not install an unverified binary on a machine that will hold a consensus key.
+</Warning>
+
+Extract the archive and run the bundled installer. It copies `lumerad` into `/usr/local/bin`, installs `libwasmvm.x86_64.so` into `/usr/lib`, and refreshes the linker cache.
+
+```bash
+tar -xzf "$ASSET"
+sudo ./install.sh
+```
+
+Confirm the binary runs. The version must match what the chain reports above.
+
+```bash
+lumerad version
+# 1.20.1
+```
+
+## Step 4. Initialize the node
+
+Pick a moniker. This is the public name for your validator. Replace `my-validator` with your own name, then initialize.
+
+```bash
+MONIKER="my-validator"
+lumerad init "$MONIKER" --chain-id lumera-testnet-2
+```
+
+This creates `~/.lumera` with a `config/` directory. It generates your node key and consensus key, and writes default `config.toml`, `app.toml`, and `client.toml`.
+
+Back up your keys right away.
+
+```bash
+mkdir -p ~/lumera-key-backup
+chmod 700 ~/lumera-key-backup
+cp ~/.lumera/config/priv_validator_key.json ~/lumera-key-backup/
+cp ~/.lumera/config/node_key.json ~/lumera-key-backup/
+chmod 600 ~/lumera-key-backup/*.json
+chmod 600 ~/.lumera/config/priv_validator_key.json ~/.lumera/config/node_key.json
+```
+
+<Warning>
+`priv_validator_key.json` is your validator identity. Anyone who holds it can double-sign on your behalf. That is punished by permanent tombstoning and a slash of your stake. Copy these files off the server to encrypted offline storage now. Verify you can restore them. Never run two nodes with the same key.
+</Warning>
+
+## Step 5. Download and verify genesis
+
+Download the testnet genesis file and check its hash.
+
+```bash
+GENESIS_URL="https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/testnet-2/genesis.json"
+GENESIS_SHA256="8d30d41d2711b43d1f27f49816c68c6bafb799f0f08fb7e4a6676c4158150031"
+
+curl -fsSL -o ~/.lumera/config/genesis.json "$GENESIS_URL"
+echo "$GENESIS_SHA256  $HOME/.lumera/config/genesis.json" | sha256sum -c -
+# Expected: ...genesis.json: OK
+```
+
+Confirm the chain ID inside the file.
+
+```bash
+jq -r .chain_id ~/.lumera/config/genesis.json
+# Expected: lumera-testnet-2
+```
+
+## Step 6. Configure the node
+
+Set the [seed node](https://github.com/cosmos/chain-registry/blob/master/testnets/lumeratestnet/chain.json) and the minimum gas price.
+
+```bash
+SEEDS="faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"
+
+sed -i "s|^seeds *=.*|seeds = \"$SEEDS\"|" "$HOME/.lumera/config/config.toml"
+sed -i "s|^minimum-gas-prices *=.*|minimum-gas-prices = \"0.025ulume\"|" "$HOME/.lumera/config/app.toml"
+```
+
+Load a maintained [address book](https://www.polkachu.com/testnets/lumera/addrbooks) so a new node has peers to dial if the seed is unreachable.
+
+```bash
+curl -fsSL -o "$HOME/.lumera/config/addrbook.json" \
+  https://snapshots.polkachu.com/testnet-addrbook/lumera/addrbook.json
+```
+
+Enable pruning so disk usage stays under control. Skip this only if you specifically need an archive node.
+
+```bash
+sed -i \
+  -e 's|^pruning *=.*|pruning = "custom"|' \
+  -e 's|^pruning-keep-recent *=.*|pruning-keep-recent = "100"|' \
+  -e 's|^pruning-interval *=.*|pruning-interval = "10"|' \
+  "$HOME/.lumera/config/app.toml"
+
+sed -i 's|^indexer *=.*|indexer = "null"|' "$HOME/.lumera/config/config.toml"
+```
+
+| Strategy | Keeps | Disk usage |
+|----------|-------|-----------|
+| `default` | Last 362,880 states | Medium |
+| `nothing` | Everything (full archive) | Very high |
+| `everything` | Last 2 states only | Lowest |
+| `custom` | Whatever you set above | Configurable |
+
+<Note>
+`indexer = "null"` turns off the transaction indexer and saves disk. Leave it as `"kv"` if you need to query historical transactions by hash from this node.
+</Note>
+
+Turn on Prometheus metrics.
+
+```bash
+sed -i 's|^prometheus *= *false|prometheus = true|' "$HOME/.lumera/config/config.toml"
+```
+
+Bind the RPC to localhost. A validator only needs the P2P port reachable.
+
+```bash
+sed -i "/^\[rpc\]/,/^\[/{ s|^laddr *=.*|laddr = \"tcp://127.0.0.1:26657\"| }" "$HOME/.lumera/config/config.toml"
+
+# [rpc] should be 127.0.0.1:26657, [p2p] still 0.0.0.0:26656
+grep -n "^laddr" "$HOME/.lumera/config/config.toml"
+```
+
+`lumerad` can listen on the ports below. Everything except 26656 should be firewalled or bound to `127.0.0.1`.
+
+| Port | Service | Config key |
+|------|---------|-----------|
+| 26656 | P2P (must be reachable) | `config.toml` `[p2p].laddr` |
+| 26657 | CometBFT RPC | `config.toml` `[rpc].laddr` |
+| 1317 | REST API (LCD) | `app.toml` `[api].address` |
+| 9090 | gRPC | `app.toml` `[grpc].address` |
+| 8545 | EVM JSON-RPC (HTTP) | `app.toml` `[json-rpc].address` |
+| 8546 | EVM JSON-RPC (WebSocket) | `app.toml` `[json-rpc].ws-address` |
+
+## Step 7. Harden the server
+
+### Firewall
+
+Allow SSH and the P2P port. Deny everything else inbound.
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow 26656/tcp comment "Lumera P2P"
+sudo ufw --force enable
+sudo ufw status
+```
+
+### Dedicated user
+
+Run the node as its own user rather than `root`.
+
+```bash
+sudo useradd -m -s /bin/bash validator
+sudo usermod -aG sudo validator
+sudo passwd validator
+
+# Give it your SSH key
+sudo rsync --archive --chown=validator:validator ~/.ssh /home/validator/
+```
+
+<Warning>
+Confirm `ssh validator@YOUR_SERVER_IP` and `sudo -v` both work from a second terminal now. The next section disables root SSH, so if this account is not reachable you lose access to the server.
+</Warning>
+
+Move the node directory from Step 4 across, so `~/.lumera` resolves to the same data before and after the switch.
+
+```bash
+sudo rsync -a ~/.lumera ~/lumera-key-backup /home/validator/
+sudo chown -R validator:validator /home/validator/.lumera /home/validator/lumera-key-backup
+
+# Drop the originals only once the consensus key is confirmed identical
+sudo diff ~/.lumera/config/priv_validator_key.json \
+          /home/validator/.lumera/config/priv_validator_key.json \
+  && sudo rm -rf ~/.lumera ~/lumera-key-backup
+```
+
+Switch users. Steps 8 to 10 and the whole of [create validator](/validators-testnet/create-validator) run as `validator`, and `$HOME` must already be `/home/validator` when you write the systemd unit in Step 9.
+
+```bash
+su - validator
+```
+
+<Warning>
+Do the move before Step 8. Migrating afterwards means shifting the whole synced database instead of a few config files.
+</Warning>
+
+### SSH
+
+Harden SSH on a machine that holds a consensus key. Disable password logins and root SSH. This locks `root` out of SSH, so do not run it until the user above exists and you have logged in as it.
+
+Drop-ins in `/etc/ssh/sshd_config.d/` override the main file. Check for conflicting values first.
+
+```bash
+grep -rn -iE "permitrootlogin|passwordauthentication" /etc/ssh/sshd_config.d/ 2>/dev/null
+```
+
+```bash
+sudo sed -i \
+  -e 's|^#\?PermitRootLogin.*|PermitRootLogin no|' \
+  -e 's|^#\?PasswordAuthentication.*|PasswordAuthentication no|' \
+  -e 's|^#\?MaxAuthTries.*|MaxAuthTries 3|' \
+  /etc/ssh/sshd_config
+
+# Ubuntu 24.04+ activates SSH through a socket unit. Restart whichever one is in use.
+if systemctl is-active --quiet ssh.socket; then
+  sudo systemctl restart ssh.socket
+else
+  sudo systemctl restart ssh
+fi
+```
+
+Verify the settings actually took effect.
+
+```bash
+sudo sshd -T | grep -iE "^permitrootlogin|^passwordauthentication|^maxauthtries"
+# Expected: permitrootlogin no / passwordauthentication no / maxauthtries 3
+```
+
+<Warning>
+Keep your current session open and confirm you can log in from a second terminal before closing it. The new config applies to the next connection. Locking yourself out of a validator means downtime and eventual jailing. Also keep RPC, LCD, gRPC, and the EVM JSON-RPC ports closed on a validator. Exposing RPC publicly is a common cause of DDoS-induced downtime and jailing.
+</Warning>
+
+## Step 8. Sync the chain
+
+Pick one of the two options below. The snapshot is fastest and is the recommended path.
+
+### Option A. Snapshot (recommended)
+
+Copy the current URL from [Polkachu's Lumera testnet snapshots](https://www.polkachu.com/testnets/lumera/snapshots), currently about 55 GB.
+
+```bash
+# example, the height changes daily
+SNAP_URL="https://snapshots.polkachu.com/testnet-snapshots/lumera/lumera_5875101.tar.lz4"
+```
+
+Reset local state, then stream the snapshot straight into the data directory.
+
+```bash
+lumerad comet unsafe-reset-all --home "$HOME/.lumera" --keep-addr-book
+curl -o - -L "$SNAP_URL" | lz4 -c -d - | tar -x -C "$HOME/.lumera"
+```
+
+### Option B. State sync
+
+State sync fetches a verified state snapshot over the P2P layer instead of downloading a database. It uses no third-party storage. It depends on the RPC provider having snapshots enabled.
+
+```bash
+SNAP_RPC="https://lumera-testnet-rpc.polkachu.com:443"
+
+LATEST_HEIGHT=$(curl -fsSL "$SNAP_RPC/block" | jq -r .result.block.header.height)
+TRUST_HEIGHT=$((LATEST_HEIGHT - 2000))
+TRUST_HASH=$(curl -fsSL "$SNAP_RPC/block?height=$TRUST_HEIGHT" | jq -r .result.block_id.hash)
+echo "trust_height=$TRUST_HEIGHT trust_hash=$TRUST_HASH"
+
+sed -i "/^\[statesync\]/,/^\[/{
+  s|^enable *=.*|enable = true|
+  s|^rpc_servers *=.*|rpc_servers = \"$SNAP_RPC,$SNAP_RPC\"|
+  s|^trust_height *=.*|trust_height = $TRUST_HEIGHT|
+  s|^trust_hash *=.*|trust_hash = \"$TRUST_HASH\"|
+  s|^trust_period *=.*|trust_period = \"168h0m0s\"|
+}" "$HOME/.lumera/config/config.toml"
+
+lumerad comet unsafe-reset-all --home "$HOME/.lumera" --keep-addr-book
+```
+
+The edit is scoped to the `[statesync]` section. Confirm the result before you start.
+
+```bash
+sed -n '/\[statesync\]/,/^\[/p' "$HOME/.lumera/config/config.toml" | head -20
+```
+
+If state sync stalls at "discovering snapshots" for more than a few minutes, no peer is serving snapshots. Fall back to Option A.
+
+<Warning>
+Do not try to replay the chain from block 1 with a single current binary. The chain has passed through many governance upgrades. Replaying historical blocks needs the binary that was live at each height. Use a snapshot or state sync.
+</Warning>
+
+## Step 9. Create the systemd service
+
+Create the service unit. `$USER` and `which lumerad` resolve on their own, so you can paste this as is.
+
+```bash
+sudo tee /etc/systemd/system/lumera.service > /dev/null <<EOF
+[Unit]
+Description=Lumera Testnet Validator Node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$USER
+ExecStart=$(which lumerad) start --home $HOME/.lumera
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable lumera
+```
+
+<Note>
+Before your first upgrade, switch this unit to run under Cosmovisor so binary swaps happen automatically at the upgrade height. See the chain upgrades section of [operations](/validators-testnet/operations).
+</Note>
+
+## Step 10. Start and verify
+
+Start the node and watch the logs.
+
+```bash
+sudo systemctl start lumera
+sudo journalctl -fu lumera
+```
+
+You should see blocks being committed.
+
+```
+INF committed state height=5830900 module=state
+```
+
+Press `Ctrl+C` to stop tailing. This does not stop the node.
+
+Wait a minute or two, then check the sync status.
+
+```bash
+lumerad status 2>&1 | jq '.sync_info | {latest_block_height, catching_up}'
+```
+
+Wait until `catching_up` is `false`. Compare your height against the live chain.
+
+```bash
+echo "local : $(lumerad status 2>&1 | jq -r .sync_info.latest_block_height)"
+echo "chain : $(curl -fsSL https://lumera-testnet-rpc.polkachu.com/status | jq -r .result.sync_info.latest_block_height)"
+```
+
+Confirm you have peers.
+
+```bash
+lumerad status 2>&1 | jq '.node_info.id'
+curl -fsSL localhost:26657/net_info | jq -r '.result.n_peers'
+```
+
+<Note>
+If zero peers persists, check the logs. `Couldn't connect to any seeds` with `connection refused` means the seed is down. In that case, stop the node, refresh `seeds` from the [chain-registry](https://github.com/cosmos/chain-registry/blob/master/testnets/lumeratestnet/chain.json), install a current addrbook, then start it again. `config.toml` is only read at startup, so edits do nothing until you restart.
+</Note>
+
+## Verification checklist
+
+Everything below should pass before you create your validator.
+
+```bash
+lumerad version                                                  # prints a version
+systemctl is-active lumera                                       # active
+lumerad status 2>&1 | jq -r .sync_info.catching_up               # false
+lumerad status 2>&1 | jq -r .node_info.network                   # lumera-testnet-2
+curl -fsSL localhost:26657/net_info | jq -r .result.n_peers      # 1 or more
+sudo ufw status | grep 26656                                     # ALLOW
+```
+
+## Next steps
+
+Once `catching_up` is `false`, register your validator.
+
+<CardGroup cols={2}>
+  <Card title="Create validator" icon="key" href="/validators-testnet/create-validator">
+    Create a wallet, fund it from the faucet, and register.
+  </Card>
+  <Card title="Operations" icon="wrench" href="/validators-testnet/operations">
+    Day-to-day commands, upgrades, monitoring, and troubleshooting.
+  </Card>
+</CardGroup>

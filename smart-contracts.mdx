@@ -4,15 +4,17 @@ sidebarTitle: "Smart contracts"
 description: "Deploy Solidity contracts on Lumera with standard Ethereum tooling and reach native modules through precompiles."
 ---
 
-Lumera Protocol runs three execution environments side by side. Native Cosmos SDK modules power Cascade and staking. CosmWasm runs Rust smart contracts. Since the v1.20.0 Aurora Convergence upgrade, a full EVM runs Solidity and Vyper contracts as well.
+Lumera Protocol runs three execution environments side by side. Native Cosmos SDK modules power Cascade and staking. CosmWasm runs Rust smart contracts. The v1.20.0 Aurora Convergence upgrade added a full EVM that runs Solidity and Vyper contracts.
+
+The EVM is live on testnet (`lumera-testnet-2`). Mainnet still runs `v1.12.0` and gains EVM support with its upgrade, so build and test against testnet for now.
 
 This page gives you the complete picture of the EVM support. Deep guides live in the [lumera repo on GitHub](https://github.com/LumeraProtocol/lumera/tree/master/docs/evm-integration) and are linked below.
 
 ## What the EVM support includes
 
-Lumera integrates Cosmos EVM v0.6.0 directly into the chain. It is not a sidechain or a bridge.
+Lumera integrates Cosmos EVM v0.6.0 directly into the chain. It is not a sidechain or a bridge. On EVM enabled networks it includes the following.
 
-- Ethereum JSON-RPC and WebSocket endpoints, enabled by default on every node
+- Ethereum JSON-RPC and WebSocket endpoints, enabled by default on every upgraded node
 - An EVM indexer and transaction tracing
 - OpenRPC discovery through `rpc_discover` or the `/openrpc.json` path on the API server
 - An EIP-1559 fee market with dynamic base fees
@@ -29,7 +31,7 @@ Lumera uses Ethereum style key derivation (`eth_secp256k1`, BIP44 coin type 60).
 | Cosmos address | `lumera1...` | Keplr, Leap, `lumerad`, Cosmos endpoints |
 | Ethereum address | `0x...` | MetaMask, EVM tooling, JSON-RPC |
 
-Both point to the same funds and the same state. Accounts created before the v1.20.0 upgrade need a one time migration. See the [EVM upgrade page](/upgrades/evm-upgrade).
+Both point to the same funds and the same state. Accounts created before a network's v1.20.0 upgrade need a one time migration. See the [EVM upgrade page](/upgrades/evm-upgrade).
 
 ## Token precision
 
