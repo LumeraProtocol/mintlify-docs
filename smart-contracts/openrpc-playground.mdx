@@ -1,0 +1,149 @@
+---
+title: "Explore the JSON-RPC catalog"
+sidebarTitle: "OpenRPC playground"
+description: "Discover every JSON-RPC method a Lumera node supports through the OpenRPC spec."
+---
+
+Lumera publishes a machine readable API catalog in the [OpenRPC](https://open-rpc.org/) format. Wallets, developer tools, and code generators can discover every JSON-RPC method the node supports, including parameters, return types, and usage examples. This page shows how to fetch the spec and browse it interactively.
+
+The EVM and its JSON-RPC surface are live on testnet (`lumera-testnet-2`) only. Mainnet gains them with its [EVM upgrade](/upgrades/evm-upgrade).
+
+## Two ways to fetch the spec
+
+| Method | Endpoint | Default port | Protocol | Use case |
+|---|---|---|---|---|
+| JSON-RPC | `rpc_discover` or `rpc.discover` | 8545 (EVM JSON-RPC) | POST | Programmatic discovery from apps, scripts, or the playground |
+| HTTP | `/openrpc.json` | 1317 (Cosmos REST) | GET or POST | Browser access, curl, CI pipelines, static documentation |
+
+Both return the same embedded spec of about 743 methods. The spec is regenerated on every build from the actual Go RPC implementation, so it never drifts from the running code.
+
+## Quick start
+
+Query the public testnet endpoint with `rpc_discover`.
+
+```bash
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}' | jq '.result.info'
+```
+
+Expected output.
+
+```json
+{
+  "title": "Lumera Cosmos EVM JSON-RPC API",
+  "version": "cosmos/evm v0.6.0",
+  "description": "Auto-generated method catalog from Cosmos EVM JSON-RPC namespace implementations."
+}
+```
+
+On your own node, the Cosmos REST server also serves the spec over plain HTTP.
+
+```bash
+curl -s http://localhost:1317/openrpc.json | jq '.info'
+```
+
+<Note>
+The HTTP endpoint is served by the Cosmos REST API server on port 1317, not the EVM JSON-RPC server on port 8545. The REST server needs `api.enable = true` and the JSON-RPC server needs `json-rpc.enable = true` in `app.toml`.
+</Note>
+
+## Use the OpenRPC playground
+
+The [OpenRPC Playground](https://playground.open-rpc.org) is a browser based explorer that renders the spec as a searchable method list with live request execution. Pass the spec location in the `url` query parameter.
+
+Point it at a node's REST port, which serves `/openrpc.json`.
+
+```text
+https://playground.open-rpc.org/?url=http://localhost:1317/openrpc.json
+```
+
+Or point it directly at the JSON-RPC port, which answers both discovery names.
+
+```text
+https://playground.open-rpc.org/?url=http://localhost:8545
+```
+
+Inside the playground you can do the following.
+
+- Browse the left panel, which groups methods by namespace (`eth`, `net`, `web3`, `debug`, `txpool`, `rpc`)
+- Click a method to see its parameters, return type, and examples
+- Click "Try It" to execute the method against the connected node
+- Read results inline with syntax highlighting
+
+The playground loads the spec with a GET to `/openrpc.json`, then sends "Try It" requests as POSTs back to the same URL. Lumera proxies `POST /openrpc.json` to the internal JSON-RPC server and rewrites the OpenRPC style `rpc.discover` name to the native `rpc_discover` for compatibility. Direct requests to the JSON-RPC port accept both names.
+
+<Note>
+Mainnet builds refuse to start with the `debug`, `personal`, or `admin` namespaces enabled. Testnet allows them, so plan tracing dependent workflows accordingly.
+</Note>
+
+## CORS for browser access
+
+The `/openrpc.json` endpoint and the WebSocket server share one CORS origin list, configured in `app.toml`.
+
+```toml
+[json-rpc]
+ws-origins = ["127.0.0.1", "localhost"]
+```
+
+| Setting | Effect |
+|---|---|
+| `["127.0.0.1", "localhost"]` (default) | Works from a local browser only |
+| `["*"]` | Allows any origin, acceptable for local development or testnet |
+| `["https://playground.open-rpc.org"]` | Allows the hosted playground specifically |
+
+Restrict origins to specific domains on production endpoints.
+
+## Configuration requirements
+
+For discovery to work on your own node, `app.toml` needs the JSON-RPC server enabled with the `rpc` namespace in the API list.
+
+```toml
+[json-rpc]
+enable = true
+# The "rpc" namespace must be in the API list.
+api = "eth,net,web3,rpc"
+```
+
+The `rpc` namespace is included by default and re-added during config migration. If you customized the `api` list, make sure `rpc` is still present. The HTTP endpoint additionally requires the REST server.
+
+```toml
+[api]
+enable = true
+```
+
+## Useful queries
+
+```bash
+# List all available methods
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}' \
+  | jq '[.result.methods[].name] | sort'
+
+# Count methods by namespace
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}' \
+  | jq '[.result.methods[].name] | group_by(split("_")[0]) | map({namespace: .[0] | split("_")[0], count: length})'
+
+# Get details for a specific method
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}' \
+  | jq '.result.methods[] | select(.name == "eth_sendRawTransaction")'
+```
+
+## Regenerating the spec
+
+This part only matters if you work on the `lumerad` codebase itself. The spec is embedded in the binary at build time. After adding or changing JSON-RPC methods, regenerate it with `make openrpc`. The spec also regenerates automatically as a dependency of `make build`, so a fresh build always serves a catalog that matches its compiled RPC surface.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy with Remix" icon="rocket" href="/smart-contracts/deploy-with-remix">
+    Use the RPC surface interactively by deploying a Solidity contract.
+  </Card>
+  <Card title="EVM JSON-RPC reference" icon="code" href="/api/evm-jsonrpc">
+    Endpoints and methods for scripting against the EVM.
+  </Card>
+</CardGroup>

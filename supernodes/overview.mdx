@@ -1,68 +1,162 @@
 ---
 title: "Run a SuperNode on Lumera"
 sidebarTitle: "Overview"
-description: "SuperNodes provide Cascade storage and Sense detection services alongside a validator and earn LUME rewards."
+description: "Pair a dedicated SuperNode server with your validator to serve Cascade, Sense, and AI workloads for extra rewards."
 ---
 
-A SuperNode is a companion application that runs alongside your Lumera Protocol validator. It extends your role beyond block production. Your SuperNode stores files for Cascade, evaluates content for Sense, and earns LUME rewards for the work. Every SuperNode is tied to a registered validator identity, so you need an active validator first.
+A SuperNode is a compute-intensive node that extends a Lumera Protocol validator with specialized services. Validators handle consensus and block production. SuperNodes handle the heavy lifting of Cascade storage, Sense verification, and AI inference.
+
+Every SuperNode is paired with a validator but must run on a separate server. The SuperNode keeps its own account, keys, and stake delegation, and talks to the Lumera chain over gRPC. A full [video walkthrough of the setup](https://www.youtube.com/watch?v=5BW3NH0qXbU) is available on YouTube.
 
 <Note>
 Existing operators. The `v1.20.0` EVM upgrade changes account key derivation. On networks that have upgraded (testnet today), the daemon can migrate your account once `evm_key_name` is set in `config.yml`, or you can migrate first yourself. See the [EVM upgrade page](/upgrades/evm-upgrade).
 </Note>
 
-## Services you provide
+## Services and rewards
 
-SuperNodes run two complementary services.
+**Cascade** is permanent, redundant file storage. Your SuperNode encodes files with RaptorQ erasure coding, splits them into redundant symbols, and distributes the symbols across the P2P network. The original file can be rebuilt even when a subset of symbols is lost.
 
-**Cascade** is permanent, redundant file storage. When a user submits a Cascade action, your SuperNode encodes the file with RaptorQ erasure coding, splits it into redundant symbols, and distributes them across the P2P network. The original file can be rebuilt even when a subset of symbols is lost. No node needs to hold a full copy.
-
-**Sense** protects content integrity. Participating SuperNodes independently evaluate submitted media for near duplicates and reach a consensus backed verdict. This stops the same content from being registered repeatedly under different identities.
-
-## How rewards work
+**Sense** protects content integrity. Participating SuperNodes independently evaluate submitted media for near duplicates and reach a consensus backed verdict.
 
 The protocol selects a set of top ranked SuperNodes for each action, based on stake and performance. If your SuperNode is selected and fulfills the action correctly, you receive a share of the action fee. This is proof of service income, separate from validator staking rewards. Higher stake and reliable uptime improve your rank and your earning opportunities.
 
-## Roles
-
-| Role | Description |
-|------|-------------|
-| SuperNode operator | A registered validator who runs the `supernode` binary, serves Cascade and Sense actions, and earns rewards |
-| User | Any account that submits a Cascade or Sense action and pays the action fee |
-
-## Requirements
-
-- An active Lumera validator in the bonded set. The SuperNode signs with an account tied to your validator identity.
-- Combined stake that meets the on-chain minimum. Registration uses a dual source model that adds your validator self delegation and the SuperNode account delegation. Check the current minimum with `lumerad query supernode params`.
-- Recommended hardware of 8 or more CPU cores, 64 GB RAM, 2 TB or more SSD storage, and a high bandwidth connection.
-- Open ports `4444` (gRPC service) and `4445` (P2P).
-- A reachable Lumera gRPC endpoint, `localhost:9090` when the validator runs on the same machine.
-
 ## Architecture
 
-The SuperNode reads action requests and submits transactions through your node's gRPC endpoint. It exchanges RaptorQ symbols with other SuperNodes over a distributed hash table on port `4445`. Clients reach its own gRPC API on port `4444`.
+The SuperNode and its validator are two independent hosts that meet on chain. The validator produces blocks through its normal consensus P2P on port 26656. The SuperNode separately talks to the Lumera chain over gRPC to read state and broadcast its own messages.
 
 ```
- Client application
-        │
-        │ gRPC (port 4444)
-        ▼
- ┌─────────────┐        gRPC (port 9090)      ┌──────────────────┐
- │  SuperNode  │ ◄──────────────────────────► │ Lumera full node │
- │             │                              │ (your validator) │
- └──────┬──────┘                              └──────────────────┘
-        │
-        │ P2P DHT (port 4445)
-        ▼
- Other SuperNodes
+ Validator host                          SuperNode host
+ ┌────────────────────┐                  ┌────────────────────┐
+ │ lumerad            │                  │ supernode          │
+ │ consensus P2P      │                  │ managed by         │
+ │ port 26656         │                  │ sn-manager         │
+ └─────────┬──────────┘                  └─────────┬──────────┘
+           │ produces blocks                       │ gRPC, reads state and
+           │                                       │ broadcasts messages
+           ▼                                       ▼
+ ┌──────────────────────────────────────────────────────────────┐
+ │                        Lumera chain                          │
+ │  register-supernode binds VALOPER + SN_ENDPOINT + SN_ACCOUNT │
+ │  SN_ACCOUNT delegates stake to VALOPER (LEP-3)               │
+ └──────────────────────────────────────────────────────────────┘
+
+ SuperNode ◄── Kademlia DHT, port 4445 ──► other SuperNodes
 ```
+
+What ties the two hosts together is a pair of on-chain records.
+
+- **`register-supernode(VALOPER, SN_ENDPOINT, SN_ACCOUNT)`**. Signed by the validator operator key, this message binds a specific SuperNode endpoint and account to a specific validator. Only that validator's operator can register, update, or retire the SuperNode.
+- **Stake delegation from `SN_ACCOUNT` to `VALOPER`**. Under LEP-3, the combined total of validator self-delegation and this SN account delegation must meet the network's minimum stake.
+
+Together those two records form the entire SuperNode and validator relationship. SuperNodes also form a peer-to-peer mesh with other SuperNodes over a Kademlia DHT on port 4445, used for data replication and storage challenge proofs across the network.
+
+## Key information
+
+| Item | Testnet | Mainnet |
+|------|---------|---------|
+| Chain ID | `lumera-testnet-2` | `lumera-mainnet-1` |
+| Binary | `sn-manager` ([releases](https://github.com/LumeraProtocol/supernode/releases)) | `sn-manager` ([releases](https://github.com/LumeraProtocol/supernode/releases)) |
+| Config directory | `~/.supernode` | `~/.supernode` |
+| Min combined stake | 10,000 LUME (self-delegation + SN account) | 25,000 LUME (self-delegation + SN account) |
+| SuperNode explorer | [portal.testnet.lumera.io/supernodes](https://portal.testnet.lumera.io/lumera-testnet-2/supernodes) | Not available yet |
+| SuperNode API | [list_super_nodes](https://lumera-testnet-api.bonynode.online/LumeraProtocol/lumera/supernode/v1/list_super_nodes) | Not available yet |
+| Explorer | [portal.testnet.lumera.io](https://portal.testnet.lumera.io/lumera-testnet-2) | [portal.lumera.io](https://portal.lumera.io) |
+
+## Staking requirements (LEP-3)
+
+SuperNode registration requires a minimum combined stake from two sources, enforced on chain through the `minimum_stake_for_sn` parameter.
+
+| Network | Minimum stake |
+|---------|--------------|
+| Testnet-2 | 10,000 LUME (10,000,000,000 ulume) |
+
+The stake can come from two sources combined. Both count toward the minimum.
+
+1. **Validator self-delegation**, which must be non-zero.
+2. **Delegation from the SuperNode account (`SN_ACCOUNT`)** to your validator.
+
+For example, 8,000 LUME self-delegated plus 2,000 LUME from `SN_ACCOUNT` gives 10,000 LUME total, which meets the requirement.
+
+You can verify the current on-chain requirement at any time.
+
+```bash
+# Via CLI
+lumerad query supernode params
+
+# Via REST API
+curl -s https://lumera-testnet-api.bonynode.online/LumeraProtocol/lumera/supernode/v1/params | jq '.params.minimum_stake_for_sn'
+```
+
+<Note>
+This parameter is governable and can change through a governance proposal. Always check the current value before registering.
+</Note>
+
+## Hardware requirements
+
+SuperNodes are more resource-intensive than validators because of the compute workloads they handle.
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 8 cores (x86_64) | 16+ cores |
+| RAM | 16 GB | 64 GB |
+| Storage | 1 TB NVMe SSD | 4 TB NVMe SSD |
+| Network | 1 Gbps | 5 Gbps |
+| OS | Ubuntu 22.04+ | Ubuntu 22.04+ |
+
+<Warning>
+ARM processors are not supported. HDDs are not suitable. NVMe SSDs are required for the I/O demands of storage and compute tasks.
+</Warning>
+
+## Required ports
+
+### SuperNode host
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 4444 | TCP | SuperNode gRPC API |
+| 4445 | TCP | P2P communication |
+| 8002 | TCP | REST gateway |
+
+### Validator host
+
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 26656 | TCP | CometBFT P2P (public, standard validator requirement) |
+| 9090 | TCP | gRPC, only needed for the self-hosted endpoint option |
+
+## Prerequisites
+
+Before setting up a SuperNode, you need the following.
+
+- A running Lumera validator in a bonded state. See the [testnet](/validators-testnet/overview) or [mainnet](/validators-mainnet/overview) validator guide.
+- A **separate** server meeting the hardware requirements above.
+- Access to the validator operator key for registration transactions.
+- Testnet LUME tokens from the [testnet faucet](/faucet), the [AstroStake faucet](https://faucet.astrostake.xyz/lumera), or [Discord](https://discord.com/invite/lumeraprotocol).
+
+## Automated setup
+
+If you prefer a one-command setup, use the tested setup script that handles all steps automatically.
+
+```bash
+wget -O setup-supernode.sh https://raw.githubusercontent.com/kaleababayneh/lumera-validator/main/setup-supernode.sh
+chmod +x setup-supernode.sh
+./setup-supernode.sh
+```
+
+The script is interactive. It pauses for key creation and gRPC configuration, then prints the registration command to run on your validator host. See the [source and full guide](https://github.com/kaleababayneh/lumera-validator) for details.
+
+For a manual step-by-step walkthrough, continue with the pages below.
 
 ## Next steps
 
-<CardGroup cols={2}>
-  <Card title="Setup and registration" icon="server" href="/supernodes/setup">
-    Install the binary, initialize your identity, and register on chain.
+<CardGroup cols={3}>
+  <Card title="Node setup" icon="server" href="/supernodes/node-setup">
+    Install sn-manager and initialize the SuperNode.
+  </Card>
+  <Card title="Register" icon="signature" href="/supernodes/register">
+    Fund, delegate, and register on chain.
   </Card>
   <Card title="Operations" icon="wrench" href="/supernodes/operations">
-    CLI commands, configuration reference, and monitoring.
+    Monitor, upgrade, and troubleshoot your node.
   </Card>
 </CardGroup>

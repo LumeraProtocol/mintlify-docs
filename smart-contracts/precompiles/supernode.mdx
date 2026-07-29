@@ -1,0 +1,215 @@
+---
+title: "The SuperNode precompile"
+sidebarTitle: "SuperNode"
+description: "Read SuperNode registration state and metrics from Solidity contracts."
+---
+
+The SuperNode precompile exposes the `x/supernode` module to the EVM at a single fixed address. Contracts can look up registered SuperNodes, list them with pagination, rank them for a block, and read their reported hardware metrics and module parameters.
+
+The EVM is live on testnet (`lumera-testnet-2`) only. Mainnet runs `v1.12.0` and gains the EVM with its upgrade.
+
+## Address
+
+```text
+0x0000000000000000000000000000000000000902
+```
+
+Lumera custom precompiles start at `0x0900`. See the [precompiles overview](/smart-contracts/precompiles/overview) for the full address map.
+
+## SuperNode states
+
+The `currentState` field in query results uses these values.
+
+| State | Value | Description |
+|---|---|---|
+| Active | 1 | Operational and processing actions |
+| Disabled | 2 | Deregistered by the owner |
+| Stopped | 3 | Temporarily stopped by the owner, can restart |
+| Penalized | 4 | Slashed due to misbehavior evidence |
+| Postponed | 5 | Suspended due to metrics non-compliance |
+
+## Design notes
+
+- **Validator addresses stay strings.** A `lumeravaloper...` address has no meaningful 20-byte EVM representation, so the ABI uses `string` for validator and account addresses instead of a lossy `address` mapping.
+- **Metrics are integers.** The module stores hardware metrics as floats. Solidity has no floating-point type, so the precompile rounds them to `uint32` and `uint64` values. Percentages are whole numbers, so 45 means 45 percent.
+- **Latest state wins.** The module stores state history. Queries return the latest state entry and the block height where it changed.
+
+## Solidity interface
+
+The interface below comes from [`ISupernode.sol`](https://github.com/LumeraProtocol/lumera/blob/master/precompiles/solidity/contracts/interfaces/ISupernode.sol) in the lumera repo.
+
+```solidity ISupernode.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/// @notice Precompile at 0x0000000000000000000000000000000000000902
+interface ISupernode {
+    /// @notice On-chain information about a registered SuperNode.
+    struct SuperNodeInfo {
+        string validatorAddress;   // Bech32 lumeravaloper... address
+        string supernodeAccount;   // Bech32 lumera... account address
+        uint8 currentState;        // see the state table above
+        int64 stateHeight;         // block height of last state transition
+        string ipAddress;          // current IP address
+        string p2pPort;            // P2P listening port
+        string note;               // operator-set note
+        uint64 evidenceCount;      // number of misbehavior evidence records
+    }
+
+    /// @notice Hardware metrics reported by a SuperNode.
+    struct MetricsReport {
+        uint32 versionMajor;
+        uint32 versionMinor;
+        uint32 versionPatch;
+        uint32 cpuCoresTotal;
+        uint64 cpuUsagePercent;
+        uint64 memTotalGb;
+        uint64 memUsagePercent;
+        uint64 memFreeGb;
+        uint64 diskTotalGb;
+        uint64 diskUsagePercent;
+        uint64 diskFreeGb;
+        uint64 uptimeSeconds;
+        uint32 peersCount;
+    }
+
+    /// @notice Get SuperNode info by validator address.
+    function getSuperNode(
+        string calldata validatorAddress
+    ) external view returns (SuperNodeInfo memory info);
+
+    /// @notice Get SuperNode info by its operator account address.
+    function getSuperNodeByAccount(
+        string calldata supernodeAddress
+    ) external view returns (SuperNodeInfo memory info);
+
+    /// @notice List all registered SuperNodes with pagination.
+    /// @param limit Max results to return (capped at 100)
+    function listSuperNodes(
+        uint64 offset,
+        uint64 limit
+    ) external view returns (SuperNodeInfo[] memory nodes, uint64 total);
+
+    /// @notice Get top SuperNodes for a block by XOR-distance ranking.
+    /// @param state Filter by state (0 = all states)
+    function getTopSuperNodesForBlock(
+        int32 blockHeight,
+        int32 limit,
+        uint8 state
+    ) external view returns (SuperNodeInfo[] memory nodes);
+
+    /// @notice Get the latest metrics for a SuperNode.
+    function getMetrics(
+        string calldata validatorAddress
+    ) external view returns (
+        MetricsReport memory metrics,
+        uint64 reportCount,
+        int64 lastReportHeight
+    );
+
+    /// @notice Get the SuperNode module parameters.
+    function getParams() external view returns (
+        uint256 minimumStake,
+        uint64 reportingThreshold,
+        uint64 slashingThreshold,
+        string memory minSupernodeVersion,
+        uint64 minCpuCores,
+        uint64 minMemGb,
+        uint64 minStorageGb
+    );
+}
+```
+
+<Note>
+The precompile also implements six transaction handlers (`registerSupernode`, `deregisterSupernode`, `startSupernode`, `stopSupernode`, `updateSupernode`, `reportMetrics`) and emits `SupernodeRegistered`, `SupernodeDeregistered`, and `SupernodeStateChanged` events. The shipped interface exposes queries only, because operators manage SuperNodes with Cosmos SDK transactions through `lumerad` and `sn-manager`, not through the EVM. See the [registration guide](/supernodes/register).
+</Note>
+
+## Read SuperNode state from a contract
+
+```solidity SupernodeDashboard.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./ISupernode.sol";
+
+contract SupernodeDashboard {
+    ISupernode constant SN = ISupernode(0x0000000000000000000000000000000000000902);
+
+    /// @notice Total number of registered SuperNodes.
+    function totalSupernodes() external view returns (uint64) {
+        (, uint64 total) = SN.listSuperNodes(0, 1);
+        return total;
+    }
+
+    /// @notice Top N active SuperNodes for a given block.
+    function topForBlock(int32 blockHeight, int32 count)
+        external view returns (ISupernode.SuperNodeInfo[] memory)
+    {
+        return SN.getTopSuperNodesForBlock(blockHeight, count, 1); // 1 = Active
+    }
+
+    /// @notice Whether a SuperNode has ever reported metrics.
+    function isHealthy(string calldata validatorAddress)
+        external view returns (bool hasReported, uint64 reportCount)
+    {
+        (, reportCount, ) = SN.getMetrics(validatorAddress);
+        hasReported = reportCount > 0;
+    }
+
+    /// @notice Minimum stake required to register.
+    function minimumStake() external view returns (uint256) {
+        (uint256 stake, , , , , , ) = SN.getParams();
+        return stake;
+    }
+}
+```
+
+`getParams` returns the minimum stake, metric reporting thresholds, and minimum hardware requirements. Governance can change these parameters, so query them on chain instead of hardcoding values.
+
+## Call it from JavaScript
+
+```typescript query-supernodes.ts
+import { ethers } from "ethers";
+
+const SN_ADDRESS = "0x0000000000000000000000000000000000000902";
+
+const SN_ABI = [
+  "function getParams() view returns (uint256 minimumStake, uint64 reportingThreshold, uint64 slashingThreshold, string minSupernodeVersion, uint64 minCpuCores, uint64 minMemGb, uint64 minStorageGb)",
+  "function listSuperNodes(uint64 offset, uint64 limit) view returns (tuple(string validatorAddress, string supernodeAccount, uint8 currentState, int64 stateHeight, string ipAddress, string p2pPort, string note, uint64 evidenceCount)[], uint64 total)",
+];
+
+// Point at your node's EVM JSON-RPC endpoint (port 8545)
+const provider = new ethers.JsonRpcProvider("http://localhost:8545");
+const supernode = new ethers.Contract(SN_ADDRESS, SN_ABI, provider);
+
+const params = await supernode.getParams();
+console.log(`Min stake: ${params.minimumStake} ulume`);
+console.log(`Min version: ${params.minSupernodeVersion}`);
+
+const [nodes, total] = await supernode.listSuperNodes(0n, 10n);
+console.log(`Total SuperNodes: ${total}`);
+for (const node of nodes) {
+  console.log(`${node.validatorAddress} state=${node.currentState}`);
+}
+```
+
+## Behavior notes
+
+- **Pagination.** `listSuperNodes` caps at 100 results per call. A larger `limit` is silently capped, so page with `offset`.
+- **Gas.** Calls meter gas from the underlying Cosmos gas usage converted to EVM gas units. Reads through `eth_call` are free.
+
+The Go implementation lives in [precompiles/supernode](https://github.com/LumeraProtocol/lumera/tree/master/precompiles/supernode), with a full reference in the [supernode precompile doc](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/precompiles/supernode-precompile.md).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="SuperNodes overview" icon="server" href="/supernodes/overview">
+    What SuperNodes do and how they earn fees.
+  </Card>
+  <Card title="Action precompile" icon="bolt" href="/smart-contracts/precompiles/action">
+    Request the actions that SuperNodes process.
+  </Card>
+  <Card title="CosmWasm bridge" icon="bridge" href="/smart-contracts/precompiles/cosmwasm-bridge">
+    Call CosmWasm contracts from Solidity.
+  </Card>
+</CardGroup>

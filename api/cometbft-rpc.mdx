@@ -1,0 +1,101 @@
+---
+title: "CometBFT RPC reference"
+sidebarTitle: "CometBFT RPC"
+description: "Query blocks, transactions, and validator sets through the consensus RPC that every Lumera node serves on port 26657."
+---
+
+Every `lumerad` node serves the CometBFT RPC on port 26657. CometBFT is the consensus engine under Lumera Protocol, and this API exposes what it sees. Raw blocks, transactions, the validator set, peer connections, and node health. Cosmos wallets, client libraries, and the Lumera SDKs use it to broadcast transactions and follow chain state.
+
+This page covers the endpoints developers reach for most. The [official CometBFT RPC documentation](https://docs.cometbft.com/v0.38/rpc/) lists the full catalog. Lumera runs the v0.38 line.
+
+## Base URLs
+
+| Network | Endpoint |
+|---|---|
+| Mainnet (official) | `https://rpc.lumera.io` |
+| Mainnet (community) | `https://lumera-rpc.polkachu.com` |
+| Testnet (community) | `https://lumera-testnet-rpc.polkachu.com` |
+
+The official mainnet endpoint can be intermittent, so the examples below use the community endpoints.
+
+<Note>
+  Validators keep port 26657 closed to the public. Use the public endpoints above, or run your own full node when you need guaranteed access and no rate limits.
+</Note>
+
+## /status
+
+Node identity, sync state, and the latest block. Check `catching_up` to see whether a node is fully synced.
+
+```bash
+curl -fsSL https://lumera-rpc.polkachu.com/status | jq '.result.sync_info'
+```
+
+## /abci_info
+
+The application version the node runs. This is the same check the validator runbooks use to confirm the current network binary.
+
+```bash
+curl -fsSL https://lumera-rpc.polkachu.com/abci_info | jq -r .result.response.version
+```
+
+## /block
+
+The latest block, or a specific block when you pass `height`.
+
+```bash
+# Latest block header
+curl -fsSL https://lumera-rpc.polkachu.com/block | jq '.result.block.header'
+
+# A specific height
+curl -fsSL "https://lumera-rpc.polkachu.com/block?height=1000000" | jq '.result.block.header'
+```
+
+## /tx
+
+A transaction by hash. The hash must carry the `0x` prefix. A `code` of `0` in `tx_result` means the transaction succeeded.
+
+```bash
+curl -fsSL "https://lumera-rpc.polkachu.com/tx?hash=0xTX_HASH" | jq '.result.tx_result.code'
+```
+
+## /validators
+
+The active validator set at the latest height, or at a given `height`. Lumera caps the active set at 50 validators, so one page covers it. Governance can change the cap.
+
+```bash
+curl -fsSL "https://lumera-rpc.polkachu.com/validators?per_page=100" | jq '.result.total'
+```
+
+## /net_info
+
+Peer count and peer details. Useful when you run your own node and want to verify connectivity.
+
+```bash
+curl -fsSL https://lumera-rpc.polkachu.com/net_info | jq '.result.n_peers'
+```
+
+## /broadcast_tx_sync
+
+Broadcasts a signed transaction and returns after the mempool check. Most applications broadcast through `lumerad` or an SDK instead of calling this endpoint by hand.
+
+```bash
+curl -fsSL "https://lumera-testnet-rpc.polkachu.com/broadcast_tx_sync?tx=0xSIGNED_TX_BYTES"
+```
+
+## Beyond HTTP GET
+
+Every endpoint also accepts JSON-RPC over HTTP POST, and a WebSocket at `/websocket` supports event subscriptions. See the [CometBFT RPC documentation](https://docs.cometbft.com/v0.38/rpc/) for parameters, response schemas, and the endpoints not shown here.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="EVM JSON-RPC" icon="ethereum" href="/api/evm-jsonrpc">
+    Ethereum-style RPC on EVM enabled networks.
+  </Card>
+  <Card title="API overview" icon="map" href="/api/overview">
+    All Lumera API surfaces at a glance.
+  </Card>
+  <Card title="Networks" icon="globe" href="/networks">
+    Chain IDs, endpoints, and seeds for mainnet and testnet.
+  </Card>
+</CardGroup>

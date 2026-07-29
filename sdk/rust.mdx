@@ -1,0 +1,171 @@
+---
+title: "Rust SDK"
+sidebarTitle: "Rust"
+description: "Build server-side Rust applications and CLI tools that store and retrieve files on Cascade."
+---
+
+The [Rust SDK](https://github.com/LumeraProtocol/sdk-rs) is the official SDK for server-side applications, CLI tools, and system-level integrations with Lumera Protocol. It talks to the chain over gRPC and routes file transfers through SN-API, the REST gateway in front of SuperNodes.
+
+Because file transfers travel over HTTPS to SN-API, the SDK works from any machine with ordinary outbound internet access. The [Go SDK](/sdk/go) instead streams files to SuperNodes directly over gRPC on port 4444, which requires direct network reachability to that port.
+
+## Install
+
+```bash
+# Initialize a project if you don't have one yet
+cargo init .
+
+# Add the SDK and async runtime
+cargo add lumera-sdk-rs --git https://github.com/LumeraProtocol/sdk-rs.git
+cargo add tokio --features full
+```
+
+The SDK needs stable Rust with edition 2021 or later.
+
+## Architecture
+
+The SDK is organized into three core modules.
+
+| Module | Purpose |
+|---|---|
+| `chain` | On-chain operations. Action parameters, fee lookups, transaction build, sign, and broadcast, gas simulation. |
+| `snapi` | SN-API interaction. Upload, download, status polling, file retrieval. |
+| `cascade` | High-level orchestration. Deterministic payload and ID generation, ticket registration, upload and download workflows. |
+
+## Create a client
+
+Configure the SDK with explicit values or with environment variables.
+
+```rust
+use lumera_sdk_rs::chain::ChainConfig;
+use lumera_sdk_rs::{CascadeConfig, CascadeSdk};
+
+let chain_cfg = ChainConfig::new(
+    "lumera-testnet-2",
+    "https://grpc.testnet.lumera.io",
+    "https://rpc.testnet.lumera.io",
+    "https://lcd.testnet.lumera.io",
+    "0.025ulume",
+);
+let cfg = CascadeConfig::new(chain_cfg, "https://snapi.testnet.lumera.io");
+let sdk = CascadeSdk::new(cfg);
+```
+
+Or load the configuration from the environment.
+
+```rust
+use lumera_sdk_rs::{CascadeSdk, SdkSettings};
+
+// Load .env file if present
+let _ = dotenvy::dotenv();
+
+let settings = SdkSettings::from_env();
+let sdk = CascadeSdk::new(settings.to_cascade_config());
+```
+
+### Environment variables
+
+The built-in defaults assume a local devnet. For testnet, override them in a `.env` file or your shell.
+
+| Variable | Testnet value | Purpose |
+|---|---|---|
+| `LUMERA_CHAIN_ID` | `lumera-testnet-2` | Chain identifier |
+| `LUMERA_GRPC` | `https://grpc.testnet.lumera.io` | gRPC endpoint |
+| `LUMERA_RPC` | `https://rpc.testnet.lumera.io` | CometBFT RPC endpoint |
+| `LUMERA_REST` | `https://lcd.testnet.lumera.io` | REST LCD endpoint |
+| `SNAPI_BASE` | `https://snapi.testnet.lumera.io` | SN-API base URL |
+| `LUMERA_GAS_PRICE` | `0.025ulume` | Gas price |
+
+## Derive signing keys
+
+Upload and download both need a `SigningIdentity` derived from your mnemonic. It carries the chain signing key for transactions and the arbitrary signing key for ADR-036 authentication with SN-API.
+
+```rust
+use lumera_sdk_rs::SigningIdentity;
+
+let identity = SigningIdentity::from_mnemonic(
+    &mnemonic,
+    "lumera",
+    "m/44'/118'/0'/0/0",
+)?;
+```
+
+<Warning>
+Load the mnemonic from an environment variable or a secrets manager. Never hardcode it or commit it to version control.
+</Warning>
+
+## Upload a file
+
+Uploads happen in two steps. Register the action on chain, then stream the file to SN-API.
+
+```rust
+use lumera_sdk_rs::RegisterTicketRequest;
+use std::path::PathBuf;
+
+let file_path = PathBuf::from("./my-document.pdf");
+
+// 1. Register the on-chain action
+let registered = sdk.register_ticket(
+    &identity.chain_signing_key,
+    &identity.arbitrary_signing_key,
+    &identity.address,
+    &file_path,
+    RegisterTicketRequest {
+        file_name: "my-document.pdf".to_string(),
+        is_public: true,
+        expiration_time: expiration.to_string(), // Unix timestamp
+    },
+).await?;
+
+// 2. Upload the file to SN-API
+let task = sdk.upload_via_snapi(
+    &registered.action_id,
+    &registered.auth_signature,
+    &file_path,
+).await?;
+
+// 3. Poll the upload status
+let status = sdk.snapi.upload_status(&task).await?;
+
+println!("Stored with action ID: {}", registered.action_id);
+```
+
+`register_ticket` escrows the storage fee and returns the `action_id`, the permanent on-chain reference to your file. SuperNodes then encode the data and distribute it across the network. [How Cascade works](/cascade/how-cascade-works) explains what happens behind each step.
+
+## Download a file
+
+```rust
+// 1. Request a download task with your arbitrary signing key
+let down_task = sdk.request_download(
+    &registered.action_id,
+    &identity.arbitrary_signing_key,
+).await?;
+
+// 2. Stream the file bytes from SN-API
+let bytes = sdk.snapi.download_file(&down_task).await?;
+
+std::fs::write("./downloaded-file.pdf", &bytes)?;
+```
+
+## Key dependencies
+
+| Crate | Role |
+|---|---|
+| `cosmrs` | Cosmos SDK signing and gRPC |
+| `reqwest` | HTTP client with rustls |
+| `tokio` | Async runtime |
+| `blake3` | File integrity verification |
+| `prost` | Protobuf encoding |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The storage flow behind register, upload, and download.
+  </Card>
+  <Card title="SN-API reference" icon="server" href="/api/sn-api">
+    The REST endpoints the SDK calls under the hood.
+  </Card>
+  <Card title="Go SDK" icon="golang" href="/sdk/go">
+    The gRPC alternative for backends with direct SuperNode access.
+  </Card>
+</CardGroup>

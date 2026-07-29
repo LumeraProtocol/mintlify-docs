@@ -33,9 +33,10 @@
 ## Content boundaries
 
 - Every command, version, endpoint, and number must be verified against the official LumeraProtocol GitHub repos or live endpoints. Never invent values.
-- The JS SDK is `@lumera-protocol/sdk-js` on npm. Never reference `@0xkaleab/sdk-js`.
-- Do not document per module x/ reference pages, LEPs, or a Rust SDK.
-- Smart contracts get one overview page only. Deep EVM guides live in the lumera repo on GitHub, link to them.
-- Do not document the Pastel claims or legacy migration flow yet. Open decisions are unresolved. Related drafts live in `drafts/`.
-- Network upgrade details belong in the Network upgrades section, not in the validator or SuperNode sections.
+- The JS SDK is `@lumera-protocol/sdk-js` on npm. Never reference `@0xkaleab/sdk-js`. The Go SDK is `github.com/LumeraProtocol/sdk-go` and the Rust SDK is `github.com/LumeraProtocol/sdk-rs`.
+- Modules are documented on the single `protocol/modules` page, not as per module x/ reference pages.
+- Individual LEPs are not documented. The `protocol/governance` page covers governance and links to the LEP files on GitHub.
+- The Smart contracts section covers the EVM (overview, MetaMask, Remix, OpenRPC, precompiles). The EVM is live on testnet only. Mainnet runs v1.12.0 until its upgrade. Never claim the EVM is live on mainnet.
+- Do not document the Pastel claims or legacy migration flow. The team ruled it out for now. Related drafts live in `drafts/`.
+- Network upgrade migration details belong in the Network upgrades section, not in the validator or SuperNode sections.
 - When quoting fee numbers or parameters, note that governance can change them.

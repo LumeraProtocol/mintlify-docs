@@ -1,0 +1,76 @@
+---
+title: "Hermes relayer setup for Lumera"
+sidebarTitle: "Relayer setup"
+description: "The Lumera values to plug into a standard Hermes chain configuration."
+---
+
+ICS-27 packets only move when a relayer carries them. This page gives you the Lumera specific values for a [Hermes](https://hermes.informal.systems) relayer serving a channel between Lumera and another Cosmos chain. It is not a general Hermes tutorial. Install Hermes, create the chain entries, and manage channels by following the official Hermes documentation, then plug in the values below.
+
+## Lumera chain values
+
+Add a chain entry for Lumera to your Hermes config with these values. The counterparty chain entry uses that chain's own documented values.
+
+<Tabs>
+  <Tab title="Mainnet">
+
+| Setting | Value |
+|---|---|
+| Chain ID | `lumera-mainnet-1` |
+| RPC | `https://rpc.lumera.io` |
+| gRPC | `https://grpc.lumera.io` |
+| Account prefix | `lumera` |
+| Gas price | `0.025ulume` |
+
+The official mainnet RPC can be intermittent. A community alternative is `https://lumera-rpc.polkachu.com`.
+
+  </Tab>
+  <Tab title="Testnet">
+
+| Setting | Value |
+|---|---|
+| Chain ID | `lumera-testnet-2` |
+| RPC | `https://lumera-testnet-rpc.polkachu.com` |
+| gRPC | `grpc.testnet.lumera.io:443` |
+| Account prefix | `lumera` |
+| Gas price | `0.025ulume` |
+
+  </Tab>
+</Tabs>
+
+Fund the relayer's Lumera key with `ulume` to pay for packet delivery. The minimum gas price on Lumera is `0.025ulume`, and governance can change it.
+
+## Key derivation depends on the network
+
+This is the part that catches relayer operators. Lumera networks that have the EVM upgrade use Ethereum style keys, and networks that do not use standard Cosmos keys.
+
+**Testnet, and any network after its EVM upgrade.** The Lumera chain entry needs the ethermint address type.
+
+```toml
+address_type = { derivation = 'ethermint', proto_type = { pk_type = '/cosmos.evm.crypto.v1.ethsecp256k1.PubKey' } }
+```
+
+Add the relayer's Lumera key with the Ethereum HD path `m/44'/60'/0'/0/0`. A key added with the default Cosmos path produces the wrong address and every transaction fails.
+
+**Mainnet today.** Mainnet runs `v1.12.0` and has not had the EVM upgrade yet. Use standard Cosmos key derivation with no `address_type` override.
+
+<Warning>
+When mainnet gains the EVM with its upgrade, existing mainnet relayers must re-key to the ethermint derivation. Follow the official [relayer migration guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/relayer-migration.md) and see the [EVM upgrade page](/upgrades/evm-upgrade) for operator checklists.
+</Warning>
+
+## Verify the setup
+
+Once the chain entries are in place, use standard Hermes commands to health check both chains, create or restore the channel, and start relaying. Confirm the setup end to end by running the [interchain accounts flow](/cross-chain/interchain-accounts). A successful `MsgSendTx` acknowledgement proves packets move in both directions.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Interchain accounts in practice" icon="link" href="/cross-chain/interchain-accounts">
+    The ICS-27 flow your relayer now carries.
+  </Card>
+  <Card title="EVM upgrade" icon="rocket" href="/upgrades/evm-upgrade">
+    What changes for relayers when a network gains the EVM.
+  </Card>
+  <Card title="Networks" icon="globe" href="/networks">
+    All Lumera endpoints and chain parameters.
+  </Card>
+</CardGroup>

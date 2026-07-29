@@ -1,0 +1,87 @@
+---
+title: "Governance on Lumera"
+sidebarTitle: "Governance"
+description: "How proposals, voting, chain upgrades, and parameter changes work on Lumera."
+---
+
+Lumera Protocol is governed on chain by its token holders. Anyone can submit a proposal, staked LUME holders vote on it, and a passed proposal executes automatically, whether that changes a fee parameter or upgrades the chain binary. Lumera uses the standard Cosmos SDK governance module, `x/gov`.
+
+This page covers the proposal lifecycle, voting with `lumerad`, software upgrades, Lumera Enhancement Proposals, and the parameters governance controls.
+
+## How a proposal passes
+
+<Steps>
+  <Step title="Deposit">
+    A proposal is submitted with a deposit. Once the minimum deposit is reached, the voting period opens. The deposit discourages spam and is returned when the proposal resolves normally.
+  </Step>
+  <Step title="Voting">
+    Staked LUME holders vote during the voting period. Validators vote with their full stake. Delegators inherit their validator's vote unless they cast their own, which overrides the inherited vote for their share.
+  </Step>
+  <Step title="Tally and execution">
+    When the voting period ends, votes are tallied. A passed proposal executes on chain without any manual step.
+  </Step>
+</Steps>
+
+The vote options are `yes`, `no`, `abstain`, and `no_with_veto`. The veto option is a stronger no that signals the proposal is spam or harmful.
+
+## Voting with lumerad
+
+List the proposals currently on chain.
+
+```shell List proposals
+lumerad query gov proposals
+```
+
+Cast a vote on an active proposal.
+
+```shell Vote on a proposal
+lumerad tx gov vote <proposal-id> yes \
+  --from <key-name> \
+  --chain-id lumera-mainnet-1 \
+  --fees 10000ulume
+```
+
+Replace `yes` with `no`, `abstain`, or `no_with_veto` as needed. On testnet, use `--chain-id lumera-testnet-2`.
+
+## Browsing proposals
+
+The governance section of the Lumera Portal shows every proposal with its status, tally, and voting deadline.
+
+- Mainnet at [portal.lumera.io](https://portal.lumera.io)
+- Testnet at [portal.testnet.lumera.io/lumera-testnet-2](https://portal.testnet.lumera.io/lumera-testnet-2)
+
+## Software upgrades
+
+Chain upgrades are governance actions. A software upgrade proposal names the new version and a plan height. When the chain reaches that height it halts, and every validator must switch to the new binary before blocks resume. Validators who miss an upgrade face downtime and eventually jailing.
+
+If you run a validator, follow the [mainnet operations runbook](/validators-mainnet/operations) for the Cosmovisor setup that automates binary swaps at the plan height.
+
+## Lumera Enhancement Proposals
+
+LEPs are protocol design proposals, the written stage before a change reaches the chain. They live in the Lumera repository at [github.com/LumeraProtocol/lumera/docs/leps](https://github.com/LumeraProtocol/lumera/tree/master/docs/leps). Recent examples include LEP-5 on availability commitments and LEP-6 on storage truth enforcement.
+
+A LEP describes the design and its rationale. On-chain governance is the ratification path. When a LEP requires a parameter change or an upgrade, a proposal puts it to a vote. Read the LEP files on GitHub for the designs themselves rather than expecting per-LEP pages here.
+
+## What governance can change
+
+Governance controls the protocol's economic and operational parameters. The main ones are the following.
+
+- Cascade fees. Currently 10000 `ulume` base plus 10 `ulume` per KB stored.
+- The Everlight funding share. In Phase 1, 2 percent of action registration fees route to the Everlight SN Pool. Governance can also fund the pool directly from the Community Pool. See the [Everlight overview](/cascade/everlight/overview).
+- SuperNode parameters, including the minimum stake requirement. Check current values with `lumerad query supernode params`.
+
+All of these values can change through a passed proposal, so treat any number in the docs as the value at the time of writing.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Validator operations" icon="server" href="/validators-mainnet/operations">
+    The upgrade runbook for governance mandated binary swaps.
+  </Card>
+  <Card title="Module reference" icon="cubes" href="/protocol/modules">
+    The modules whose parameters governance controls.
+  </Card>
+  <Card title="Everlight" icon="lightbulb" href="/cascade/everlight/overview">
+    The storage retention pool funded partly through governance.
+  </Card>
+</CardGroup>

@@ -1,91 +1,155 @@
 ---
-title: "SuperNode operations"
+title: "SuperNode operations and troubleshooting"
 sidebarTitle: "Operations"
-description: "Every supernode command, the full config.yml reference, and how to monitor a running node."
+description: "Day to day SuperNode operations, monitoring, upgrades, configuration reference, and troubleshooting."
 ---
 
-This page is the operating reference for a running SuperNode. It covers the CLI, the configuration file, and monitoring. For first time installation and registration, start with [setup](/supernodes/setup).
+This page is the operating reference for a running SuperNode. It covers daily commands, on-chain lifecycle transactions, upgrades, the configuration file, monitoring, and troubleshooting. For first time installation and registration, start with [node setup](/supernodes/node-setup).
 
-## CLI commands
+## Quick reference
 
-Every command accepts a global `--basedir` flag (short `-d`, default `~/.supernode`) so you can manage several instances on one machine.
+```bash
+# View logs
+sudo journalctl -fu sn-manager
 
-### supernode init
+# Restart the SuperNode
+sudo systemctl restart sn-manager
 
-Initializes a new SuperNode. Creates the base directory, generates or imports a key, and writes `config.yml`. Run it once before the first start. Without flags it launches an interactive wizard. With `-y` it runs non-interactive and every value comes from flags.
+# Stop the SuperNode
+sudo systemctl stop sn-manager
 
-| Flag | Description |
-|------|-------------|
-| `--force` | Override an existing installation and re-initialize |
-| `-y`, `--yes` | Skip all prompts, values come from flags |
-| `--keyring-backend` | `os`, `file`, or `test`. Never use `test` in production |
-| `--key-name` | Name of the key to create or recover |
-| `--recover` | Import an existing key from a mnemonic instead of generating one |
-| `--mnemonic` | The 24 word phrase, only with `--recover` |
-| `--supernode-addr` | IP the gRPC service binds to, `0.0.0.0` for all interfaces |
-| `--supernode-port` | gRPC service port, default `4444` |
-| `--lumera-grpc` | gRPC endpoint of your Lumera node as `host:port` |
-| `--chain-id` | `lumera-mainnet-1` or `lumera-testnet-2` |
-| `--keyring-passphrase` | Plain text passphrase, testing only |
-| `--keyring-passphrase-env` | Environment variable holding the passphrase, preferred |
-| `--keyring-passphrase-file` | File holding the passphrase, use `600` permissions |
+# Check service status
+sudo systemctl status sn-manager
 
-### supernode start
-
-Starts the service. The process connects to the configured Lumera gRPC endpoint, joins the P2P network, and begins serving Cascade and Sense actions. It runs in the foreground, so wrap it in a supervisor for production.
-
-```shell
-supernode start
-supernode start -d /opt/supernode-data
+# Health check
+sn-manager status
+sn-manager check
 ```
 
-A minimal `systemd` unit looks like this.
+## SuperNode states
 
-```ini /etc/systemd/system/supernode.service
-[Unit]
-Description=Lumera SuperNode
-After=network-online.target
+The on-chain state of your SuperNode determines whether it is actively serving the network.
 
-[Service]
-User=supernode
-Environment=KEYRING_PASS=changeme
-ExecStart=/usr/local/bin/supernode start
-Restart=always
-RestartSec=5
+| State | Meaning | Action |
+|-------|---------|--------|
+| `ACTIVE` | Operating normally | None |
+| `DISABLED` | Deregistered | Can re-register |
+| `STOPPED` | Manually stopped via transaction | Start with the `start-supernode` tx |
+| `PENALIZED` | Penalized for violations | Cannot re-register |
+| `POSTPONED` | Non-compliant metrics | Recovers automatically when compliant |
 
-[Install]
-WantedBy=multi-user.target
+Everlight, the storage retention compensation program, adds a `STORAGE_FULL` state for nodes whose disk usage crosses the configured limit. Those nodes stop receiving new storage assignments but keep serving compute tasks and keep earning Everlight payouts for data they already hold. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
+
+## On-chain metrics (LEP-4)
+
+SuperNodes must self-report metrics about every 400 blocks. If metrics are not reported within the grace period of about 100 blocks, the SuperNode moves to the `POSTPONED` state. This reporting is handled automatically by `sn-manager`, so no manual action is needed.
+
+Reported metrics include the version, CPU, RAM, and disk usage, port status, uptime, and peer count.
+
+## Lifecycle operations
+
+### Check SuperNode status
+
+```bash
+# On-chain (run on validator host)
+lumerad query supernode get-supernode $(lumerad keys show validator --bech val -a)
+
+# Local health (run on SuperNode host)
+sn-manager status
+sn-manager check
 ```
 
-Load the passphrase from a secrets manager rather than writing it into the unit file where possible.
+### Update the SuperNode endpoint
 
-### supernode version
+If your SuperNode's IP changes, update it on chain. Run on your **validator host**.
 
-Prints the binary version. Use it to confirm installs and include it in bug reports.
+```bash
+VALOPER=$(lumerad keys show validator --bech val -a)
 
-### supernode keys
-
-```shell
-# List keys and their lumera1 addresses
-supernode keys list
-
-# Recover a key from a mnemonic into the keyring
-supernode keys recover mykey
+lumerad tx supernode update-supernode \
+  "$VALOPER" "NEW_IP:4444" "endpoint update" "<SN_ACCOUNT>" \
+  --from validator \
+  --chain-id lumera-testnet-2 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
 ```
 
-`keys recover` prompts for the mnemonic when you omit `--mnemonic`. Prefer the prompt. An inline mnemonic lands in shell history.
+### Stop the SuperNode
 
-### supernode config
+To gracefully stop your SuperNode, submit the stop transaction first, then stop the service.
 
-```shell
-# Print current config.yml values
-supernode config list
+```bash
+# On validator host, notify the chain
+lumerad tx supernode stop-supernode $(lumerad keys show validator --bech val -a) "maintenance" \
+  --from validator \
+  --chain-id lumera-testnet-2 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
 
-# Interactively update individual values
-supernode config update
+# On SuperNode host, stop the service
+sudo systemctl stop sn-manager
 ```
 
-Restart the SuperNode after any configuration change. Changes only apply on process start.
+### Restart the SuperNode
+
+Start the service first, then submit the on-chain start transaction.
+
+```bash
+# On SuperNode host
+sudo systemctl start sn-manager
+
+# On validator host
+lumerad tx supernode start-supernode $(lumerad keys show validator --bech val -a) \
+  --from validator \
+  --chain-id lumera-testnet-2 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
+```
+
+### Deregister the SuperNode
+
+To permanently remove your SuperNode from the network, run this on the **validator host**.
+
+```bash
+lumerad tx supernode deregister-supernode $(lumerad keys show validator --bech val -a) \
+  --from validator \
+  --chain-id lumera-testnet-2 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
+```
+
+This moves the SuperNode to the `DISABLED` state. You can re-register later if needed.
+
+### List all SuperNodes
+
+```bash
+lumerad query supernode list-supernodes
+```
+
+## Upgrading sn-manager
+
+`sn-manager` includes a built-in version manager.
+
+```bash
+# List available versions
+sn-manager ls-remote
+
+# Download a specific version
+sn-manager get v2.6.1-testnet
+
+# Switch to the new version
+sn-manager use v2.6.1-testnet
+
+# Restart the service
+sudo systemctl restart sn-manager
+
+# Verify
+sn-manager version
+```
+
+<Note>
+If you initialized with `--auto-upgrade`, `sn-manager` upgrades itself and the `supernode` binary automatically. It checks every 10 minutes and applies updates within the same major version. On a testnet chain ID it tracks releases tagged `-testnet`. On mainnet it tracks stable tags. You can still switch versions manually at any time.
+</Note>
 
 ## Configuration reference
 
@@ -93,7 +157,7 @@ All runtime parameters live in `~/.supernode/config.yml`. Path values that do no
 
 ```yaml config.yml
 supernode:
-  key_name: "mykey"
+  key_name: "supernode"
   identity: "lumera1..."
   host: "0.0.0.0"
   port: 4444
@@ -102,7 +166,7 @@ keyring:
   backend: "file"
   dir: "keys"
   passphrase_plain: ""
-  passphrase_env: "KEYRING_PASS"
+  passphrase_env: "SUPERNODE_PASSPHRASE"
   passphrase_file: ""
 
 p2p:
@@ -110,19 +174,21 @@ p2p:
   data_dir: "data/p2p"
 
 lumera:
-  grpc_addr: "localhost:9090"
-  chain_id: "lumera-mainnet-1"
+  grpc_addr: "https://lumera-testnet-grpc.linknode.org"
+  chain_id: "lumera-testnet-2"
 
 raptorq:
   files_dir: "raptorq_files"
 ```
+
+Restart the SuperNode after any configuration change. Changes only apply on process start.
 
 ### supernode section
 
 | Field | Description |
 |-------|-------------|
 | `key_name` | Keyring key used to sign transactions |
-| `identity` | The `lumera1...` address derived from the key. Written by `init`. Must match your registered identity |
+| `identity` | The `lumera1...` address derived from the key. Written by `init`. Must match your registered `SN_ACCOUNT` |
 | `host` | Bind address for the gRPC service |
 | `port` | gRPC service port, default `4444` |
 
@@ -130,13 +196,13 @@ raptorq:
 
 | Field | Description |
 |-------|-------------|
-| `backend` | `os` for interactive machines, `file` for servers, `test` never in production |
+| `backend` | `os`, `file`, or `test`. Use `file` on servers, never `test` in production |
 | `dir` | Keyring directory for the `file` backend, default `keys` |
 | `passphrase_plain` | Plain text passphrase. Testing only, readable by anyone who can read the file |
-| `passphrase_env` | Environment variable holding the passphrase. Preferred on servers |
+| `passphrase_env` | Name of the environment variable holding the passphrase. Preferred on servers |
 | `passphrase_file` | Path to a passphrase file with `600` permissions |
 
-If `passphrase_plain` is set it takes precedence over the other two. Leave it empty in production. The strongest setup is `backend: file` with `passphrase_env` injected by a secrets manager.
+If `passphrase_plain` is set it takes precedence over the other two. Leave it empty in production.
 
 ### p2p section
 
@@ -149,8 +215,8 @@ If `passphrase_plain` is set it takes precedence over the other two. Leave it em
 
 | Field | Description |
 |-------|-------------|
-| `grpc_addr` | Your node's gRPC endpoint. Use `localhost:9090` when co-located |
-| `chain_id` | `lumera-mainnet-1` or `lumera-testnet-2`, must match genesis |
+| `grpc_addr` | The Lumera gRPC endpoint. A public endpoint or `<VALIDATOR_IP>:9090` when self-hosting |
+| `chain_id` | `lumera-testnet-2` or `lumera-mainnet-1`, must match the network |
 
 ### raptorq section
 
@@ -164,31 +230,55 @@ Cascade encode and decode are I/O heavy. If the server has a dedicated NVMe volu
 
 ## Monitoring
 
-The SuperNode exposes a gRPC status service. `SupernodeService.GetStatus` returns the version, uptime, CPU, memory and storage usage, peer counts, registered services, and your rank. Wire it into your monitoring stack and alert on the same signals you watch for a validator, low peers, low disk, and unexpected restarts. The [SupernodeService gRPC reference](/api/grpc/supernode-service) documents the full response.
+The `supernode` process exposes a gRPC status service. `SupernodeService.GetStatus` returns the version, uptime, CPU, memory and storage usage, peer counts, registered services, and your rank. Wire it into your monitoring stack and alert on low peers, low disk, and unexpected restarts, the same signals you watch for a validator. The [SupernodeService gRPC reference](/api/grpc/supernode-service) documents the full response.
 
 Also watch the on-chain state from the validator host.
 
-```shell
-lumerad query supernode get-supernode <valoper-address>
+```bash
+lumerad query supernode get-supernode <VALOPER>
 ```
 
-A healthy record shows `SUPERNODE_STATE_ACTIVE`. Any other state means you are not being selected for actions and are not earning.
+A healthy record shows `state: SUPERNODE_STATE_ACTIVE`. Any other state means your SuperNode is not being selected for actions and is not earning.
+
+## Backup
+
+Always back up these files from your SuperNode host.
+
+```bash
+mkdir -p ~/sn-backup
+cp ~/.supernode/config.yml ~/sn-backup/
+cp -r ~/.supernode/keys/ ~/sn-backup/keys/
+```
+
+<Warning>
+**Also save your mnemonic offline.** The key files and config can be recreated from the mnemonic, but the mnemonic cannot be recovered from the key files.
+</Warning>
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---------|-------------|-----|
-| No peers connect | Port `4445` blocked or changed | Open the port, restore the default value |
-| Clients cannot reach you | Port `4444` blocked or wrong `host` | Open the port, bind to `0.0.0.0` |
-| Cannot reach the chain | Wrong `grpc_addr` or closed port `9090` | Point at `localhost:9090` or open the port privately |
-| Keyring errors on start | Passphrase source missing | Set `passphrase_env` and export the variable for the service |
-| Registration not found | Query ran too early | Wait a few blocks and re-run the query |
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| SuperNode shows `POSTPONED` | Metrics reporting failed | Check logs with `journalctl -u sn-manager -f` and verify ports with `ufw status`. The service auto-recovers when compliant |
+| Registration fails with "insufficient stake" | Combined stake below minimum | Check both sources with `lumerad query staking delegation <SN_ACCOUNT> <VALOPER>` and your validator self-delegation. The combined total must meet `minimum_stake_for_sn` (check with `lumerad query supernode params`) |
+| `SigningInfo not found` after registration | Chain has not processed yet | Wait a few blocks and query again |
+| sn-manager will not start | Passphrase or config issue | Verify `SUPERNODE_PASSPHRASE` in the service file and inspect `~/.supernode/config.yml` |
+| Ports appear closed in metrics | Firewall or cloud security group | Verify `ufw status` and cloud provider firewall rules. Test externally with `nc -zv <IP> 4444` |
+| Cannot connect to validator gRPC | gRPC bound to localhost | On the validator, set `address = "0.0.0.0:9090"` in `~/.lumera/config/app.toml` and run `ufw allow from <SN_IP> to any port 9090` |
+
+## Useful links
+
+- [Automated setup script](https://github.com/kaleababayneh/lumera-validator)
+- [SuperNode releases](https://github.com/LumeraProtocol/supernode/releases)
+- [sn-manager README](https://github.com/LumeraProtocol/supernode/blob/master/sn-manager/README.md)
+- [SuperNode operator guide](https://github.com/LumeraProtocol/lumera-networks/blob/master/docs/SUPERNODE_GUIDE.md)
+- [Lumera Portal (testnet)](https://portal.testnet.lumera.io/lumera-testnet-2)
+- [Discord](https://discord.com/invite/lumeraprotocol)
 
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="v1.20.0 EVM upgrade" icon="arrow-up-right-dots" href="/upgrades/evm-upgrade">
-    Migrate a pre-upgrade SuperNode account.
+  <Card title="Everlight for operators" icon="lightbulb" href="/cascade/everlight/supernode-operators">
+    How storage retention payouts work for your node.
   </Card>
   <Card title="SupernodeService gRPC" icon="satellite-dish" href="/api/grpc/supernode-service">
     The status and metrics API your monitoring can poll.

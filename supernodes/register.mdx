@@ -1,0 +1,238 @@
+---
+title: "Register your SuperNode"
+sidebarTitle: "Register"
+description: "Fund the SuperNode account, delegate stake, and register the SuperNode on chain."
+---
+
+With the SuperNode running, three transactions bind it to your validator. You fund the SuperNode account, delegate stake to your validator, then register the SuperNode with the validator operator key. This page walks through each transaction and the checks that confirm success.
+
+## Prerequisites
+
+Before registering, make sure of the following.
+
+- Your SuperNode is running and the `sn-manager` service is active. See [node setup](/supernodes/node-setup).
+- You have the SuperNode account address `SN_ACCOUNT`, which starts with `lumera1`.
+- You have your validator operator address `VALOPER`, which starts with `lumeravaloper1`.
+- Your validator is bonded and synced.
+
+## Step 1. Fund the SuperNode account
+
+The SuperNode account needs LUME tokens to delegate to your validator. There are several ways to fund it.
+
+### Find your SuperNode account address
+
+If you did not note the `SN_ACCOUNT` address when you ran `sn-manager init`, you can retrieve it at any time from the **SuperNode server** in one of two ways.
+
+**Read it from the SuperNode config file.** No `lumerad` call needed.
+
+```bash
+cat ~/.supernode/config.yml | grep -i -A1 -E 'address|key'
+```
+
+You will see output similar to this.
+
+```text
+    key_name: supernode
+    identity: lumera1hl2tutczuuu6ngap57r79mzv9jy8n26xcu7tsx
+--
+keyring:
+    backend: file
+    dir: keys
+    passphrase_env: SUPERNODE_PASSPHRASE
+```
+
+The value next to `identity:` (starts with `lumera1...`) is your `SN_ACCOUNT`.
+
+**Or use the `lumerad` CLI** installed in [node setup, Step 8](/supernodes/node-setup#step-8-install-the-lumerad-cli).
+
+```bash
+# Print just the bech32 address of the supernode key
+lumerad keys show supernode -a --keyring-backend file --keyring-dir ~/.supernode/keys
+
+# Or list all keys in the SuperNode keyring
+lumerad keys list --keyring-backend file --keyring-dir ~/.supernode/keys
+```
+
+You will be prompted for the keyring passphrase. The address starts with `lumera1`. This is your `SN_ACCOUNT`, and it is what you pass to every command below.
+
+<Warning>
+Every `lumerad` command you run on the SuperNode host **must** include **both** `--keyring-backend file` **and** `--keyring-dir ~/.supernode/keys`. The SuperNode stores its keyring at `~/.supernode/keys/`, not in `lumerad`'s default `~/.lumera/keyring-os/` location.
+</Warning>
+
+### Option A. Transfer from your validator wallet
+
+On your **validator host**, send tokens to the SuperNode account.
+
+```bash
+lumerad tx bank send validator <SN_ACCOUNT> <amount>ulume \
+  --chain-id lumera-testnet-2 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
+```
+
+Replace `<SN_ACCOUNT>` with your SuperNode's address and `<amount>` with the amount in ulume. The combined stake from your validator self-delegation and this SN account delegation must meet the on-chain minimum, currently 10,000 LUME on testnet-2.
+
+### Option B. Testnet faucet or Discord
+
+Request testnet tokens for your `SN_ACCOUNT` address from the [testnet faucet](/faucet), the [AstroStake faucet](https://faucet.astrostake.xyz/lumera), or [Discord](https://discord.com/invite/lumeraprotocol).
+
+<Note>
+SuperNode registration uses a **LEP-3 dual-source stake** model. The minimum is the combined total of your validator self-delegation plus the SN account delegation. On testnet-2 this is currently **10,000 LUME**. Check the current value with `lumerad query supernode params`. This parameter is governable and can change.
+</Note>
+
+## Step 2. Delegate from the SuperNode account to the validator
+
+This links the SuperNode's stake to your validator. The delegation from the SN account counts toward the combined minimum stake alongside your validator self-delegation.
+
+### Find your validator operator address
+
+On your **validator host**, retrieve the `VALOPER` address (starts with `lumeravaloper1...`) from the validator key.
+
+```bash
+lumerad keys show validator --bech val -a
+```
+
+This prints the bech32 operator address, which is what you pass as `<VALOPER>` in both Step 2 and Step 3. Note it down. You will need it twice.
+
+### Run the delegation
+
+This must run on the **SuperNode host**, where the `supernode` key lives in `~/.supernode/keys/`. It requires `lumerad` on that host, which you installed in [node setup, Step 8](/supernodes/node-setup#step-8-install-the-lumerad-cli).
+
+```bash
+VALOPER="lumeravaloper1..."  # paste the address from the command above
+
+lumerad tx staking delegate "$VALOPER" 10000000000ulume \
+  --from supernode \
+  --keyring-backend file \
+  --keyring-dir ~/.supernode/keys \
+  --chain-id lumera-testnet-2 \
+  --node https://lumera-testnet-rpc.polkachu.com/ \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
+```
+
+You will be prompted for the SuperNode keyring passphrase. A successful broadcast prints `code: 0` and a `txhash`.
+
+<Warning>
+The flags above are all mandatory on the SuperNode host and cannot be omitted.
+
+- `--keyring-backend file` and `--keyring-dir ~/.supernode/keys` tell `lumerad` where the SuperNode key actually lives, not in its default `~/.lumera/keyring-os/`.
+- `--node https://lumera-testnet-rpc.polkachu.com/` points the CLI at a public testnet-2 CometBFT RPC endpoint, because the SuperNode host has no local chain node to broadcast through.
+- `--from supernode` selects the SuperNode key inside that keyring as the signer.
+
+If you would rather broadcast through your own validator instead of a public endpoint, use `--node tcp://<VALIDATOR_IP>:26657` and open port `26657` on the validator from the SuperNode IP. Open it in **both** `ufw` and your cloud provider firewall, the same way you opened `9090` in [node setup, Step 3](/supernodes/node-setup#step-3-choose-a-lumera-grpc-endpoint).
+</Warning>
+
+Adjust the amount as needed. `10000000000ulume` equals 10,000 LUME. If your validator already has substantial self-delegation, you may need less from the SN account. Only the combined total must meet the minimum.
+
+### Verify the delegation
+
+Still on the **SuperNode host**, pass the same `--node` you used for the delegation. Otherwise `lumerad` tries its default `tcp://localhost:26657` and fails with a connection error.
+
+```bash
+lumerad query staking delegations <SN_ACCOUNT> \
+  --node https://lumera-testnet-rpc.polkachu.com/
+```
+
+You should see a delegation entry pointing to your validator operator address.
+
+## Step 3. Register the SuperNode on chain
+
+<Warning>
+**This command must run on your validator host**, signed by the validator operator key. It cannot be run from the SuperNode server.
+</Warning>
+
+SSH into your **validator server** and run the registration.
+
+```bash
+VALOPER=$(lumerad keys show validator --bech val -a)
+SN_ENDPOINT="<SN_PUBLIC_IP>:4444"
+SN_ACCOUNT="lumera1..."  # SuperNode account from node setup
+
+lumerad tx supernode register-supernode \
+  "$VALOPER" \
+  "$SN_ENDPOINT" \
+  "$SN_ACCOUNT" \
+  --from validator \
+  --chain-id lumera-testnet-2 \
+  --gas auto --gas-adjustment 1.3 \
+  --fees 10000ulume -y
+```
+
+Replace `<SN_PUBLIC_IP>` with your SuperNode server's public IP and set `SN_ACCOUNT` to the address from [node setup, Step 5](/supernodes/node-setup#step-5-initialize-the-supernode).
+
+A successful response shows `code: 0`.
+
+## Step 4. Verify registration
+
+### Check on-chain status
+
+On your **validator host**, query the SuperNode record.
+
+```bash
+lumerad query supernode get-supernode "$VALOPER"
+```
+
+You should see `state: SUPERNODE_STATE_ACTIVE`.
+
+### Check SuperNode health
+
+On your **SuperNode host**, run the health checks.
+
+```bash
+sn-manager status
+sn-manager check
+```
+
+### Verify port connectivity
+
+From any external machine, test that the SuperNode ports are reachable.
+
+```bash
+nc -zv <SN_PUBLIC_IP> 4444
+nc -zv <SN_PUBLIC_IP> 4445
+nc -zv <SN_PUBLIC_IP> 8002
+```
+
+## Verification checklist
+
+Run these checks to confirm everything is working. Pay attention to which host each command belongs on.
+
+On the **validator host**, which has the local chain node and the `validator` key.
+
+```bash
+# SuperNode registered? (state should be SUPERNODE_STATE_ACTIVE)
+lumerad query supernode get-supernode $(lumerad keys show validator --bech val -a)
+```
+
+On the **SuperNode host**, where a remote `--node` is required since there is no local chain node.
+
+```bash
+# sn-manager running?
+sudo systemctl status sn-manager
+
+# Delegation in place?
+lumerad query staking delegations <SN_ACCOUNT> \
+  --node https://lumera-testnet-rpc.polkachu.com/
+
+# Ports listening?
+ss -tlnp | grep -E '4444|4445|8002'
+
+# Health check passing?
+sn-manager check
+```
+
+<Note>
+If the on-chain query returns `SigningInfo not found` right after registration, wait a few blocks for the chain to pick it up.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Operations" icon="wrench" href="/supernodes/operations">
+    Monitor, upgrade, and troubleshoot your running SuperNode.
+  </Card>
+  <Card title="SuperNode overview" icon="server" href="/supernodes/overview">
+    Architecture, staking model, and requirements at a glance.
+  </Card>
+</CardGroup>

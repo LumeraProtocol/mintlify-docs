@@ -1,0 +1,307 @@
+---
+title: "SuperNode node setup"
+sidebarTitle: "Node setup"
+description: "Install sn-manager on a dedicated server, open the firewall, and initialize your SuperNode."
+---
+
+This page prepares a dedicated server, installs `sn-manager`, and initializes the SuperNode. `sn-manager` is the SuperNode process manager. It downloads the `supernode` binary, keeps it updated, and supervises the running process.
+
+The walkthrough uses testnet values (`lumera-testnet-2`). For mainnet, use `lumera-mainnet-1` and mainnet endpoints.
+
+## Step 1. Prepare the server
+
+SSH into your **SuperNode server** (not the validator) and install the required packages.
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl wget jq ufw lz4 tar golang-go
+```
+
+<Warning>
+**Never run a SuperNode and validator on the same server.** They must be on separate machines. The setup script will refuse to run if it detects a validator service on the same host.
+</Warning>
+
+## Step 2. Configure the firewall
+
+Open the ports required by `sn-manager`.
+
+```bash
+sudo ufw allow 22/tcp comment "SSH"
+sudo ufw allow 4444/tcp comment "SuperNode gRPC"
+sudo ufw allow 4445/tcp comment "SuperNode P2P"
+sudo ufw allow 8002/tcp comment "SuperNode REST"
+sudo ufw --force enable
+sudo ufw status
+```
+
+You should see all four ports listed as ALLOW.
+
+## Step 3. Choose a Lumera gRPC endpoint
+
+The SuperNode needs a gRPC endpoint to query the chain and broadcast its on-chain messages. You have two options.
+
+### Option 1. Use a public testnet gRPC endpoint (recommended)
+
+The simplest and most common setup points `sn-manager` at a public testnet-2 gRPC endpoint. You do not need to touch your validator, open any ports on it, or edit `app.toml`. Pick one of these endpoints, or find more on the [networks page](/networks).
+
+- `grpc.testnet.lumera.io:443` (official)
+- `https://lumera-testnet-grpc.linknode.org` (AstroStake)
+- `lumera-testnet-grpc.stakerhouse.com:443` (StakerHouse)
+- `https://grpc-t.lumera.nodestake.org/` (Nodestake)
+
+Note the endpoint you pick. You will pass it as `--lumera-grpc` in Step 5.
+
+### Option 2. Self-host your validator's gRPC (advanced)
+
+If you prefer to route SuperNode traffic through your own validator instead of a third-party endpoint, you can expose the validator's built-in gRPC port. This gives you sovereignty and lower latency, but it increases the validator's attack surface and requires firewall rules in two places.
+
+Only follow this option if you have a specific reason to avoid public endpoints.
+
+<Accordion title="Expose validator gRPC on port 9090">
+
+**Bind gRPC to all interfaces.** SSH into your **validator server** and run the following.
+
+```bash
+# Check current gRPC config
+grep -A 5 "^\[grpc\]" ~/.lumera/config/app.toml
+
+# Change localhost to 0.0.0.0
+sed -i 's|address = "localhost:9090"|address = "0.0.0.0:9090"|' ~/.lumera/config/app.toml
+
+# Restart the validator
+sudo systemctl restart lumera
+```
+
+**Restrict access to the SuperNode IP.** Do not expose port 9090 publicly.
+
+```bash
+sudo ufw allow from <SUPERNODE_IP> to any port 9090 proto tcp comment "SuperNode gRPC"
+```
+
+Replace `<SUPERNODE_IP>` with your SuperNode server's public IP address. You must also open the port in your cloud provider's firewall (Azure NSG, AWS Security Group, GCP VPC firewall, DigitalOcean Cloud Firewall). ufw alone is not enough.
+
+**Verify the listener.** On the validator, run this check.
+
+```bash
+sudo ss -tlnp | grep 9090
+```
+
+You should see `*:9090` or `0.0.0.0:9090`. A line containing `127.0.0.1:9090` means the `app.toml` edit did not apply. Re-check the file and restart `lumera` again.
+
+**Verify reachability from the SuperNode.**
+
+```bash
+curl -v telnet://<VALIDATOR_IP>:9090 --max-time 3 2>&1 | head -5
+```
+
+You should see `Connected to <VALIDATOR_IP> port 9090`. A timeout usually means the cloud firewall is blocking. `ufw` is not the only layer.
+
+You will pass `<VALIDATOR_IP>:9090` as `--lumera-grpc` in Step 5.
+
+</Accordion>
+
+## Step 4. Install sn-manager
+
+Download and install the latest `sn-manager` release. Installing it under your home directory lets it update itself.
+
+```bash
+curl -L https://github.com/LumeraProtocol/supernode/releases/latest/download/supernode-linux-amd64.tar.gz | tar -xz
+
+mkdir -p ~/.sn-manager/bin
+install -D -m 0755 sn-manager ~/.sn-manager/bin/sn-manager
+```
+
+Add `sn-manager` to your PATH.
+
+```bash
+echo 'export PATH="$HOME/.sn-manager/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+sn-manager version
+```
+
+## Step 5. Initialize the SuperNode
+
+Set a passphrase for the keyring and initialize.
+
+```bash
+export SUPERNODE_PASSPHRASE="your-secure-passphrase"
+
+sn-manager init -y \
+  --auto-upgrade \
+  --keyring-backend file \
+  --keyring-passphrase-env SUPERNODE_PASSPHRASE \
+  --key-name supernode \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc https://lumera-testnet-grpc.linknode.org \
+  --chain-id lumera-testnet-2
+```
+
+Use whichever public testnet gRPC endpoint you chose in Step 3. If you picked Option 2 (self-host) instead, replace the URL with `<VALIDATOR_IP>:9090`.
+
+<Warning>
+`--keyring-passphrase-env` takes the name of an environment variable, not the passphrase itself.
+</Warning>
+
+<Note>
+The passphrase must be at least 8 characters. It protects the SuperNode wallet key stored in the file-based keyring. Write it down now. You will enter the exact same value in the systemd service file in Step 6.
+</Note>
+
+<Warning>
+**Save the mnemonic that is displayed immediately.** It is the only backup of your SuperNode wallet key. If you lose it, you lose access to the SuperNode account and any delegated funds.
+</Warning>
+
+The output includes the SuperNode account address, called `SN_ACCOUNT`, which starts with `lumera1`. Note this address. You will need it for funding, delegation, and registration.
+
+### Recover an existing key
+
+If you have a mnemonic from a previous installation, add the `--recover` and `--mnemonic` flags.
+
+```bash
+sn-manager init -y \
+  --auto-upgrade \
+  --keyring-backend file \
+  --keyring-passphrase-env SUPERNODE_PASSPHRASE \
+  --key-name supernode \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc https://lumera-testnet-grpc.linknode.org \
+  --chain-id lumera-testnet-2 \
+  --recover --mnemonic "your 24 word mnemonic phrase here"
+```
+
+<Warning>
+`--lumera-grpc` must point to a **testnet** gRPC endpoint. Use one of the public endpoints from Step 3, or `<VALIDATOR_IP>:9090` if you self-hosted.
+</Warning>
+
+## Step 6. Create the systemd service
+
+```bash
+sudo tee /etc/systemd/system/sn-manager.service > /dev/null <<EOF
+[Unit]
+Description=Lumera SuperNode Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$USER
+Environment=HOME=$HOME
+Environment=SUPERNODE_PASSPHRASE=your-secure-passphrase
+WorkingDirectory=$HOME
+ExecStart=$HOME/.sn-manager/bin/sn-manager start
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+Replace `your-secure-passphrase` with the passphrase you chose in Step 5.
+
+<Warning>
+The `SUPERNODE_PASSPHRASE` in this service file must match the passphrase from Step 5 exactly, character for character, with no typos or trailing whitespace. Any mismatch causes the SuperNode process to loop on `incorrect passphrase` at startup and fail to load the keyring. This is the single most common post-install failure, so double-check the value before starting the service.
+</Warning>
+
+Secure the service file (it contains your passphrase) and enable it.
+
+```bash
+sudo chmod 600 /etc/systemd/system/sn-manager.service
+sudo systemctl daemon-reload
+sudo systemctl enable sn-manager
+```
+
+<Warning>
+The systemd service file stores your keyring passphrase in plaintext. It is protected by `chmod 600` (root-only read), but be aware of this when managing your server.
+</Warning>
+
+## Step 7. Start the SuperNode
+
+```bash
+sudo systemctl start sn-manager
+```
+
+### Check the service status
+
+```bash
+sudo systemctl status sn-manager
+```
+
+### Watch the logs
+
+```bash
+sudo journalctl -fu sn-manager
+```
+
+### Run a health check
+
+```bash
+sn-manager status
+sn-manager check
+```
+
+<Note>
+The health check may not pass until the SuperNode is registered on chain (next page). This is expected.
+</Note>
+
+## Step 8. Install the lumerad CLI
+
+The registration flow on the next page signs a `staking delegate` transaction with the SuperNode key. That key lives in `~/.supernode/keys/` on **this host**, so the delegation must be signed on this same machine.
+
+<Note>
+You only need the `lumerad` **CLI binary** here, not a full chain node. Do **not** run `lumerad init` or `lumerad start` on this host. Doing so would spin up a second, unrelated chain node in `~/.lumera/` that has nothing to do with your SuperNode. You install the binary only to run `lumerad tx` and `lumerad keys` subcommands against the SuperNode keyring.
+</Note>
+
+### Build lumerad from source
+
+Clone the Lumera repository, check out the release tag matching your network, and build the binary into `~/go/bin/`.
+
+```bash
+git clone https://github.com/LumeraProtocol/lumera.git ~/lumera-src
+cd ~/lumera-src
+git checkout v1.20.1   # testnet tag, use the current release tag if newer
+go build -o ~/go/bin/lumerad ./cmd/lumera
+```
+
+<Note>
+The build needs the Go version pinned in the repo's `go.mod` (currently Go 1.26.2). The Go from `apt` may be older. If the build fails on the Go version, install a newer Go from https://go.dev/dl/ first.
+</Note>
+
+### Add lumerad to your PATH
+
+By default `~/go/bin` is not on your shell PATH, so `lumerad` returns `command not found` even after a successful build. Add it.
+
+```bash
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+lumerad version
+```
+
+You should see a version string printed. Your SuperNode host is now ready to sign the delegation transaction in [Register your SuperNode](/supernodes/register).
+
+<Warning>
+Every `lumerad` command you run on the SuperNode host **must** include `--keyring-backend file` and `--keyring-dir ~/.supernode/keys`. The SuperNode key lives at `~/.supernode/keys/` and uses the file keyring backend, and neither is a `lumerad` default. Transaction commands (`lumerad tx ...`) also need `--node <RPC_ENDPOINT>` to point the CLI at a CometBFT RPC for testnet-2, since the SuperNode host has no local chain node. Use a public testnet endpoint such as `https://lumera-testnet-rpc.polkachu.com/`, or `tcp://<VALIDATOR_IP>:26657` if you prefer to broadcast through your own validator (which requires opening port 26657).
+</Warning>
+
+Verify the setup by printing the SuperNode key's address. It should match the `SN_ACCOUNT` you noted in Step 5.
+
+```bash
+lumerad keys show supernode -a --keyring-backend file --keyring-dir ~/.supernode/keys
+```
+
+You will be prompted for the keyring passphrase from Step 5. A successful output is a single `lumera1...` line.
+
+## Next steps
+
+With `sn-manager` running and `lumerad` installed, proceed to fund, delegate, and register your SuperNode on chain.
+
+<CardGroup cols={2}>
+  <Card title="Register" icon="signature" href="/supernodes/register">
+    Fund the SuperNode account, delegate stake, and register on chain.
+  </Card>
+  <Card title="Operations" icon="wrench" href="/supernodes/operations">
+    Day to day commands, monitoring, and troubleshooting.
+  </Card>
+</CardGroup>

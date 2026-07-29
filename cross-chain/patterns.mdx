@@ -1,0 +1,98 @@
+---
+title: "Cross-chain integration patterns"
+sidebarTitle: "Patterns"
+description: "Three proven ways to write to Cascade from an app on another chain."
+---
+
+Every cross-chain Cascade integration answers one question. Who signs the Cascade write? This page generalizes the worked Injective and LUKSO integrations into three patterns, with the trade-offs that decide between them. Whatever you pick, the read side stays the same, because reading by `action_id` needs no signature at all.
+
+## The action_id pointer pattern
+
+Cascade's unit of storage is an action. Registering one returns a numeric `action_id`, and the bytes behind it stay retrievable permanently. Your app or contract stores that ID as an opaque string. Cascade holds the bytes.
+
+```rust A CosmWasm contract storing a Cascade pointer
+pub struct StoredArtifact {
+    pub cid: String,         // Cascade action_id, for example "15823"
+    pub submitter: Addr,
+    pub block_height: u64,
+}
+```
+
+The contract validates only that the field is non-empty. It cannot read across chains synchronously, so resolution and integrity checks happen at read time, in an indexer or frontend, off the consensus path. That single string is the entire cross-chain coupling, which is why the same pattern works from CosmWasm, Solidity, or a plain backend.
+
+## Pattern A. User signed
+
+The user holds their own Lumera account and signs the Cascade write directly, usually from the same wallet that signs on your chain.
+
+**Flow.** The app signs two transactions per artifact. First a Lumera transaction uploads the file and returns an `action_id`. Then a transaction on your chain stores that `action_id` in contract or app state.
+
+**Choose it when** provenance matters. Every artifact carries a direct on-chain link to the user's own Lumera key, and your service holds no keys at all.
+
+**Trust assumptions.** None beyond the two chains. The cost is UX. The user needs a funded Lumera address, pays the `ulume` fee, and signs twice. On chains that use `eth_secp256k1` keys, such as Injective, the same wallet mnemonic produces different addresses on each chain, so your UI must keep the two identities distinct.
+
+## Pattern B. Server signed
+
+Your backend holds one funded Lumera key and uploads on behalf of users. Users interact only with your chain or app, and the Cascade write is a server side call.
+
+**Flow.** The user submits content to your backend. The backend uploads it to Cascade with its own key, gets the `action_id`, and returns it. The user, or the backend, then records the `action_id` on your chain. You can hold the Lumera key yourself with an SDK, or forward uploads to a Cascade API gateway that holds the key and pays the fee for you.
+
+```ts Server side upload with your own Lumera key
+import { createLumeraClient } from "@lumera-protocol/sdk-js";
+
+// One funded Lumera key uploads on behalf of users
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer,
+  address: serverLumeraAddress,
+  gasPrice: "0.025ulume",
+});
+
+const result = await client.Cascade.uploader.uploadFile(file, {
+  fileName: "artifact.json",
+  isPublic: true,
+});
+// result.action_id points at the stored bytes forever
+```
+
+**Choose it when** UX matters. One signature instead of two, no Lumera address required from users, and a single key you can monitor, quota, and rotate. This is the default in the Injective reference integration and the fastest path to shipping.
+
+**Trust assumptions.** The operator key signs every artifact, so the Lumera signature proves your service uploaded it, not the user. If you need per-user provenance, have your contract store the `(user, action_id)` pair so the binding lives on your chain. Fund the key with `ulume`, watch its balance, and put quotas on any user-facing upload path so it cannot be drained.
+
+**The EVM variant.** LUKSO shows Pattern B on a chain with no IBC at all. Universal Profile metadata stores a hash-bound URL pointing at a Cascade gateway. Readers fetch the bytes, recompute the hash, and reject any mismatch, so the gateway can deny service but never tamper. The same shape works on any EVM chain whose metadata standard carries a hash beside the URL.
+
+## Pattern C. Contract driven over ICA
+
+A contract or module on the controller chain owns an interchain account on Lumera and is itself the signer of the Cascade write.
+
+**Flow.** The contract packs a `MsgRequestAction`, sends it across the IBC channel with `MsgSendTx`, and the interchain account on Lumera executes it and pays the escrow. The [interchain accounts page](/cross-chain/interchain-accounts) walks the full flow, including the application keypair that authenticates the file upload.
+
+**Choose it when** the artifact must exist exactly when the state transition happens and there is genuinely no user or operator in the loop. Canonical, contract-deterministic writes are the narrow case this pattern exists for.
+
+**Trust assumptions.** The strongest of the three. No user key, no operator key, only the contract and the IBC light clients. The price is latency and operations. The write takes an IBC round-trip of roughly 30 to 60 seconds, stalls when the relayer backs up, and requires you to keep the ICA address funded. Never put it on a user-facing hot path.
+
+## Choosing a pattern
+
+| | Pattern A user signed | Pattern B server signed | Pattern C contract driven |
+|---|---|---|---|
+| Best for | On-chain provenance to the user's key | Fast UX, most products | Canonical writes with no user in the loop |
+| Who pays `ulume` | The user | Your service key | The ICA address |
+| Signatures per artifact | Two, one per chain | One, on your chain | None from users |
+| Key custody | None | Operator holds one Lumera key | Contract owns the ICA |
+| Latency | Two confirmations | One confirmation plus an upload | IBC round-trip, 30 to 60 seconds |
+| Works without IBC | Yes | Yes | No |
+
+Start with Pattern B. Move specific artifact types to A when user provenance is a requirement, and reserve C for contract-only canonical writes where IBC latency is acceptable. The patterns are not exclusive, and many deployments use more than one, chosen per artifact type.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Interchain accounts in practice" icon="link" href="/cross-chain/interchain-accounts">
+    The full Pattern C runbook with the Go SDK.
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdk/javascript">
+    The client used for Pattern A and B uploads.
+  </Card>
+  <Card title="Encrypted storage" icon="lock" href="/cascade/guides/encrypted-storage">
+    Keep cross-chain artifacts private while storing them permanently.
+  </Card>
+</CardGroup>

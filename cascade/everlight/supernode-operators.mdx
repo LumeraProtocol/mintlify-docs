@@ -1,0 +1,74 @@
+---
+title: "Everlight for SuperNode operators"
+sidebarTitle: "For SuperNode operators"
+description: "Understand the STORAGE_FULL state, payout eligibility, and what Everlight means for your node."
+---
+
+Everlight turns retained Cascade data into recurring revenue for your SuperNode. This page covers what changes on the operator side, the new `STORAGE_FULL` state, and what keeps your node eligible for payouts. Read [How Everlight payments work](/cascade/everlight/payments) for the distribution mechanics.
+
+SuperNode software compatibility for Everlight shipped in `v2.5.0-testnet`. Everlight itself is rolling out in phases, and the chain-side pieces arrive through governance-approved upgrades. Keep your node current with `sn-manager` and watch upgrade announcements. The [operations guide](/supernodes/operations) covers updates and monitoring.
+
+## The STORAGE_FULL state
+
+Today a SuperNode that violates any compliance threshold is moved to `POSTPONED` and excluded from all work. That is the right response to an unreliable node, but a full disk is not unreliability. A node that has filled its storage allocation still holds its Cascade data and can still run compute services.
+
+Everlight introduces `STORAGE_FULL`, a state for exactly this case. The transition rules are strict.
+
+- A node enters `STORAGE_FULL` when its `disk_usage_percent` exceeds `max_storage_usage_percent` and no other compliance check is failing. The threshold is an existing SuperNode parameter, and governance can change it.
+- If any other check fails, with or without a full disk, the node goes to `POSTPONED` as before. The more restrictive state always wins.
+- When the node frees storage below the threshold, it returns to `ACTIVE`.
+
+```text
+ACTIVE ........ storage full, nothing else wrong ....... STORAGE_FULL
+ACTIVE ........ any other violation .................... POSTPONED
+STORAGE_FULL .. storage freed .......................... ACTIVE
+STORAGE_FULL .. another violation appears .............. POSTPONED
+```
+
+## STORAGE_FULL versus POSTPONED
+
+The two states look similar but their economics are opposites.
+
+| Capability | STORAGE_FULL | POSTPONED |
+| --- | --- | --- |
+| New Cascade storage assignments | Excluded | Excluded |
+| Sense (compute) | Eligible | Excluded |
+| Agents (compute) | Eligible | Excluded |
+| Everlight payouts | Paid for held data | Not eligible |
+
+A `STORAGE_FULL` node keeps earning Everlight payouts for every byte of Cascade data it already holds, and it stays eligible for compute work such as Sense verification and AI inference. Only new storage assignments stop. A `POSTPONED` node earns nothing from Everlight until it resolves its violations.
+
+<Tip>
+Filling your disk does not end your storage revenue. Held data keeps paying, and compute work keeps flowing. Adding capacity puts you back in line for new storage assignments on top of that.
+</Tip>
+
+## Payout eligibility
+
+Your node qualifies for a distribution when all of the following hold.
+
+- Its state is `ACTIVE` or `STORAGE_FULL`.
+- Its retained Cascade bytes, reported as `cascade_kademlia_db_bytes` through LEP-4 metrics, meet the minimum payment threshold.
+- Its latest metrics report is fresh.
+
+Payouts are proportional to retained bytes, so the more Cascade data your node holds, the larger its share of each distribution. New nodes ramp up to full payout weight over several periods, and a smoothing window averages reported bytes across periods. All thresholds are governance parameters and can change.
+
+## What to do as an operator
+
+1. Run a compatible SuperNode version. Compatibility shipped in `v2.5.0-testnet`, and `sn-manager` keeps your node on current releases.
+2. Keep your node compliant. Everlight rewards retention, but only for nodes that are `ACTIVE` or `STORAGE_FULL`. A `POSTPONED` node forfeits payouts entirely.
+3. Watch your disk headroom. `STORAGE_FULL` protects your revenue on held data, but only `ACTIVE` nodes receive new storage assignments that grow it.
+4. Follow governance. Payment period length, minimum thresholds, and the fee share that funds the pool are all on-chain parameters.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Operations guide" icon="wrench" href="/supernodes/operations">
+    Updates, configuration, and monitoring for your SuperNode.
+  </Card>
+  <Card title="How payments work" icon="coins" href="/cascade/everlight/payments">
+    The pool, payment periods, and proportional distribution.
+  </Card>
+  <Card title="SuperNode overview" icon="circle-info" href="/supernodes/overview">
+    What SuperNodes do and how they earn.
+  </Card>
+</CardGroup>

@@ -1,0 +1,103 @@
+---
+title: "EVM precompiles on Lumera"
+sidebarTitle: "Overview"
+description: "Native chain features exposed to Solidity contracts at fixed addresses."
+---
+
+Precompiles are contracts at fixed addresses that the chain implements natively instead of in EVM bytecode. Your Solidity code calls them like any other contract, and the chain runs the matching module logic directly. There is nothing to deploy, and the addresses never change.
+
+Lumera Protocol ships 11 static precompiles. Eight come from the standard Cosmos EVM v0.6.0 set. Three are custom precompiles that expose Lumera's own modules. The EVM is live on testnet (`lumera-testnet-2`) only. Mainnet runs `v1.12.0` and gains the EVM with its upgrade.
+
+## Address map
+
+Lumera follows a simple address convention.
+
+| Range | Contents |
+|---|---|
+| `0x01` to `0x0a` | Ethereum standard precompiles |
+| `0x0100` to `0x0806` | Cosmos EVM standard precompiles |
+| `0x0900` and up | Lumera custom precompiles |
+
+### Custom precompiles
+
+| Precompile | Address | Module |
+|---|---|---|
+| [Action](/smart-contracts/precompiles/action) | `0x0000000000000000000000000000000000000901` | `x/action` |
+| [SuperNode](/smart-contracts/precompiles/supernode) | `0x0000000000000000000000000000000000000902` | `x/supernode` |
+| [Wasm](/smart-contracts/precompiles/cosmwasm-bridge) | `0x0000000000000000000000000000000000000903` | CosmWasm (wasmd) |
+
+### Standard precompiles
+
+| Precompile | Address | Purpose |
+|---|---|---|
+| P256 | `0x...0100` | NIST P-256 signature verification (EIP-7212) |
+| Bech32 | `0x...0400` | Hex and Bech32 address conversion |
+| Staking | `0x...0800` | Delegate, undelegate, redelegate, manage validators |
+| Distribution | `0x...0801` | Claim rewards, set withdraw address, fund community pool |
+| ICS20 | `0x...0802` | IBC fungible token transfers |
+| Bank | `0x...0804` | Query balances and supply (read-only) |
+| Gov | `0x...0805` | Submit proposals, vote, query governance state |
+| Slashing | `0x...0806` | Unjail validators, query signing info |
+
+The Vesting precompile (`0x...0803`) is excluded because the current Cosmos EVM default registry does not provide an implementation for it. Full signatures for the whole set live on the [standard precompiles page](/smart-contracts/precompiles/standard).
+
+## When to use a precompile
+
+Reach for a precompile whenever your contract needs a native chain feature.
+
+- Register and track Cascade storage or Sense analysis actions from contract logic ([Action](/smart-contracts/precompiles/action))
+- Read SuperNode registration state, rankings, and hardware metrics on chain ([SuperNode](/smart-contracts/precompiles/supernode))
+- Execute or query a CosmWasm contract from Solidity ([Wasm](/smart-contracts/precompiles/cosmwasm-bridge))
+- Stake, vote, claim rewards, or send IBC transfers from a contract ([standard set](/smart-contracts/precompiles/standard))
+
+You can also call any precompile straight from JavaScript over JSON-RPC. Read methods work through `eth_call` with no deployed contract at all.
+
+## Calling a precompile
+
+Import the interface and point it at the fixed address.
+
+```solidity MyDApp.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./interfaces/IAction.sol";
+import "./interfaces/ISupernode.sol";
+
+contract MyDApp {
+    IAction constant ACTION = IAction(0x0000000000000000000000000000000000000901);
+    ISupernode constant SUPERNODE = ISupernode(0x0000000000000000000000000000000000000902);
+
+    function getStorageCost(uint64 fileSizeKbs) external view returns (uint256) {
+        (, , uint256 totalFee) = ACTION.getActionFee(fileSizeKbs);
+        return totalFee;
+    }
+
+    function totalSuperNodes() external view returns (uint64 total) {
+        (, total) = SUPERNODE.listSuperNodes(0, 1);
+    }
+}
+```
+
+The interfaces (`IAction.sol`, `ISupernode.sol`, `IWasm.sol`) live in [precompiles/solidity](https://github.com/LumeraProtocol/lumera/tree/master/precompiles/solidity) in the lumera repo, together with example contracts and a Hardhat test project. They are plain type-safe wrappers around calls to the fixed addresses.
+
+## Gas
+
+Precompile calls consume gas like any other EVM call. The custom precompiles meter gas from the underlying Cosmos gas usage, converted to EVM gas units. `view` methods cost nothing when called through `eth_call`. The P256 precompile has a fixed cost of 3,450 gas.
+
+## Safety rails
+
+Precompile addresses cannot receive plain token transfers. The chain blocks them through the module account block list and a bank send restriction, so funds cannot be lost by sending tokens to a precompile address by accident.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Standard precompiles" icon="cubes" href="/smart-contracts/precompiles/standard">
+    Staking, governance, IBC transfers, and more with full signatures.
+  </Card>
+  <Card title="Action precompile" icon="bolt" href="/smart-contracts/precompiles/action">
+    Drive Cascade and Sense actions from your contracts.
+  </Card>
+  <Card title="CosmWasm bridge" icon="bridge" href="/smart-contracts/precompiles/cosmwasm-bridge">
+    Call CosmWasm contracts from Solidity and the reverse.
+  </Card>
+</CardGroup>

@@ -1,0 +1,61 @@
+---
+title: "Run a SuperNode"
+sidebarTitle: "Run a SuperNode"
+description: "What it takes to extend your validator with a SuperNode, condensed to one page."
+---
+
+A SuperNode extends a Lumera Protocol validator with Cascade storage, Sense verification, and AI inference. It earns additional rewards for that work on top of staking income.
+
+This page is the condensed orientation. The full runbook lives in the [SuperNode section](/supernodes/overview).
+
+## Before you start
+
+You need four things.
+
+- **A validator in a bonded state.** If you do not have one yet, start with [Run a validator](/quickstart-validator).
+- **A separate server.** The SuperNode must never share a host with the validator. It keeps its own account, keys, and stake delegation, and talks to the chain over gRPC.
+- **Access to the validator operator key.** It signs the registration transaction.
+- **SuperNode hardware.** Plan for at least 8 CPU cores, 16 GB RAM, a 1 TB NVMe SSD, and a 1 Gbps connection. Ports 4444 (gRPC) and 4445 (P2P) must be reachable.
+
+The pairing itself is two on-chain records. A registration signed by the validator operator binds the SuperNode endpoint and account to the validator, and a stake delegation from the SuperNode account backs it.
+
+## The path
+
+Four stages take you from a bonded validator to a registered SuperNode.
+
+- **Provision a second server.** Ubuntu 22.04 LTS or later on x86_64 hardware that meets the specs above.
+- **Install with `sn-manager`.** The manager downloads the `supernode` binary, applies updates automatically, and supervises the service. Configuration lives in `~/.supernode/config.yml`.
+- **Fund the SuperNode account and delegate.** LEP-3, a Lumera Enhancement Proposal, defines a dual stake rule. Your validator self-delegation plus the delegation from the SuperNode account must together meet the minimum, 10,000 LUME on testnet and 25,000 LUME on mainnet. Governance can change these values.
+- **Register from the validator host.** The validator operator key signs the transaction that binds the SuperNode endpoint and account to your validator.
+
+Two commands anchor the flow. The runbook walks through everything around them.
+
+```bash
+# Check the current combined stake minimum
+lumerad query supernode params
+
+# Bind the SuperNode to your validator, signed by the operator key
+lumerad tx supernode register-supernode <valoper> <sn-endpoint> <sn-account>
+```
+
+<Note>
+Verify the stake minimum before you register. The `minimum_stake_for_sn` parameter is set by governance and can change.
+</Note>
+
+## Earning for retention
+
+SuperNodes that keep Cascade data available receive ongoing payouts from the Everlight SN Pool, proportional to the data they retain. [Everlight for SuperNode operators](/cascade/everlight/supernode-operators) explains eligibility and payout mechanics.
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="SuperNode overview" icon="circle-info" href="/supernodes/overview">
+    Architecture, staking requirements, and hardware in full.
+  </Card>
+  <Card title="Node setup" icon="server" href="/supernodes/node-setup">
+    Install and configure the SuperNode with `sn-manager`.
+  </Card>
+  <Card title="Everlight payouts" icon="coins" href="/cascade/everlight/supernode-operators">
+    How retention compensation works for operators.
+  </Card>
+</CardGroup>
