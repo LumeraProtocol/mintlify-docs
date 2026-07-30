@@ -119,7 +119,8 @@
               "sdk/javascript",
               "sdk/javascript-reference",
               "sdk/go",
-              "sdk/go-reference"
+              "sdk/go-reference",
+              "sdk/rust"
             ]
           },
           {
@@ -217,7 +218,15 @@
               "api/overview",
               "api/actions",
               "api/supernodes",
-              "api/lumescope"
+              "api/lumescope",
+              "api/sn-api"
+            ]
+          },
+          {
+            "group": "RPC",
+            "pages": [
+              "api/cometbft-rpc",
+              "api/evm-jsonrpc"
             ]
           },
           {
