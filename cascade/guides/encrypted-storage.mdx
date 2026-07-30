@@ -12,6 +12,9 @@ You need a browser app with a connected Cascade client and a signer that support
 
 The scheme uses two keys. The wallet key is re-derived from a wallet signature whenever needed. A random document key encrypts the file itself.
 
+<img className="block dark:hidden mx-auto" src="/images/diagrams/encrypted-storage-light.svg" alt="Encrypted Storage Architecture" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/encrypted-storage-dark.svg" alt="Encrypted Storage Architecture" />
+
 ```text
 wallet signs a fixed message (ADR-036)
         |
@@ -268,6 +271,11 @@ For a complete implementation of this pattern, see the [Research Archive example
 
 </Step>
 </Steps>
+
+### Collaboration at a glance
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/collaboration-flow-light.svg" alt="Collaboration Flow" style={{ maxWidth: "280px" }} />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/collaboration-flow-dark.svg" alt="Collaboration Flow" style={{ maxWidth: "280px" }} />
 
 ## Next steps
 

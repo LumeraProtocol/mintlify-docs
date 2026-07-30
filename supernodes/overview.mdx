@@ -24,24 +24,8 @@ The protocol selects a set of top ranked SuperNodes for each action, based on st
 
 The SuperNode and its validator are two independent hosts that meet on chain. The validator produces blocks through its normal consensus P2P on port 26656. The SuperNode separately talks to the Lumera chain over gRPC to read state and broadcast its own messages.
 
-```
- Validator host                          SuperNode host
- ┌────────────────────┐                  ┌────────────────────┐
- │ lumerad            │                  │ supernode          │
- │ consensus P2P      │                  │ managed by         │
- │ port 26656         │                  │ sn-manager         │
- └─────────┬──────────┘                  └─────────┬──────────┘
-           │ produces blocks                       │ gRPC, reads state and
-           │                                       │ broadcasts messages
-           ▼                                       ▼
- ┌──────────────────────────────────────────────────────────────┐
- │                        Lumera chain                          │
- │  register-supernode binds VALOPER + SN_ENDPOINT + SN_ACCOUNT │
- │  SN_ACCOUNT delegates stake to VALOPER (LEP-3)               │
- └──────────────────────────────────────────────────────────────┘
-
- SuperNode ◄── Kademlia DHT, port 4445 ──► other SuperNodes
-```
+<img className="block dark:hidden mx-auto" src="/images/diagrams/supernode-architecture-light.svg" alt="Supernode Architecture" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/supernode-architecture-dark.svg" alt="Supernode Architecture" />
 
 What ties the two hosts together is a pair of on-chain records.
 

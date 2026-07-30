@@ -1,0 +1,53 @@
+{
+  "everlight-flow": {
+    "viewBox": "0 0 760 505",
+    "title": "Everlight funding and payout flow",
+    "elements": [
+      { "type": "box", "id": "src-foundation", "x": 20, "y": 20, "w": 210, "h": 72, "label": "Foundation\nstaking rewards", "items": ["MsgSend"] },
+      { "type": "box", "id": "src-fees", "x": 270, "y": 20, "w": 210, "h": 72, "label": "Action registration\nfees", "items": ["governance set share"] },
+      { "type": "box", "id": "src-pool", "x": 520, "y": 20, "w": 210, "h": 72, "label": "Community Pool\ntransfers", "items": ["MsgCommunityPoolSpend"] },
+      { "type": "arrow", "id": "a-f", "points": [[125, 102], [125, 190]] },
+      { "type": "arrow", "id": "a-r", "points": [[375, 102], [375, 190]] },
+      { "type": "arrow", "id": "a-c", "points": [[625, 102], [625, 190]] },
+      { "type": "text", "id": "mod-label", "x": 55, "y": 182, "text": "X/SUPERNODE", "size": 9, "bold": true, "muted": true, "anchor": "start" },
+      { "type": "box", "id": "module", "x": 50, "y": 200, "w": 660, "h": 110, "label": " ", "dashed": true },
+      { "type": "box", "id": "pool", "x": 230, "y": 225, "w": 300, "h": 60, "label": "Everlight SN Pool", "variant": "inner", "items": ["pays every payment period"] },
+      { "type": "arrow", "id": "a-sn1", "points": [[380, 320], [190, 380]] },
+      { "type": "arrow", "id": "a-sn2", "points": [[380, 320], [380, 380]] },
+      { "type": "arrow", "id": "a-sn3", "points": [[380, 320], [570, 380]] },
+      { "type": "box", "id": "sn1", "x": 120, "y": 390, "w": 140, "h": 54, "label": "SN #1" },
+      { "type": "box", "id": "sn2", "x": 310, "y": 390, "w": 140, "h": 54, "label": "SN #2" },
+      { "type": "box", "id": "sn3", "x": 500, "y": 390, "w": 140, "h": 54, "label": "SN #N" },
+      { "type": "text", "id": "note-1", "x": 380, "y": 472, "text": "Payouts are proportional to retained Cascade bytes (LEP-4 metrics)", "size": 9, "muted": true },
+      { "type": "text", "id": "note-2", "x": 380, "y": 492, "text": "STORAGE_FULL nodes stay eligible · POSTPONED nodes do not", "size": 9, "muted": true }
+    ]
+  },
+  "execution-environments": {
+    "viewBox": "0 0 760 300",
+    "title": "Three execution environments on one chain",
+    "elements": [
+      { "type": "box", "id": "t1", "x": 60, "y": 20, "w": 190, "h": 46, "label": "SDKs and lumerad" },
+      { "type": "box", "id": "t2", "x": 285, "y": 20, "w": 190, "h": 46, "label": "Rust contract tooling" },
+      { "type": "box", "id": "t3", "x": 510, "y": 20, "w": 190, "h": 46, "label": "MetaMask · Hardhat · Remix" },
+      { "type": "arrow", "id": "a1", "points": [[155, 76], [155, 130]] },
+      { "type": "arrow", "id": "a2", "points": [[380, 76], [380, 130]] },
+      { "type": "arrow", "id": "a3", "points": [[605, 76], [605, 130]] },
+      { "type": "text", "id": "chain-label", "x": 45, "y": 122, "text": "LUMERA CHAIN", "size": 9, "bold": true, "muted": true, "anchor": "start" },
+      { "type": "box", "id": "chain", "x": 40, "y": 140, "w": 680, "h": 135, "label": " ", "dashed": true },
+      { "type": "box", "id": "b1", "x": 60, "y": 165, "w": 190, "h": 70, "label": "Cosmos SDK modules", "variant": "inner", "items": ["Cascade · staking · gov"] },
+      { "type": "box", "id": "b2", "x": 285, "y": 165, "w": 190, "h": 70, "label": "CosmWasm", "variant": "inner", "items": ["Rust contracts"] },
+      { "type": "box", "id": "b3", "x": 510, "y": 165, "w": 190, "h": 70, "label": "EVM", "variant": "inner", "items": ["Solidity · Vyper"] },
+      { "type": "arrow", "id": "bridge", "points": [[380, 245], [380, 262], [605, 262], [605, 245]], "bidirectional": true, "dashed": true, "label": "Wasm precompile 0x0903", "labelPos": [492, 273] }
+    ]
+  },
+  "protocol-stack": {
+    "viewBox": "0 0 760 400",
+    "title": "Lumera protocol stack",
+    "elements": [
+      { "type": "box", "id": "client", "x": 100, "y": 20, "w": 560, "h": 64, "label": "Client layer", "items": ["Lumera Hub · Lumera Portal · LumeScope · lumerad CLI · SDKs"] },
+      { "type": "box", "id": "supernode", "x": 100, "y": 116, "w": 560, "h": 64, "label": "SuperNode layer", "items": ["Cascade permanent storage · Sense authentication · Everlight retention"] },
+      { "type": "box", "id": "modules", "x": 100, "y": 212, "w": 560, "h": 64, "label": "Custom module layer", "items": ["x/action · x/supernode · x/lumeraid · x/claim · x/audit"] },
+      { "type": "box", "id": "base", "x": 100, "y": 308, "w": 560, "h": 64, "label": "Base layer", "items": ["Cosmos SDK · CometBFT · CosmWasm · IBC · EVM"] }
+    ]
+  }
+}

@@ -6,21 +6,8 @@ description: "How the base chain, custom modules, SuperNode layer, and clients f
 
 Lumera Protocol is organized into four layers. The base chain provides consensus and three execution environments. Custom modules add storage, identity, and SuperNode coordination. The SuperNode layer does the heavy off-chain work. Client applications surface all of it to users. This page walks through each layer and how they interact.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  Client layer                       │
-│         Lumera Hub  ·  LumeScope  ·  CLI            │
-├─────────────────────────────────────────────────────┤
-│                 SuperNode layer                     │
-│      Cascade (permanent storage)  ·  Sense (AI)     │
-├─────────────────────────────────────────────────────┤
-│              Custom module layer                    │
-│  x/action  ·  x/supernode  ·  x/lumeraid  ·  x/claim│
-├─────────────────────────────────────────────────────┤
-│                   Base layer                        │
-│   Cosmos SDK v0.53.6  ·  CosmWasm  ·  IBC  ·  EVM   │
-└─────────────────────────────────────────────────────┘
-```
+<img className="block dark:hidden mx-auto" src="/images/diagrams/protocol-stack-light.svg" alt="Lumera protocol stack" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/protocol-stack-dark.svg" alt="Lumera protocol stack" />
 
 ## Base layer
 

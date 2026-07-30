@@ -10,6 +10,9 @@ Everlight pays SuperNodes recurring compensation for the Cascade data they retai
 Everlight is rolling out in phases. The mechanisms on this page ship through governance-approved chain upgrades, and parameters can change through governance at any time.
 </Note>
 
+<img className="block dark:hidden mx-auto" src="/images/diagrams/everlight-flow-light.svg" alt="Everlight funding and payout flow" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/everlight-flow-dark.svg" alt="Everlight funding and payout flow" />
+
 ## The Everlight SN Pool
 
 The Everlight SN Pool is a module account inside `x/supernode`, the module that manages SuperNode registration, ranking, and rewards. There is no separate Everlight module. The pool account accumulates LUME between distributions, and any address can send funds to it with a standard bank transfer. The distribution logic does not care where the balance came from. It pays out whatever the pool holds when a payment period ends.

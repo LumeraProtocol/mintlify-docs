@@ -14,24 +14,8 @@ This opens cross-chain use cases.
 
 ## How it works
 
-```text
-Controller chain                     Lumera (host chain)
-----------------                     -------------------
-MsgSendTx with a packed
-MsgRequestAction
-       |
-       v
-  IBC relayer ---------------------> ICA host module
-                                           |
-                                           v
-                                 executes MsgRequestAction
-                                 ICA address pays the escrow
-                                           |
-                                           v
-                                       action_id
-
-Your application ------------------> SN-API upload using action_id
-```
+<img className="block dark:hidden mx-auto" src="/images/diagrams/interchain-accounts-light.svg" alt="Interchain Accounts (ICA) Flow" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/interchain-accounts-dark.svg" alt="Interchain Accounts (ICA) Flow" />
 
 The flow has six steps.
 
