@@ -190,6 +190,15 @@
             ]
           },
           {
+            "group": "Protocol",
+            "icon": "diagram-project",
+            "pages": [
+              "protocol/sense",
+              "protocol/modules",
+              "protocol/governance"
+            ]
+          },
+          {
             "group": "Lumera Hub",
             "icon": "wallet",
             "pages": [
