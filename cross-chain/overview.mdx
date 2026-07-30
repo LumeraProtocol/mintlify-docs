@@ -22,8 +22,8 @@ Most chains keep consensus-critical state on-chain and push large supporting dat
 
 Two worked integrations shaped the patterns in this section.
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/cross-chain-integration-light.svg" alt="Injective × Cascade Integration Shape" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/cross-chain-integration-dark.svg" alt="Injective × Cascade Integration Shape" />
+<img className="block dark:hidden mx-auto" src="/images/diagrams/cross-chain-integration-light.svg" alt="Cross-chain integration shape" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/cross-chain-integration-dark.svg" alt="Cross-chain integration shape" />
 
 - **Injective.** A CosmWasm chain build that exercises all three write patterns, with contracts holding `action_id` pointers to permanent receipts and evidence.
 - **LUKSO.** An EVM chain build where Universal Profile metadata points at hash-bound Cascade URLs, so standard LSP readers verify the bytes without knowing Cascade exists.

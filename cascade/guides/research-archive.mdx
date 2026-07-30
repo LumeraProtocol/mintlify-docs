@@ -123,22 +123,8 @@ const papers = actions.filter(
 
 Sharing a draft moves a wrapped document key from the owner to the collaborator.
 
-```text
-Owner                          Cascade                    Collaborator
-  |                               |                             |
-  |  re-encrypt the document key  |                             |
-  |  for the collaborator         |                             |
-  |------ upload invitation ----->|                             |
-  |                               |                             |
-  |  share the app link with the key in the #key=... fragment   |
-  |------------------------------------------------------------>|
-  |                               |                             |
-  |                               |<----- fetch invitation -----|
-  |                               |                             |
-  |                               |   unwrap the document key,  |
-  |                               |   then download and decrypt |
-  |                               |   the draft                 |
-```
+<img className="block dark:hidden mx-auto" src="/images/diagrams/collaboration-flow-light.svg" alt="Collaboration flow" style={{ maxWidth: "280px" }} />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/collaboration-flow-dark.svg" alt="Collaboration flow" style={{ maxWidth: "280px" }} />
 
 The app link carries key material in the URL hash fragment (`#key=...`). Browsers never send the hash fragment to servers, so it stays on the client. That makes the link safe to share over any messaging channel.
 

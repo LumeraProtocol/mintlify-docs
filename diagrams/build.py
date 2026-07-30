@@ -29,9 +29,9 @@ EXPORTS = {
     "sdk-architecture": ("sdk-architecture", {}),
     "node-architecture": ("node-architecture", {}),
     "supernode-architecture": ("supernode-architecture", {}),
-    "injective-pattern-a": ("pattern-user-signed", {"Injective (your CW)": "Your chain\n(contract)"}),
-    "injective-pattern-b": ("pattern-server-signed", {"Injective (your CW)": "Your chain\n(contract)"}),
-    "injective-integration": ("cross-chain-integration", {"Injective contract": "Your chain contract", "Injective": "Your chain"}),
+    "injective-pattern-a": ("pattern-user-signed", {"Injective\n(your CW)": "Your chain\n(contract)"}),
+    "injective-pattern-b": ("pattern-server-signed", {"Injective\n(your CW)": "Your chain\n(contract)", "sign Injective tx": "sign your chain tx"}),
+    "injective-integration": ("cross-chain-integration", {"Injective contract": "Your chain contract", "signs Injective txs": "signs your chain txs"}),
     "everlight-flow": ("everlight-flow", {}),
     "execution-environments": ("execution-environments", {}),
     "protocol-stack": ("protocol-stack", {}),
@@ -40,6 +40,15 @@ EXPORTS = {
 THEMES = {
     "light": {"box": "#078a8a", "text": "#1e293b", "muted": "#64748b"},
     "dark": {"box": "#47c78a", "text": "#e2e8f0", "muted": "#94a3b8"},
+}
+
+# Clean titles for the SVG aria-label, keyed by output name. Overrides the
+# source title where it names a specific chain or uses punctuation we avoid.
+TITLES = {
+    "pattern-user-signed": "Pattern A user signed Cascade write",
+    "pattern-server-signed": "Pattern B server signed through a backend",
+    "cross-chain-integration": "Cross-chain integration shape",
+    "node-architecture": "Browser-first Cascade architecture",
 }
 
 # ── collect used characters for the font subset ──────────────────────────────
@@ -52,6 +61,8 @@ for src, (out_name, subs) in EXPORTS.items():
                 v = v.replace(a, b)
             chars.update(v)
         for item in el.get("items") or []:
+            for a, b in subs.items():
+                item = item.replace(a, b)
             chars.update(item)
 CHARSET = "".join(sorted(chars - {"\n"}))
 
@@ -133,6 +144,8 @@ def render_box(el, s, subs, c):
             f'fill="{c["text"]}" font-size="{num(s["labelSize"])}" text-anchor="middle" dominant-baseline="middle">{esc(line)}</text>'
         )
     for i, item in enumerate(items):
+        for a, b in subs.items():
+            item = item.replace(a, b)
         y = label_y + len(lines) * s["labelLineHeight"] + s["itemGap"] + i * s["itemLineHeight"]
         parts.append(
             f'<text x="{num(el["x"] + el["w"] / 2)}" y="{num(y)}" '
@@ -208,7 +221,7 @@ for src, (out_name, subs) in EXPORTS.items():
                 body.append(render_arrow(el, out_name, s, subs, c))
             elif el["type"] == "text":
                 body.append(render_text(el, subs, c))
-        title = esc(d.get("title", out_name))
+        title = esc(TITLES.get(out_name, d.get("title", out_name)))
         svg = (
             f'<svg viewBox="{d["viewBox"]}" role="img" aria-label="{title}" xmlns="http://www.w3.org/2000/svg">'
             f"<style>{FONT_CSS}</style>"

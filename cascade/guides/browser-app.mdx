@@ -8,6 +8,11 @@ In this guide you build a Vite and TypeScript single page app that connects to t
 
 Every upload returns an action ID. This is the permanent on-chain reference you later use to download the file.
 
+The app talks to Cascade straight from the browser. The SDK handles the SN-API transfer, so you do not need a backend server for storage.
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/node-architecture-light.svg" alt="Browser-first Cascade architecture" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/node-architecture-dark.svg" alt="Browser-first Cascade architecture" />
+
 ## What you need
 
 - [Node.js](https://nodejs.org/) 18 or later
