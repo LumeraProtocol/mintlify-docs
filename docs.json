@@ -118,7 +118,20 @@
             "group": "Smart contracts",
             "icon": "file-code",
             "pages": [
-              "smart-contracts"
+              "smart-contracts/overview",
+              "smart-contracts/connect-metamask",
+              "smart-contracts/deploy-with-remix",
+              "smart-contracts/openrpc-playground",
+              {
+                "group": "Precompiles",
+                "pages": [
+                  "smart-contracts/precompiles/overview",
+                  "smart-contracts/precompiles/standard",
+                  "smart-contracts/precompiles/action",
+                  "smart-contracts/precompiles/supernode",
+                  "smart-contracts/precompiles/cosmwasm-bridge"
+                ]
+              }
             ]
           },
           {
@@ -254,6 +267,10 @@
     {
       "source": "/supernodes/setup",
       "destination": "/supernodes/node-setup"
+    },
+    {
+      "source": "/smart-contracts",
+      "destination": "/smart-contracts/overview"
     }
   ]
 }
