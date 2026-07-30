@@ -5,7 +5,7 @@ Developer documentation for [Lumera Protocol](https://lumera.io), built with [Mi
 ## Structure
 
 - `docs.json` holds the site config and navigation.
-- Pages are MDX files. The folder layout mirrors the sidebar (cascade/, sdk/, validators/, supernodes/, upgrades/, hub/, api/).
+- Pages are MDX files. The folder layout mirrors the sidebar (cascade/, smart-contracts/, sdk/, validators-mainnet/, validators-testnet/, supernodes/, cross-chain/, upgrades/, protocol/, hub/, api/).
 - `sources/` holds scraped research material. It is excluded from the build by `.mintignore`.
 - `drafts/` holds content that is written but not yet published. Also excluded from the build.
 
