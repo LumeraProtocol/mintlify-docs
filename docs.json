@@ -15,8 +15,8 @@
   "navbar": {
     "links": [
       {
-        "label": "Explorer",
-        "href": "https://portal.lumera.io/lumera-mainnet-1"
+        "label": "Portal",
+        "href": "https://portal.lumera.io"
       },
       {
         "label": "GitHub",
@@ -25,8 +25,8 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Launch Hub",
-      "href": "https://hub.lumera.io"
+      "label": "Launch App",
+      "href": "https://portal.lumera.io"
     }
   },
   "footer": {
@@ -34,7 +34,22 @@
       "github": "https://github.com/LumeraProtocol",
       "x": "https://x.com/lumera",
       "discord": "https://discord.com/invite/lumeraprotocol"
-    }
+    },
+    "links": [
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "Faucet",
+            "href": "https://portal.testnet.lumera.io/lumera-testnet-2/faucet"
+          },
+          {
+            "label": "Explorer",
+            "href": "https://portal.lumera.io"
+          }
+        ]
+      }
+    ]
   },
   "navigation": {
     "tabs": [
@@ -42,14 +57,23 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Get started",
-            "icon": "rocket",
+            "group": "Introduction",
+            "icon": "book-open",
             "pages": [
               "index",
-              "quickstart",
-              "faucet",
+              "architecture",
               "networks",
               "ecosystem"
+            ]
+          },
+          {
+            "group": "Quick start",
+            "icon": "rocket",
+            "pages": [
+              "quickstart",
+              "quickstart-validator",
+              "quickstart-supernode",
+              "faucet"
             ]
           },
           {
@@ -61,21 +85,21 @@
               "cascade/client-setup",
               "cascade/error-handling",
               {
+                "group": "Concepts",
+                "pages": [
+                  "cascade/concepts/erasure-coding",
+                  "cascade/concepts/upload-lifecycle",
+                  "cascade/concepts/download-lifecycle",
+                  "cascade/concepts/interchain-accounts"
+                ]
+              },
+              {
                 "group": "Guides",
                 "pages": [
                   "cascade/guides/browser-app",
                   "cascade/guides/nodejs",
                   "cascade/guides/research-archive",
                   "cascade/guides/encrypted-storage"
-                ]
-              },
-              {
-                "group": "Concepts",
-                "pages": [
-                  "cascade/concepts/upload-lifecycle",
-                  "cascade/concepts/download-lifecycle",
-                  "cascade/concepts/erasure-coding",
-                  "cascade/concepts/interchain-accounts"
                 ]
               }
             ]
@@ -131,13 +155,6 @@
             "icon": "arrow-up-right-dots",
             "pages": [
               "upgrades/evm-upgrade"
-            ]
-          },
-          {
-            "group": "Protocol",
-            "icon": "diagram-project",
-            "pages": [
-              "architecture"
             ]
           },
           {
