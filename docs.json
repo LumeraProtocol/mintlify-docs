@@ -146,7 +146,8 @@
             "icon": "server",
             "pages": [
               "supernodes/overview",
-              "supernodes/setup",
+              "supernodes/node-setup",
+              "supernodes/register",
               "supernodes/operations"
             ]
           },
@@ -249,6 +250,10 @@
     {
       "source": "/supernodes/configuration",
       "destination": "/supernodes/operations"
+    },
+    {
+      "source": "/supernodes/setup",
+      "destination": "/supernodes/node-setup"
     }
   ]
 }
