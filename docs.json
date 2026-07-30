@@ -101,6 +101,14 @@
                   "cascade/guides/research-archive",
                   "cascade/guides/encrypted-storage"
                 ]
+              },
+              {
+                "group": "Everlight",
+                "pages": [
+                  "cascade/everlight/overview",
+                  "cascade/everlight/payments",
+                  "cascade/everlight/supernode-operators"
+                ]
               }
             ]
           },
