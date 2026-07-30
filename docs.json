@@ -173,6 +173,16 @@
             ]
           },
           {
+            "group": "Cross-chain",
+            "icon": "arrows-left-right",
+            "pages": [
+              "cross-chain/overview",
+              "cross-chain/interchain-accounts",
+              "cross-chain/relayer-setup",
+              "cross-chain/patterns"
+            ]
+          },
+          {
             "group": "Network upgrades",
             "icon": "arrow-up-right-dots",
             "pages": [
