@@ -2,3 +2,67 @@
 title: "LUME"
 description: "The native asset of Lumera: what it is used for, how supply adjusts, and how staking and slashing work."
 ---
+
+LUME is the native asset of Lumera. It pays for transactions and services, secures the network through staking, and governs protocol parameters. All protocol revenue and service fees are collected in LUME, so token demand tracks network usage rather than sitting alongside it.
+
+## Utility
+
+**Medium of exchange.** LUME pays gas on every transaction and settles every service request. Fees for Actions such as Cascade storage are quoted and escrowed in LUME.
+
+**Network services.** Executing an Action requires payment in LUME. Storage is priced by data size, attestation by size and analysis cost. Fees are held in escrow at registration and released only when the work is verifiably complete. If an Action fails or expires, the escrow is refunded.
+
+**Security and staking.** Validators and delegators stake LUME to secure consensus. Validators run nodes, propose and sign blocks, and earn block rewards plus a share of transaction fees. Delegators stake to a validator without running infrastructure and earn pro-rata rewards net of commission. A SuperNode requires its validator to meet a self-stake threshold, tying service capacity to capital at risk.
+
+**Governance.** Staked LUME votes on protocol parameters, fee structures, issuance, and ecosystem funding. See [governance](/governance).
+
+## Supply mechanics
+
+Issuance is not fixed. The mint module recalculates the supply rate every block, steering the share of staked supply toward a target bonded ratio. When less than the target is staked, issuance rises to make staking more attractive. When more than the target is staked, issuance falls to limit dilution and return liquidity to circulation. Adjustments are incremental and bounded, so the rate moves smoothly rather than in shocks.
+
+Genesis parameters:
+
+| Parameter | Value |
+| --- | --- |
+| Genesis supply | 250,000,000 LUME |
+| Target bonded ratio | 67% |
+| Initial issuance rate | 13.75% |
+| Maximum issuance rate | 20% |
+| Minimum issuance rate | 5% |
+| Rate of change | 7.5% |
+
+These are governable. Current values are queryable on chain through the mint and staking modules.
+
+### Deflationary pressure
+
+Two mechanisms remove supply from circulation:
+
+- **Fee burn.** A share of every transaction fee is permanently destroyed. As usage grows, more LUME leaves circulation, which links scarcity to activity rather than to a fixed schedule.
+- **Slashing.** LUME forfeited by a slashed validator is removed from circulation, so the penalty for misbehavior is also deflationary.
+
+A further share of block rewards is directed to a community pool that funds development and ecosystem work. Exact splits are covered in [protocol revenue](/protocol-revenue).
+
+## Staking and slashing
+
+Validators are expected to maintain uptime and follow consensus rules. Penalties apply for provable failures:
+
+| Condition | Consequence |
+| --- | --- |
+| Downtime | A portion of stake is slashed and the validator is jailed temporarily |
+| Double signing | A larger slash, with removal from the validator set possible |
+| Malicious behavior | Removal from the validator set |
+
+Delegators share slashing risk with the validator they choose, which gives them a direct reason to evaluate operator reliability rather than chase the highest advertised yield.
+
+<CardGroup cols={3}>
+  <Card title="Protocol revenue" icon="receipt" href="/protocol-revenue">
+    Where fees come from and how they are distributed.
+  </Card>
+
+  <Card title="Governance" icon="landmark" href="/governance">
+    Propose and vote on parameter changes.
+  </Card>
+
+  <Card title="Run a validator" icon="shield-check" href="/quickstart-validator">
+    Stake, secure the chain, and earn rewards.
+  </Card>
+</CardGroup>

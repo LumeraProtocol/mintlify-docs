@@ -2,3 +2,78 @@
 title: "Governance"
 description: "How staked LUME governs protocol parameters, the proposal and voting process, and what governance can change."
 ---
+
+Lumera's protocol parameters are not fixed at launch. Issuance, fee structures, service pricing, and ecosystem funding are all adjustable by on-chain proposal, which means the network can respond to real conditions without a hard fork or a central decision-maker.
+
+Voting power comes from staked LUME. One LUME staked equals one vote. Tokens sitting unstaked do not vote, so governance weight follows capital that is committed to securing the network.
+
+## What governance controls
+
+- **Issuance** - the target bonded ratio, issuance bounds, and rate of change
+- **Fees** - transaction fee parameters, the burn share, and distribution splits
+- **Service pricing** - Action fee parameters and adjustment factors
+- **Ecosystem funding** - spending from the community pool
+- **Protocol upgrades** - coordinated chain upgrades and module changes
+- **Governance itself** - deposits, periods, and thresholds
+
+## The proposal process
+
+<Steps>
+  <Step title="Submit">
+    A proposal is submitted with an initial deposit. Anyone holding LUME can submit one.
+  </Step>
+  <Step title="Deposit period">
+    The proposal must reach the minimum deposit threshold before it advances. Any community member can contribute to the deposit, so a proposal with support can clear the bar even if the author cannot fund it alone. If the threshold is not met before the deposit period expires, the proposal is rejected and the deposit is burned.
+  </Step>
+  <Step title="Voting period">
+    Staked LUME votes. Options are Yes, No, Abstain, and No With Veto.
+  </Step>
+  <Step title="Outcome">
+    An approved proposal executes automatically according to its contents. A rejected or vetoed proposal burns the deposit.
+  </Step>
+</Steps>
+
+Burning the deposit on failure is deliberate. It puts a real cost on frivolous or malicious proposals while leaving legitimate ones cheap for anyone with community backing.
+
+## Parameters
+
+Genesis governance parameters:
+
+| Parameter | Value |
+| --- | --- |
+| Minimum deposit | 1,250 LUME |
+| Minimum initial deposit ratio | 0.25% |
+| Minimum deposit ratio | 1.0% |
+| Maximum deposit period | 3 days |
+| Voting period | 7 days |
+| Expedited minimum deposit | 5,000 LUME |
+| Expedited voting period | 2 days |
+| Veto threshold | 40% |
+
+Expedited proposals exist for changes that cannot wait a full voting period. They require a higher deposit and pass through a shorter vote. These parameters are themselves governable, and current values are queryable on chain.
+
+## Validators and delegators
+
+Governance follows a delegation model, which keeps participation high without requiring every holder to track every proposal.
+
+A validator votes on behalf of the stake delegated to it. A delegator who disagrees can cast their own vote, which overrides their validator's vote for that proposal only. A delegator who does not vote inherits their validator's position by default.
+
+The practical effect is that passive holders stay represented while active holders retain full control. It also makes governance behavior part of how delegators evaluate validators, since a validator's voting record is public and applies to delegated stake.
+
+## Veto
+
+A proposal that attracts No With Veto votes above the veto threshold is discarded outright and its deposit burned, regardless of how many Yes votes it received. The veto is a protection against proposals that are technically popular but harmful to the network: a majority alone is not sufficient to pass something a substantial minority considers damaging.
+
+<CardGroup cols={3}>
+  <Card title="Submit a proposal" icon="file-signature" href="/protocol/governance">
+    The operational walkthrough, including CLI commands.
+  </Card>
+
+  <Card title="LUME" icon="coins" href="/token">
+    Staking, supply mechanics, and voting power.
+  </Card>
+
+  <Card title="Protocol revenue" icon="receipt" href="/protocol-revenue">
+    The fee structures governance can change.
+  </Card>
+</CardGroup>
