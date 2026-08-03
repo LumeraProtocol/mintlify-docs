@@ -1,10 +1,10 @@
 ---
-title: "CascadeService gRPC: Register and Download Reference"
+title: "CascadeService gRPC reference"
 sidebarTitle: "CascadeService"
 description: "CascadeService provides streaming gRPC RPCs for registering files in Cascade permanent storage and downloading stored data from a Lumera SuperNode."
 ---
 
-`CascadeService` is the gRPC interface you use to register files in Lumera's Cascade permanent-storage layer and to retrieve them later. Both operations use gRPC streaming: the `Register` RPC is bidirectional (you stream file chunks to the SuperNode while it streams progress events back), and the `Download` RPC streams chunks from the SuperNode to you. The SuperNode handles RaptorQ encoding, P2P distribution, and on-chain finalization — your client only needs to send the data and act on the event stream.
+`CascadeService` is the gRPC interface you use to register files in Lumera's Cascade permanent-storage layer and to retrieve them later. Both operations use gRPC streaming. The `Register` RPC is bidirectional. You stream file chunks to the SuperNode while it streams progress events back. The `Download` RPC streams chunks from the SuperNode to you. The SuperNode handles RaptorQ encoding, P2P distribution, and on-chain finalization. Your client only needs to send the data and act on the event stream.
 
 ## Proto definition
 
@@ -21,14 +21,14 @@ service CascadeService {
 
 `rpc Register(stream RegisterRequest) returns (stream RegisterResponse)`
 
-Use `Register` to upload a file and anchor it permanently on the Lumera network. The RPC is a bidirectional stream: your client opens the stream, sends the file in `DataChunk` messages, then sends a final `Metadata` message to identify the pre-created on-chain action. The SuperNode encodes the data with RaptorQ, distributes the encoded symbols across the P2P network, and finalizes the action on-chain — streaming `RegisterResponse` progress events back to you throughout.
+Use `Register` to upload a file and anchor it permanently on the Lumera network. The RPC is a bidirectional stream. Your client opens the stream, sends the file in `DataChunk` messages, then sends a final `Metadata` message to identify the pre-created on-chain action. The SuperNode encodes the data with RaptorQ, distributes the encoded symbols across the P2P network, and finalizes the action on-chain. It streams `RegisterResponse` progress events back to you throughout.
 
-### Client stream — `RegisterRequest`
+### Client stream `RegisterRequest`
 
-Each message in your outgoing stream is one of two types (`oneof`):
+Each message in your outgoing stream is one of two types (`oneof`).
 
 <ParamField body="chunk" type="DataChunk">
-  A slice of the file's raw bytes. Send as many chunk messages as needed to transfer the complete file. There is no prescribed chunk size — a few hundred kilobytes per message is a reasonable default.
+  A slice of the file's raw bytes. Send as many chunk messages as needed to transfer the complete file. There is no prescribed chunk size. A few hundred kilobytes per message is a reasonable default.
 
   <Expandable title="DataChunk fields">
     <ParamField body="chunk.data" type="bytes" required>
@@ -50,7 +50,7 @@ Each message in your outgoing stream is one of two types (`oneof`):
   </Expandable>
 </ParamField>
 
-### Server stream — `RegisterResponse`
+### Server stream `RegisterResponse`
 
 <ResponseField name="event_type" type="SupernodeEventType">
   A progress milestone. See the event table below.
@@ -61,12 +61,12 @@ Each message in your outgoing stream is one of two types (`oneof`):
 </ResponseField>
 
 <ResponseField name="tx_hash" type="string">
-  Populated on the `ACTION_FINALIZED` event — the transaction hash of the finalization transaction broadcast to the Lumera chain.
+  Populated on the `ACTION_FINALIZED` event. It holds the transaction hash of the finalization transaction broadcast to the Lumera chain.
 </ResponseField>
 
 ### Registration event sequence
 
-The server emits these events in order during a successful registration:
+The server emits these events in order during a successful registration.
 
 | Event | Description |
 |-------|-------------|
@@ -76,9 +76,9 @@ The server emits these events in order during a successful registration:
 | `INPUT_ENCODED` | File data encoded with RaptorQ into erasure-coded symbols |
 | `RQID_GENERATED` | RaptorQ symbol identifiers generated |
 | `ARTEFACTS_STORED` | Encoded symbols distributed and stored in the P2P network |
-| `ACTION_FINALIZED` | Finalization transaction submitted on-chain; `tx_hash` is set |
+| `ACTION_FINALIZED` | Finalization transaction submitted on-chain with `tx_hash` set |
 
-### Example — grpcurl
+### grpcurl example
 
 ```shell
 # Stream file registration (sends metadata only; pipe real file data in production)
@@ -98,9 +98,9 @@ grpcurl -plaintext \
 
 `rpc Download(DownloadRequest) returns (stream DownloadResponse)`
 
-Use `Download` to retrieve a file that was previously registered via Cascade. You send a single unary request containing the action ID and a signature proving ownership, and the SuperNode streams back progress events followed by the raw file data in chunks.
+Use `Download` to retrieve a file that was previously registered via Cascade. You send a single unary request containing the action ID and a signature proving ownership. The SuperNode streams back progress events followed by the raw file data in chunks.
 
-### Request — `DownloadRequest`
+### Request message `DownloadRequest`
 
 <ParamField body="action_id" type="string" required>
   The on-chain Cascade action ID whose data you want to retrieve.
@@ -110,9 +110,9 @@ Use `Download` to retrieve a file that was previously registered via Cascade. Yo
   A base64-encoded signature over the `action_id`, produced with the LumeraID key associated with the action's owner address. The SuperNode verifies this signature before serving the data.
 </ParamField>
 
-### Server stream — `DownloadResponse`
+### Server stream `DownloadResponse`
 
-Each message in the response stream is one of two types (`oneof`):
+Each message in the response stream is one of two types (`oneof`).
 
 <ResponseField name="event" type="DownloadEvent">
   Progress milestone emitted during the retrieval phase.
@@ -137,7 +137,7 @@ Each message in the response stream is one of two types (`oneof`):
   </Expandable>
 </ResponseField>
 
-### Example — grpcurl
+### grpcurl example
 
 ```shell
 grpcurl -plaintext \
@@ -158,7 +158,7 @@ The `SupernodeEventType` enum is shared by both `Register` and `Download`. Not e
 
 | Value | Name | Flows |
 |-------|------|-------|
-| `0` | `UNKNOWN` | — |
+| `0` | `UNKNOWN` | none |
 | `1` | `ACTION_RETRIEVED` | Register, Download |
 | `2` | `ACTION_FEE_VERIFIED` | Register |
 | `3` | `TOP_SUPERNODE_CHECK_PASSED` | Register |
@@ -175,7 +175,7 @@ The `SupernodeEventType` enum is shared by both `Register` and `Download`. Not e
 
 ---
 
-## HTTP Gateway alternative
+## HTTP gateway alternative
 
 If you cannot use gRPC directly, the SuperNode also exposes an HTTP/JSON gateway that wraps these RPCs. See [`docs/gateway.md`](https://github.com/LumeraProtocol/supernode/blob/master/docs/gateway.md) in the SuperNode repository for the full list of endpoints, request/response examples, and a link to the Swagger UI.
 

@@ -3,20 +3,53 @@
   "name": "Lumera Protocol",
   "theme": "aspen",
   "logo": {
-    "light": "https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg",
-    "dark": "https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   },
-  "favicon": "/favicon.png",
+  "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#848c8e",
-    "light": "#cfd0d2",
-    "dark": "#11161e"
+    "primary": "#078a8a",
+    "light": "#47c78a",
+    "dark": "#001432"
   },
   "navbar": {
+    "links": [
+      {
+        "label": "Portal",
+        "href": "https://portal.lumera.io"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/LumeraProtocol"
+      }
+    ],
     "primary": {
-      "type": "github",
-      "href": "https://github.com/LumeraProtocol"
+      "type": "button",
+      "label": "Launch App",
+      "href": "https://portal.lumera.io"
     }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/LumeraProtocol",
+      "x": "https://x.com/lumera",
+      "discord": "https://discord.com/invite/lumeraprotocol"
+    },
+    "links": [
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "Faucet",
+            "href": "https://portal.testnet.lumera.io/lumera-testnet-2/faucet"
+          },
+          {
+            "label": "Explorer",
+            "href": "https://portal.lumera.io"
+          }
+        ]
+      }
+    ]
   },
   "navigation": {
     "tabs": [
@@ -24,43 +57,155 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Introduction",
+            "icon": "book-open",
             "pages": [
-              "introduction",
+              "index",
               "architecture",
-              "networks"
+              "networks",
+              "ecosystem",
+              "untitled-page-3",
+              "untitled-page-3",
+              "untitled-page-4",
+              "untitled-page-4"
             ]
           },
           {
-            "group": "Validators",
+            "group": "Quick start",
+            "icon": "rocket",
             "pages": [
-              "validators/overview",
-              "validators/setup",
-              "validators/configuration",
-              "validators/operations"
+              "quickstart",
+              "quickstart-validator",
+              "quickstart-supernode",
+              "faucet"
+            ]
+          },
+          {
+            "group": "Cascade",
+            "icon": "database",
+            "pages": [
+              "cascade/how-cascade-works",
+              "cascade/installation",
+              "cascade/client-setup",
+              "cascade/error-handling",
+              {
+                "group": "Concepts",
+                "pages": [
+                  "cascade/concepts/erasure-coding",
+                  "cascade/concepts/upload-lifecycle",
+                  "cascade/concepts/download-lifecycle",
+                  "cascade/concepts/interchain-accounts"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "cascade/guides/browser-app",
+                  "cascade/guides/nodejs",
+                  "cascade/guides/research-archive",
+                  "cascade/guides/encrypted-storage"
+                ]
+              },
+              {
+                "group": "Everlight",
+                "pages": [
+                  "cascade/everlight/overview",
+                  "cascade/everlight/payments",
+                  "cascade/everlight/supernode-operators"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "SDKs",
+            "icon": "code",
+            "pages": [
+              "sdk/javascript",
+              "sdk/javascript-reference",
+              "sdk/go",
+              "sdk/go-reference",
+              "sdk/rust"
+            ]
+          },
+          {
+            "group": "Smart contracts",
+            "icon": "file-code",
+            "pages": [
+              "smart-contracts/overview",
+              "smart-contracts/connect-metamask",
+              "smart-contracts/deploy-with-remix",
+              "smart-contracts/openrpc-playground",
+              {
+                "group": "Precompiles",
+                "pages": [
+                  "smart-contracts/precompiles/overview",
+                  "smart-contracts/precompiles/standard",
+                  "smart-contracts/precompiles/action",
+                  "smart-contracts/precompiles/supernode",
+                  "smart-contracts/precompiles/cosmwasm-bridge"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Validators (Mainnet)",
+            "icon": "shield",
+            "pages": [
+              "validators-mainnet/overview",
+              "validators-mainnet/node-setup",
+              "validators-mainnet/create-validator",
+              "validators-mainnet/operations"
+            ]
+          },
+          {
+            "group": "Validators (Testnet)",
+            "icon": "shield-halved",
+            "pages": [
+              "validators-testnet/overview",
+              "validators-testnet/node-setup",
+              "validators-testnet/create-validator",
+              "validators-testnet/operations"
             ]
           },
           {
             "group": "SuperNodes",
+            "icon": "server",
             "pages": [
               "supernodes/overview",
-              "supernodes/setup",
-              "supernodes/cli-reference",
-              "supernodes/configuration"
+              "supernodes/node-setup",
+              "supernodes/register",
+              "supernodes/operations"
             ]
           },
           {
-            "group": "Core Modules",
+            "group": "Cross-chain",
+            "icon": "arrows-left-right",
             "pages": [
-              "modules/overview",
-              "modules/cascade",
-              "modules/sense",
-              "modules/lumeraid",
-              "modules/claims"
+              "cross-chain/overview",
+              "cross-chain/interchain-accounts",
+              "cross-chain/relayer-setup",
+              "cross-chain/patterns"
+            ]
+          },
+          {
+            "group": "Network upgrades",
+            "icon": "arrow-up-right-dots",
+            "pages": [
+              "upgrades/evm-upgrade"
+            ]
+          },
+          {
+            "group": "Protocol",
+            "icon": "diagram-project",
+            "pages": [
+              "protocol/sense",
+              "protocol/modules",
+              "protocol/governance"
             ]
           },
           {
             "group": "Lumera Hub",
+            "icon": "wallet",
             "pages": [
               "hub/overview",
               "hub/wallet"
@@ -77,7 +222,15 @@
               "api/overview",
               "api/actions",
               "api/supernodes",
-              "api/lumescope"
+              "api/lumescope",
+              "api/sn-api"
+            ]
+          },
+          {
+            "group": "RPC",
+            "pages": [
+              "api/cometbft-rpc",
+              "api/evm-jsonrpc"
             ]
           },
           {
@@ -88,7 +241,7 @@
             ]
           },
           {
-            "group": "SDKs & Libraries",
+            "group": "Libraries and tools",
             "pages": [
               "sdk/raptorq",
               "sdk/lumerad-cli"
@@ -97,5 +250,67 @@
         ]
       }
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/introduction",
+      "destination": "/"
+    },
+    {
+      "source": "/modules/overview",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/modules/cascade",
+      "destination": "/cascade/how-cascade-works"
+    },
+    {
+      "source": "/modules/sense",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/modules/lumeraid",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/modules/claims",
+      "destination": "/architecture"
+    },
+    {
+      "source": "/validators/configuration",
+      "destination": "/validators-mainnet/operations"
+    },
+    {
+      "source": "/validators/overview",
+      "destination": "/validators-mainnet/overview"
+    },
+    {
+      "source": "/validators/setup",
+      "destination": "/validators-mainnet/node-setup"
+    },
+    {
+      "source": "/validators/create-validator",
+      "destination": "/validators-mainnet/create-validator"
+    },
+    {
+      "source": "/validators/operations",
+      "destination": "/validators-mainnet/operations"
+    },
+    {
+      "source": "/supernodes/cli-reference",
+      "destination": "/supernodes/operations"
+    },
+    {
+      "source": "/supernodes/configuration",
+      "destination": "/supernodes/operations"
+    },
+    {
+      "source": "/supernodes/setup",
+      "destination": "/supernodes/node-setup"
+    },
+    {
+      "source": "/smart-contracts",
+      "destination": "/smart-contracts/overview"
+    }
+  ]
 }

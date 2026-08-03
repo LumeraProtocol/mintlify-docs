@@ -1,0 +1,57 @@
+---
+title: "Cross-chain storage on Lumera"
+sidebarTitle: "Overview"
+description: "Use Cascade as the permanent storage layer for apps on any chain."
+---
+
+Your application does not need to run on Lumera Protocol to use Cascade. An app on any chain can register a storage action, upload the bytes, and keep only a pointer in its own state. The pointer is the numeric `action_id`. Cascade holds the bytes permanently on the SuperNode network.
+
+This section covers the two ways to wire that up, the relayer plumbing for Cosmos chains, and the integration patterns proven in real reference builds.
+
+## Why cross-chain storage
+
+Most chains keep consensus-critical state on-chain and push large supporting data to IPFS pins or cloud buckets. That data survives only as long as someone pays the hosting bill. Cascade replaces the recurring bill with a one time on-chain payment, RaptorQ erasure coding across SuperNodes, and self-healing redundancy. Your chain keeps the small state. Cascade keeps the large, citable bytes. The `action_id` ties them together.
+
+## Two integration families
+
+**Cosmos chains over IBC.** Lumera is IBC native. Through [ICS-27 interchain accounts](/cascade/concepts/interchain-accounts), a module or contract on your chain controls an account on Lumera and registers Cascade actions remotely. This needs an IBC channel and a running relayer, and it is the only path where a contract itself can be the signer.
+
+**Chains without IBC.** A backend service holds a funded Lumera account and writes to Cascade on behalf of your users, through the SDKs or an API gateway. This works from any stack that can run an SDK or make an HTTP call, including EVM chains.
+
+## Reference integrations
+
+Two worked integrations shaped the patterns in this section.
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/cross-chain-integration-light.svg" alt="Cross-chain integration shape" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/cross-chain-integration-dark.svg" alt="Cross-chain integration shape" />
+
+- **Injective.** A CosmWasm chain build that exercises all three write patterns, with contracts holding `action_id` pointers to permanent receipts and evidence.
+- **LUKSO.** An EVM chain build where Universal Profile metadata points at hash-bound Cascade URLs, so standard LSP readers verify the bytes without knowing Cascade exists.
+
+## What is in this section
+
+<CardGroup cols={2}>
+  <Card title="Interchain accounts in practice" icon="link" href="/cross-chain/interchain-accounts">
+    The full ICS-27 flow with the Go SDK, from registration to approval.
+  </Card>
+  <Card title="Relayer setup" icon="arrows-left-right" href="/cross-chain/relayer-setup">
+    The Lumera values you plug into a Hermes chain config.
+  </Card>
+  <Card title="Integration patterns" icon="sitemap" href="/cross-chain/patterns">
+    User signed, server signed, and contract driven, and when to pick each.
+  </Card>
+  <Card title="ICS-27 concepts" icon="book" href="/cascade/concepts/interchain-accounts">
+    How interchain accounts and application keypairs work under the hood.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Integration patterns" icon="sitemap" href="/cross-chain/patterns">
+    Decide who signs the Cascade write before touching any plumbing.
+  </Card>
+  <Card title="How Cascade works" icon="diagram-project" href="/cascade/how-cascade-works">
+    The storage model every pattern builds on.
+  </Card>
+</CardGroup>

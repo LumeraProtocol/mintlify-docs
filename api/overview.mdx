@@ -1,12 +1,12 @@
 ---
-title: "Lumera Protocol REST API Overview: LumeScope and LCD"
+title: "Lumera REST API overview"
 sidebarTitle: "Overview"
-description: "Lumera Protocol exposes REST APIs via LumeScope and the lumerad LCD endpoint. Learn about base URLs, authentication, and rate limits."
+description: "Learn the base URLs, authentication model, and response format for the LumeScope and LCD REST APIs."
 ---
 
-Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD** endpoint speaks directly to the chain, letting you query state and broadcast transactions with no middleware in the way. **LumeScope** sits in front of the network as a neutral, read-only aggregator: it decodes Action metadata (Cascade and Sense), tracks SuperNode hardware metrics, and assembles network-wide statistics so your application doesn't have to reconstruct that data from raw chain state. Both surfaces return JSON and require no authentication for read operations.
+Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD** endpoint speaks directly to the chain. Use it to query state and broadcast transactions with no middleware in the way. **LumeScope** sits in front of the network as a neutral, read-only aggregator. It decodes Action metadata for Cascade and Sense, tracks SuperNode hardware metrics, and assembles network-wide statistics. Your application does not have to reconstruct that data from raw chain state. Both surfaces return JSON and require no authentication for read operations.
 
-## API Surfaces
+## API surfaces
 
 **Lumera LCD (native chain API)** is the standard Cosmos SDK REST interface served by any `lumerad` node. Use it when you need to submit transactions, query on-chain parameters, or access data that LumeScope does not index.
 
@@ -20,27 +20,27 @@ Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD*
 | Testnet | `https://api.testnet.lumera.io` | `https://lcd.testnet.lumera.io` |
 
 <Note>
-  All examples in this documentation target Mainnet. Replace the base URL with the Testnet equivalent when developing against **lumera-testnet-2**.
+  All examples in this documentation target mainnet. Replace the base URL with the testnet equivalent when developing against **lumera-testnet-2**.
 </Note>
 
 ## Authentication
 
-All LumeScope endpoints are **public** — no API key or bearer token is required. You can call any endpoint directly from a browser, curl, or your application's HTTP client.
+All LumeScope endpoints are **public**. No API key or bearer token is required. You can call any endpoint directly from a browser, curl, or your application's HTTP client.
 
-## Response Format
+## Response format
 
 Every LumeScope response is JSON. Successful responses use HTTP `200` status codes. Error responses include a machine-readable `error` field and an appropriate 4xx or 5xx status code.
 
-## OpenAPI Specification & Interactive Docs
+## OpenAPI specification and interactive docs
 
-LumeScope embeds a full OpenAPI 3.0 specification and an interactive Swagger UI you can use to explore and test every endpoint:
+LumeScope embeds a full OpenAPI 3.0 specification and an interactive Swagger UI. Use them to explore and test every endpoint.
 
 | Resource | URL |
 |----------|-----|
 | OpenAPI JSON spec | `{base}/openapi.json` |
 | Swagger UI | `{base}/docs` |
 
-For example, on Mainnet browse to `https://api.lumera.io/docs` to open the interactive documentation.
+For example, on mainnet browse to `https://api.lumera.io/docs` to open the interactive documentation.
 
 ## Explore the API
 
@@ -61,6 +61,6 @@ For example, on Mainnet browse to `https://api.lumera.io/docs` to open the inter
   </Card>
 </CardGroup>
 
-## Self-Hosting LumeScope
+## Self-hosting LumeScope
 
-If you need a private deployment — custom sync intervals, data sovereignty, or your own analytics pipeline — you can run LumeScope yourself with a single Docker command. See the [LumeScope deployment guide](/api/lumescope) for instructions.
+You can run LumeScope yourself with a single Docker command. A private deployment gives you custom sync intervals, data sovereignty, and your own analytics pipeline. See the [LumeScope deployment guide](/api/lumescope) for instructions.

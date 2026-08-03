@@ -1,0 +1,302 @@
+---
+title: "Set up the Cascade client"
+sidebarTitle: "Client setup"
+description: "Create a Lumera client with network presets, custom endpoints, and a wallet signer."
+---
+
+Every Cascade operation starts with a client. The `createLumeraClient` factory connects to the Lumera Protocol blockchain and configures the SuperNode API client in one call. This page shows how to build the client with each supported signer and how to point it at any network.
+
+## Chain configuration
+
+Keplr and Leap require a chain configuration to register the Lumera network. Define it once and reuse it.
+
+```ts chain-config.ts
+export const CHAIN_ID = "lumera-testnet-2";
+
+export const LUMERA_CHAIN_INFO = {
+  chainId: CHAIN_ID,
+  chainName: "Lumera Testnet",
+  rpc: "https://rpc.testnet.lumera.io",
+  rest: "https://lcd.testnet.lumera.io",
+  bip44: { coinType: 60 },
+  bech32Config: {
+    bech32PrefixAccAddr: "lumera",
+    bech32PrefixAccPub: "lumerapub",
+    bech32PrefixValAddr: "lumeravaloper",
+    bech32PrefixValPub: "lumeravaloperpub",
+    bech32PrefixConsAddr: "lumeravalcons",
+    bech32PrefixConsPub: "lumeravalconspub",
+  },
+  currencies: [
+    { coinDenom: "LUME", coinMinimalDenom: "ulume", coinDecimals: 6 },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "LUME",
+      coinMinimalDenom: "ulume",
+      coinDecimals: 6,
+      gasPriceStep: { low: 0.025, average: 0.03, high: 0.04 },
+    },
+  ],
+  stakeCurrency: {
+    coinDenom: "LUME",
+    coinMinimalDenom: "ulume",
+    coinDecimals: 6,
+  },
+  features: ["stargate", "ibc-transfer", "eth-address-gen", "eth-key-sign"],
+};
+```
+
+## Choose a signer
+
+The client accepts any signer that provides `signDirect`, `signAmino`, and `signArbitrary`. The `signArbitrary` method produces ADR-036 signatures, the Cosmos standard for signing arbitrary offline data. Cascade uses those signatures to authenticate with SuperNodes.
+
+### Browser with Keplr
+
+```ts keplr-client.ts
+import { createLumeraClient, getKeplrSigner } from "@lumera-protocol/sdk-js";
+import { CHAIN_ID, LUMERA_CHAIN_INFO } from "./chain-config";
+
+// Register the Lumera chain and request wallet access
+await window.keplr.experimentalSuggestChain(LUMERA_CHAIN_INFO);
+
+// getKeplrSigner returns a unified signer with getAccounts, signDirect,
+// signAmino, and signArbitrary already wired up.
+const signer = await getKeplrSigner(CHAIN_ID);
+const [account] = await signer.getAccounts();
+
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer,
+  address: account.address,
+  gasPrice: "0.025ulume",
+});
+```
+
+### Browser with Leap
+
+Leap's `getOfflineSignerAuto` covers `getAccounts`, `signAmino`, and `signDirect`. You only add `signArbitrary`.
+
+```ts leap-client.ts
+import { createLumeraClient } from "@lumera-protocol/sdk-js";
+import { CHAIN_ID, LUMERA_CHAIN_INFO } from "./chain-config";
+
+// Register the Lumera chain and request wallet access
+await window.leap.experimentalSuggestChain(LUMERA_CHAIN_INFO);
+await window.leap.enable(CHAIN_ID);
+
+// getOfflineSignerAuto provides getAccounts, signAmino, and signDirect.
+// We only need to add signArbitrary, Cascade uses it for Supernode auth.
+const offlineSigner = await window.leap.getOfflineSignerAuto(CHAIN_ID);
+const accounts = await offlineSigner.getAccounts();
+
+const signer = {
+  ...offlineSigner,
+  async signArbitrary(_chainId: string, signerAddress: string, data: string) {
+    const result = await window.leap.signArbitrary(_chainId, signerAddress, data);
+    return { signed: data, signature: result.signature, pub_key: result.pub_key };
+  },
+};
+
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer,
+  address: accounts[0].address,
+  gasPrice: "0.025ulume",
+});
+```
+
+### Node.js with a mnemonic
+
+In Node.js you build the signer from a mnemonic. You need a Direct signer for transaction signing and an Amino signer for `signArbitrary`.
+
+```ts node-client.ts
+import { createLumeraClient } from "@lumera-protocol/sdk-js";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import {
+  Secp256k1HdWallet,
+  makeSignDoc as makeAminoSignDoc,
+} from "@cosmjs/amino";
+
+const mnemonic = process.env.LUMERA_MNEMONIC!;
+
+const directWallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
+  prefix: "lumera",
+});
+const aminoWallet = await Secp256k1HdWallet.fromMnemonic(mnemonic, {
+  prefix: "lumera",
+});
+const [account] = await directWallet.getAccounts();
+
+const signer = {
+  getAccounts: () => directWallet.getAccounts(),
+  signDirect: (addr: string, doc: any) => directWallet.signDirect(addr, doc),
+  signAmino: (addr: string, doc: any) => aminoWallet.signAmino(addr, doc),
+  async signArbitrary(
+    chainId: string,
+    signerAddress: string,
+    data: string
+  ) {
+    const signDoc = makeAminoSignDoc(
+      [
+        {
+          type: "sign/MsgSignData",
+          value: {
+            signer: signerAddress,
+            data: Buffer.from(data).toString("base64"),
+          },
+        },
+      ],
+      { gas: "0", amount: [] },
+      "",
+      "",
+      0,
+      0
+    );
+    const { signature } = await aminoWallet.signAmino(signerAddress, signDoc);
+    return {
+      signed: data,
+      signature: signature.signature,
+      pub_key: signature.pub_key,
+    };
+  },
+};
+
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer: signer as any,
+  address: account.address,
+  gasPrice: "0.025ulume",
+});
+```
+
+<Warning>
+Never hardcode mnemonics. Use environment variables or a secrets manager.
+</Warning>
+
+## Configuration options
+
+```ts
+interface LumeraClientConfig {
+  // Use a preset for testnet or mainnet endpoints
+  preset?: "testnet" | "mainnet";
+
+  // Or specify endpoints manually
+  // (without a preset, rpcUrl, chainId, and snapiUrl are all required)
+  rpcUrl?: string;
+  lcdUrl?: string;
+  chainId?: string;
+  snapiUrl?: string;
+
+  // Signer (wallet or DirectSecp256k1HdWallet) - required
+  signer: OfflineSigner;
+
+  // Sender bech32 address - required
+  address: string;
+
+  // Gas price for transaction fee estimation
+  gasPrice?: string;
+
+  // HTTP client options for SN-API requests
+  http?: {
+    timeout?: number;    // default 30000
+    maxRetries?: number; // default 3
+  };
+}
+```
+
+Set `gasPrice` to `0.025ulume`. That is the minimum gas price on both networks.
+
+### Presets
+
+| Preset | Chain ID | RPC | LCD | SN-API |
+| --- | --- | --- | --- | --- |
+| `testnet` | `lumera-testnet-2` | `https://rpc.testnet.lumera.io` | `https://lcd.testnet.lumera.io` | `https://snapi.testnet.lumera.io` |
+| `mainnet` | `lumera-mainnet-1` | `https://rpc.lumera.io` | `https://lcd.lumera.io` | `https://snapi.lumera.io` |
+
+<Note>
+The public mainnet RPC and LCD endpoints are coming soon. Use the `testnet` preset while you build and test.
+</Note>
+
+### Custom endpoints
+
+Pass explicit endpoints for local development or self-hosted nodes.
+
+```ts
+const client = await createLumeraClient({
+  chainId: "<your-chain-id>", // whatever you passed to `lumerad init --chain-id`
+  rpcUrl: "http://localhost:26657",
+  lcdUrl: "http://localhost:1317",
+  snapiUrl: "http://localhost:8080",
+  signer: wallet,
+  address: account.address,
+  gasPrice: "0.025ulume",
+});
+```
+
+## Client structure
+
+Once created, the client exposes two primary sub-clients.
+
+```ts
+// --- Blockchain queries (nested under Action / Supernode / Tx) ---
+client.Blockchain.Action.getParams();
+client.Blockchain.Action.getAction(actionId);
+client.Blockchain.Action.getActionFee(dataSizeKb); // size in KB, rounded up
+client.Blockchain.Supernode.listSupernodes();
+client.Blockchain.Tx.signAndBroadcast(signerAddress, messages, fee);
+
+// --- Cascade storage (high-level) ---
+client.Cascade.uploader.uploadFile(file, params); // upload + monitor
+client.Cascade.downloader.download(actionId);     // signs the action ID via ADR-036
+```
+
+## Go client
+
+The Go SDK follows the same shape. The `lumerasdk.New` entry point takes a config and a keyring, then surfaces `client.Blockchain` for chain queries and `client.Cascade` for storage.
+
+```go main.go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	lumerasdk "github.com/LumeraProtocol/sdk-go/client"
+	"go.uber.org/zap"
+)
+
+func main() {
+	ctx := context.Background()
+	kr, _ := keyring.New("lumera", "test", "/tmp", nil)
+
+	client, err := lumerasdk.New(ctx, lumerasdk.Config{
+		ChainID:      "lumera-testnet-2",
+		GRPCEndpoint: "grpc.testnet.lumera.io:443",
+		RPCEndpoint:  "https://rpc.testnet.lumera.io",
+		Address:      "lumera1...",
+		KeyName:      "my-key",
+	}, kr, lumerasdk.WithLogger(zap.NewExample()))
+	if err != nil {
+		panic(err)
+	}
+	defer client.Close()
+}
+```
+
+See [Go SDK](/sdk/go) for uploads, downloads, and event subscriptions in Go.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Upload lifecycle" icon="cloud-arrow-up" href="/cascade/concepts/upload-lifecycle">
+    See every phase of an upload in detail.
+  </Card>
+  <Card title="Error handling" icon="triangle-exclamation" href="/cascade/error-handling">
+    Diagnose failures and tune retries and timeouts.
+  </Card>
+  <Card title="Browser app guide" icon="globe" href="/cascade/guides/browser-app">
+    Build a browser upload app with Keplr.
+  </Card>
+</CardGroup>

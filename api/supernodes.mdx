@@ -1,13 +1,13 @@
 ---
-title: "LumeScope SuperNodes API: Metrics, Status, and Payments"
+title: "LumeScope SuperNodes API reference"
 sidebarTitle: "SuperNodes API"
 description: "Query SuperNode hardware metrics, payment statistics, version compatibility matrix, and availability status using the LumeScope read-only REST API."
 ---
 
-The LumeScope SuperNodes API aggregates hardware telemetry, payment statistics, availability probes, and version compatibility data for every SuperNode registered on the Lumera network. LumeScope probes each SuperNode on a configurable interval and stores the results so your application can query current status, rank individual nodes by resources, and identify nodes that are temporarily unreachable — without needing direct access to each operator's machine.
+The LumeScope SuperNodes API aggregates hardware telemetry, payment statistics, availability probes, and version compatibility data for every SuperNode registered on the Lumera network. LumeScope probes each SuperNode on a configurable interval and stores the results. Your application can query current status, rank individual nodes by resources, and identify nodes that are temporarily unreachable. You never need direct access to an operator's machine.
 
 <Note>
-  All SuperNodes API endpoints are read-only and require no authentication. The base URL for Mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for Testnet.
+  All SuperNodes API endpoints are read-only and require no authentication. The base URL for mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for testnet.
 </Note>
 
 ---
@@ -16,10 +16,10 @@ The LumeScope SuperNodes API aggregates hardware telemetry, payment statistics, 
 
 Returns hardware and network metrics for all SuperNodes. Use query parameters to filter by status, version, or failure threshold, and to paginate large result sets.
 
-### Query Parameters
+### Query parameters
 
 <ParamField query="status" type="string">
-  Filter by probe status. Common values: `available`, `unavailable`.
+  Filter by probe status. Common values are `available` and `unavailable`.
 </ParamField>
 
 <ParamField query="currentState" type="string">
@@ -42,7 +42,7 @@ Returns hardware and network metrics for all SuperNodes. Use query parameters to
   Opaque pagination cursor returned by the previous response. Pass this value to retrieve the next page.
 </ParamField>
 
-### Example Request
+### Example request
 
 <CodeGroup>
 ```shell All supernodes
@@ -54,7 +54,7 @@ curl "https://api.lumera.io/v1/supernodes/metrics?status=available&limit=10"
 ```
 </CodeGroup>
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -80,7 +80,7 @@ curl "https://api.lumera.io/v1/supernodes/metrics?status=available&limit=10"
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="supernodes" type="array">
   Array of SuperNode metric objects.
@@ -93,7 +93,7 @@ curl "https://api.lumera.io/v1/supernodes/metrics?status=available&limit=10"
       Public IP address of the node.
     </ResponseField>
     <ResponseField name="status" type="string">
-      Probe status: `available` or `unavailable`.
+      The probe status, either `available` or `unavailable`.
     </ResponseField>
     <ResponseField name="rank" type="integer">
       Relative ranking among all SuperNodes (lower is better).
@@ -141,19 +141,19 @@ curl "https://api.lumera.io/v1/supernodes/metrics?status=available&limit=10"
 
 Returns the current hardware and network metrics for a single SuperNode identified by its operator address.
 
-### Path Parameters
+### Path parameters
 
 <ParamField path="id" type="string" required>
   The Bech32 operator address of the SuperNode (e.g. `lumera15abc...`).
 </ParamField>
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/supernodes/lumera15abc.../metrics
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -182,19 +182,19 @@ The response object uses the same field schema as the individual entries in `GET
 
 Returns payment statistics broken down by denomination for a specific SuperNode. Use this endpoint to audit reward distribution or inspect historical payment totals.
 
-### Path Parameters
+### Path parameters
 
 <ParamField path="id" type="string" required>
   The Bech32 operator address of the SuperNode.
 </ParamField>
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/supernodes/lumera15abc.../paymentInfo
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -209,7 +209,7 @@ curl https://api.lumera.io/v1/supernodes/lumera15abc.../paymentInfo
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="id" type="string">
   Bech32 operator address of the SuperNode.
@@ -235,15 +235,15 @@ curl https://api.lumera.io/v1/supernodes/lumera15abc.../paymentInfo
 
 ## GET /v1/supernodes/stats
 
-Returns aggregated hardware statistics across all SuperNodes — network-wide totals and averages for CPU, memory, and storage. Use this endpoint for capacity-planning dashboards and fleet health snapshots.
+Returns aggregated hardware statistics across all SuperNodes. You get network-wide totals and averages for CPU, memory, and storage. Use this endpoint for capacity-planning dashboards and fleet health snapshots.
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/supernodes/stats
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -256,7 +256,7 @@ curl https://api.lumera.io/v1/supernodes/stats
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="total_supernodes" type="integer">
   Total number of SuperNodes tracked by LumeScope.
@@ -286,15 +286,15 @@ curl https://api.lumera.io/v1/supernodes/stats
 
 ## GET /v1/supernodes/action-stats
 
-Returns per-SuperNode action statistics — how many Cascade and Sense actions each node has participated in. Use this endpoint to identify the most active nodes or detect imbalanced workload distribution.
+Returns per-SuperNode action statistics. The response shows how many Cascade and Sense actions each node has participated in. Use this endpoint to identify the most active nodes or detect imbalanced workload distribution.
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/supernodes/action-stats
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -309,7 +309,7 @@ curl https://api.lumera.io/v1/supernodes/action-stats
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="supernodes" type="array">
   Array of per-SuperNode action count objects.
@@ -336,19 +336,19 @@ curl https://api.lumera.io/v1/supernodes/action-stats
 
 Returns the list of SuperNodes whose most recent probe reported an unavailable status. This endpoint is the quickest way to triage connectivity or operator issues without filtering the full metrics list.
 
-### Query Parameters
+### Query parameters
 
 <ParamField query="currentState" type="string">
   Filter by on-chain validator state, e.g. `active`, `jailed`.
 </ParamField>
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/supernodes/unavailable
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -363,7 +363,7 @@ curl https://api.lumera.io/v1/supernodes/unavailable
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="supernodes" type="array">
   Array of unavailable SuperNode objects.
@@ -388,19 +388,19 @@ curl https://api.lumera.io/v1/supernodes/unavailable
 
 ## POST /v1/supernodes/sync
 
-Triggers an immediate, out-of-schedule sync and probe of all SuperNodes. Under normal operation LumeScope syncs automatically on the configured `SUPERNODES_SYNC_INTERVAL`; use this endpoint when you need fresh data immediately after an operator change or network event.
+Triggers an immediate, out-of-schedule sync and probe of all SuperNodes. Under normal operation LumeScope syncs automatically on the configured `SUPERNODES_SYNC_INTERVAL`. Use this endpoint when you need fresh data immediately after an operator change or network event.
 
 <Warning>
-  Manual sync is only available when the LumeScope instance is configured to allow it. On the public Mainnet and Testnet endpoints this endpoint may return `403 Forbidden`.
+  Manual sync is only available when the LumeScope instance is configured to allow it. On the public mainnet and testnet endpoints this endpoint may return `403 Forbidden`.
 </Warning>
 
-### Example Request
+### Example request
 
 ```shell
 curl -X POST https://api.lumera.io/v1/supernodes/sync
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -409,7 +409,7 @@ curl -X POST https://api.lumera.io/v1/supernodes/sync
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="status" type="string">
   Confirmation message indicating the sync was accepted.
@@ -425,13 +425,13 @@ curl -X POST https://api.lumera.io/v1/supernodes/sync
 
 Returns the version compatibility matrix for SuperNode software, implementing a partial view of the Lumera Enhancement Proposal 2 (LEP2) versioning scheme. Use this endpoint to determine which node versions are compatible with the current network state.
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/version/matrix
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -451,7 +451,7 @@ curl https://api.lumera.io/v1/version/matrix
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="matrix" type="array">
   Array of version compatibility entries.

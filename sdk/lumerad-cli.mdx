@@ -1,12 +1,12 @@
 ---
-title: "lumerad CLI Reference: Keys, Queries, and Transactions"
+title: "lumerad CLI reference"
 sidebarTitle: "lumerad CLI"
-description: "Complete reference for the lumerad command-line tool: query chain state, submit transactions, manage keys, and work with Lumera modules."
+description: "Use the lumerad command line tool to query chain state, submit transactions, manage keys, and work with Lumera modules."
 ---
 
-`lumerad` is the Lumera blockchain node binary and the primary command-line tool for interacting with the Lumera Protocol. You use it to run a full node, query any on-chain state, submit transactions, manage cryptographic keys, and work with Lumera-specific modules such as actions (Cascade/Sense), claims, and the supernode registry. It is built on the Cosmos SDK and follows the same command conventions as other Cosmos chains, so existing Cosmos familiarity transfers directly.
+`lumerad` is the Lumera blockchain node binary and the primary command-line tool for interacting with the Lumera Protocol. You use it to run a full node, query any on-chain state, submit transactions, manage cryptographic keys, and work with Lumera-specific modules such as actions (Cascade/Sense), claims, and the SuperNode registry. It is built on the Cosmos SDK and follows the same command conventions as other Cosmos chains. Existing Cosmos familiarity transfers directly.
 
-Current version: **v1.20.0 — Aurora Convergence**
+The current release is `v1.20.1-hotfix` (July 14, 2026). Version `v1.20.0` was the Aurora Convergence EVM upgrade.
 
 ---
 
@@ -39,7 +39,7 @@ Current version: **v1.20.0 — Aurora Convergence**
   </Step>
 </Steps>
 
-**Prerequisites:** Go 1.26+ (see `go.mod` for the exact version) and `make`. The `libwasmvm` shared library is built automatically during `make build` or can be sourced from the [CosmWasm releases page](https://github.com/CosmWasm/wasmvm/releases).
+**Prerequisites.** You need Go 1.26+ (see `go.mod` for the exact version) and `make`. The `libwasmvm` shared library is built automatically during `make build`. You can also source it from the [CosmWasm releases page](https://github.com/CosmWasm/wasmvm/releases).
 
 ---
 
@@ -56,7 +56,7 @@ lumerad keys delete <name>       # Permanently delete a key from the keyring
 ```
 
 <Warning>
-  When you run `lumerad keys add`, the mnemonic is displayed **once** and never stored. Write it down and keep it in a safe place — it is the only way to recover your key if you lose access to the keyring files.
+  When you run `lumerad keys add`, the mnemonic is displayed **once** and never stored. Write it down and keep it in a safe place. It is the only way to recover your key if you lose access to the keyring files.
 </Warning>
 
 ---
@@ -149,7 +149,7 @@ These flags apply to every `lumerad` command. You can set frequently-used flags 
 
 | Flag | Description |
 |------|-------------|
-| `--chain-id` | Chain identifier — `lumera-mainnet-1` for mainnet, `lumera-testnet-2` for testnet |
+| `--chain-id` | Chain identifier, `lumera-mainnet-1` for mainnet or `lumera-testnet-2` for testnet |
 | `--from` | Key name or bech32 address used to sign the transaction |
 | `--fees` | Transaction fee in `ulume` (e.g., `5000ulume`) |
 | `--gas` | Gas limit as an integer, or `"auto"` to estimate automatically |
@@ -160,13 +160,13 @@ These flags apply to every `lumerad` command. You can set frequently-used flags 
 | `--keyring-backend` | Keyring backend: `os`, `file`, or `test` |
 
 <Tip>
-  Add `--output json` to any query command and pipe the result to `jq` for easy scripting:
+  Add `--output json` to any query command and pipe the result to `jq` for easy scripting.
 
   ```shell
   lumerad query bank balances lumera1abc... --output json | jq '.balances'
   ```
 
-  For transactions, combine `--broadcast-mode block` with `--output json` to get the full transaction result — including events and the transaction hash — in a single call.
+  For transactions, combine `--broadcast-mode block` with `--output json` to get the full transaction result in a single call. The result includes events and the transaction hash.
 </Tip>
 
 ---
@@ -209,7 +209,7 @@ These flags apply to every `lumerad` command. You can set frequently-used flags 
     lumerad query bank balances lumera1abc... --node tcp://rpc.mainnet.lumera.io:26657
     ```
 
-    Set `--node` once in your client config to avoid repeating it:
+    Set `--node` once in your client config to avoid repeating it.
 
     ```shell
     lumerad config node tcp://rpc.mainnet.lumera.io:26657
@@ -221,7 +221,7 @@ These flags apply to every `lumerad` command. You can set frequently-used flags 
 
 ## Additional build targets
 
-The Makefile exposes several targets useful during development:
+The Makefile exposes several targets useful during development.
 
 ```shell
 make build-debug          # Build with debug symbols

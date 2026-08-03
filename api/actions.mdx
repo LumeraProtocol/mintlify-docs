@@ -1,13 +1,13 @@
 ---
-title: "LumeScope Actions API: Query Cascade and Sense Actions"
+title: "LumeScope Actions API reference"
 sidebarTitle: "Actions API"
-description: "Query Cascade and Sense actions on the Lumera network. List all actions, get action details with transaction lifecycle, and fetch aggregated statistics."
+description: "Query Cascade and Sense actions on the Lumera network with decoded metadata, lifecycle details, and aggregated statistics."
 ---
 
-The LumeScope Actions API gives you a decoded view of every Cascade and Sense action registered on the Lumera network. Rather than parsing raw chain transactions yourself, you query a pre-indexed store that tracks each action through its full lifecycle — from the initial `register` transaction through `finalize` and `approve`. Three endpoints cover the most common needs: listing actions with filters, fetching the full detail for a single action, and retrieving aggregate counts across the network.
+The LumeScope Actions API gives you a decoded view of every Cascade and Sense action registered on the Lumera network. Rather than parsing raw chain transactions yourself, you query a pre-indexed store. The store tracks each action through its full lifecycle, from the initial `register` transaction through `finalize` and `approve`. Three endpoints cover the most common needs. You can list actions with filters, fetch the full detail for a single action, and retrieve aggregate counts across the network.
 
 <Note>
-  All Actions API endpoints are read-only and require no authentication. The base URL for Mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for Testnet.
+  All Actions API endpoints are read-only and require no authentication. The base URL for mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for testnet.
 </Note>
 
 ---
@@ -16,10 +16,10 @@ The LumeScope Actions API gives you a decoded view of every Cascade and Sense ac
 
 Returns a paginated list of Cascade and Sense actions with fully decoded metadata. Use the query parameters to filter by type, creator, state, and block height range.
 
-### Query Parameters
+### Query parameters
 
 <ParamField query="type" type="string">
-  Filter by action type. Accepted values: `cascade`, `sense`. Omit to return both types.
+  Filter by action type. Accepted values are `cascade` and `sense`. Omit to return both types.
 </ParamField>
 
 <ParamField query="creator" type="string">
@@ -27,7 +27,7 @@ Returns a paginated list of Cascade and Sense actions with fully decoded metadat
 </ParamField>
 
 <ParamField query="state" type="string">
-  Filter by action state. Common values: `registered`, `finalized`, `approved`.
+  Filter by action state. Common values are `registered`, `finalized`, and `approved`.
 </ParamField>
 
 <ParamField query="supernode" type="string">
@@ -54,7 +54,7 @@ Returns a paginated list of Cascade and Sense actions with fully decoded metadat
   When `true`, each action in the list includes its full transaction lifecycle (register, finalize, approve tx hashes and heights).
 </ParamField>
 
-### Example Request
+### Example request
 
 <CodeGroup>
 ```shell Cascade actions
@@ -70,7 +70,7 @@ curl "https://api.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=2
 ```
 </CodeGroup>
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -89,7 +89,7 @@ curl "https://api.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=2
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="actions" type="array">
   Array of action objects matching the query.
@@ -99,10 +99,10 @@ curl "https://api.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=2
       Unique action identifier on the Lumera chain.
     </ResponseField>
     <ResponseField name="type" type="string">
-      Action type: `cascade` or `sense`.
+      The action type, either `cascade` or `sense`.
     </ResponseField>
     <ResponseField name="status" type="string">
-      Current lifecycle state: `registered`, `finalized`, or `approved`.
+      The current lifecycle state, one of `registered`, `finalized`, or `approved`.
     </ResponseField>
     <ResponseField name="data_hash" type="string">
       SHA-256 content hash of the stored data.
@@ -130,19 +130,19 @@ curl "https://api.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=2
 
 Returns the full details for a single action, including its complete transaction lifecycle. Use this endpoint when you need register, finalize, and approve transaction hashes and block heights for a specific action.
 
-### Path Parameters
+### Path parameters
 
 <ParamField path="id" type="string" required>
   The unique action ID. This is the same `id` value returned by `GET /v1/actions`.
 </ParamField>
 
-### Example Request
+### Example request
 
 ```shell
 curl https://api.lumera.io/v1/actions/abc123
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -171,14 +171,14 @@ curl https://api.lumera.io/v1/actions/abc123
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="id" type="string">
   Unique action identifier.
 </ResponseField>
 
 <ResponseField name="type" type="string">
-  Action type: `cascade` or `sense`.
+  The action type, either `cascade` or `sense`.
 </ResponseField>
 
 <ResponseField name="status" type="string">
@@ -236,10 +236,10 @@ curl https://api.lumera.io/v1/actions/abc123
 
 Returns aggregated action statistics across the entire network. Use this endpoint to build dashboards or monitor overall Cascade and Sense activity without paginating through individual records.
 
-### Query Parameters
+### Query parameters
 
 <ParamField query="type" type="string">
-  Scope statistics to a single action type: `cascade` or `sense`. Omit to aggregate across both types.
+  Scope statistics to a single action type, either `cascade` or `sense`. Omit to aggregate across both types.
 </ParamField>
 
 <ParamField query="from" type="string">
@@ -250,7 +250,7 @@ Returns aggregated action statistics across the entire network. Use this endpoin
   End of the time window as an RFC 3339 timestamp.
 </ParamField>
 
-### Example Request
+### Example request
 
 <CodeGroup>
 ```shell All actions
@@ -266,7 +266,7 @@ curl "https://api.lumera.io/v1/actions/stats?from=2024-01-01T00:00:00Z&to=2024-1
 ```
 </CodeGroup>
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -277,7 +277,7 @@ curl "https://api.lumera.io/v1/actions/stats?from=2024-01-01T00:00:00Z&to=2024-1
 }
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="total_actions" type="integer">
   Total number of actions indexed by LumeScope, across all types and states.

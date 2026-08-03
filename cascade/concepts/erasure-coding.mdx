@@ -1,0 +1,97 @@
+---
+title: "RaptorQ erasure coding in Cascade"
+sidebarTitle: "Erasure coding"
+description: "Why Cascade uses RaptorQ fountain codes and how LEP-1 derives layout IDs."
+---
+
+Erasure coding is why files stored through Cascade on Lumera Protocol stay available even when many SuperNodes go offline. Understanding it explains Cascade's durability guarantees and the layout IDs that appear in every upload.
+
+## Why erasure coding beats replication
+
+Simple replication stores N full copies of a file. That is wasteful. If your data must survive half the nodes going offline, replication needs 2x the storage. Erasure coding reaches the same reliability with only about 1.5x overhead.
+
+Cascade uses RaptorQ, a fountain code standardized in [RFC 6330](https://www.rfc-editor.org/rfc/rfc6330). A fountain code generates a practically unlimited stream of encoded symbols from a source file. RaptorQ has three properties that matter for permanent storage.
+
+- It encodes a file into N symbols where any K symbols (`K < N`) reconstruct the original.
+- Its decoding failure probability is near zero.
+- It operates efficiently on large files.
+
+## Encoding during upload
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/erasure-coding-light.svg" alt="RaptorQ Encoding Flow" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/erasure-coding-dark.svg" alt="RaptorQ Encoding Flow" />
+
+1. The SDK loads the file into the RaptorQ WASM module (`rq-library-wasm`).
+2. The encoder produces a layout that describes source blocks and encoding parameters.
+3. Encoded symbols are distributed across SuperNodes.
+4. Each SuperNode stores a subset of the symbols.
+
+SuperNodes run the same encoding through [`rq-go`](https://github.com/LumeraProtocol/rq-go), the official RaptorQ Go library.
+
+## Decoding during download
+
+1. The SN-API, the HTTP API served by SuperNodes, gathers available symbols from responsive SuperNodes.
+2. As long as at least K symbols are available, the original file is reconstructed.
+3. The BLAKE3 hash of the reconstructed file is verified against the on-chain record.
+
+## LEP-1 layout and ID derivation
+
+LEP-1 (Lumera Enhancement Proposal 1) defines the deterministic algorithm that derives layout IDs from the encoding layout.
+
+### Layout generation
+
+```ts
+const layout = await createSingleBlockLayout(fileBytes, {
+  rq_ids_ic: randomSeed,
+  rq_ids_max: actionParams.rq_ids_max,
+});
+```
+
+`rq_ids_ic` is a random counter seed. `rq_ids_max` sets how many layout IDs are derived. The layout JSON is compacted (no whitespace) before hashing so every implementation produces identical bytes.
+
+### ID derivation algorithm
+
+Each layout ID is derived deterministically so the on-chain Go implementation can independently verify it.
+
+```text
+For i = 0 to rq_ids_max - 1:
+  counter = rq_ids_ic + i
+  input = Base64(compacted_layout_json) + "." + Base64(adr036_signature) + "." + String(counter)
+  compressed = zstd_compress(input, level=3)
+  hash = BLAKE3(compressed)
+  layout_id = Base58(hash)
+```
+
+### Why determinism matters
+
+- **Determinism.** The same file, signer, and seed always produce the same layout IDs.
+- **Verifiability.** The chain can check that the claimed layout IDs match the submitted layout.
+- **Uniqueness.** Each symbol gets a globally unique identifier.
+
+## The LEP-1 index file
+
+The index file aggregates the layout IDs and the layout signature.
+
+```json
+{
+  "version": 1,
+  "layout_ids": ["7K9xQ2b...", "3Jm2pNd...", "..."],
+  "layout_signature": "base64-encoded ADR-036 signature"
+}
+```
+
+The index file is itself signed with ADR-036, the Cosmos standard for signing arbitrary data, and included in the `MsgRequestAction` transaction.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Upload lifecycle" icon="upload" href="/cascade/concepts/upload-lifecycle">
+    Where layout generation and ID derivation fit in an upload.
+  </Card>
+  <Card title="Interchain accounts" icon="globe" href="/cascade/concepts/interchain-accounts">
+    Store to Cascade from any IBC-connected Cosmos chain.
+  </Card>
+  <Card title="JavaScript SDK reference" icon="code" href="/sdk/javascript-reference">
+    Full method reference for uploads, downloads, and task options.
+  </Card>
+</CardGroup>

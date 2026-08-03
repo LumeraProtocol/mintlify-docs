@@ -1,0 +1,295 @@
+---
+title: JavaScript SDK
+sidebarTitle: JavaScript
+description: Install the Lumera JavaScript SDK and store your first file on Cascade.
+---
+
+`@lumera-protocol/sdk-js` is the official JavaScript and TypeScript SDK for Lumera Protocol. It puts chain queries, transaction signing, and Cascade storage behind a single client. Cascade is the Lumera permanent storage network with a pay once, store forever model.
+
+The SDK runs in Node.js 18 or later and in modern browsers with the Keplr and Leap wallets. File transfers go through SN-API, a REST gateway in front of SuperNodes. The current release is 0.3.0. This page takes you from install to your first upload and download. Every method is listed in the [JavaScript SDK reference](/sdk/javascript-reference).
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/sdk-architecture-light.svg" alt="JavaScript SDK Architecture" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/sdk-architecture-dark.svg" alt="JavaScript SDK Architecture" />
+
+## Install the SDK
+
+Install the package together with the CosmJS peer dependencies for signing and chain queries.
+
+<CodeGroup>
+
+```bash npm
+npm install @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+```
+
+```bash yarn
+yarn add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+```
+
+```bash pnpm
+pnpm install @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+```
+
+</CodeGroup>
+
+## Create a client
+
+`createLumeraClient` is the entry point for everything. The `testnet` preset fills in the chain ID `lumera-testnet-2` and the public testnet endpoints. Use `mainnet` for `lumera-mainnet-1`. To target your own node instead, pass custom endpoints as shown in the [JavaScript SDK reference](/sdk/javascript-reference).
+
+```ts
+import { createLumeraClient } from "@lumera-protocol/sdk-js";
+
+const client = await createLumeraClient({
+  preset: "testnet",         // or "mainnet"
+  signer,                    // Keplr, Leap, or a wrapped HD wallet
+  address: account.address,  // sender bech32 address
+  gasPrice: "0.025ulume",
+});
+```
+
+The signer must provide three methods. `signDirect` and `signAmino` sign transactions. `signArbitrary` implements ADR-036, the Cosmos standard for arbitrary message signing, which Cascade uses to authenticate with SuperNodes. Keplr and Leap cover all three in the browser. In Node.js you build a compatible signer from a mnemonic, as shown below.
+
+## Wallet options
+
+Browser wallets must know the Lumera chain before they can sign for it. Register it once with `experimentalSuggestChain` using this config. The config uses coin type 60 with the Ethereum key features because testnet derives keys the Ethereum way since the `v1.20.0` upgrade.
+
+<Accordion title="chain-config.ts for Keplr and Leap">
+
+```ts chain-config.ts
+export const CHAIN_ID = "lumera-testnet-2";
+
+export const LUMERA_CHAIN_INFO = {
+  chainId: CHAIN_ID,
+  chainName: "Lumera Testnet",
+  rpc: "https://rpc.testnet.lumera.io",
+  rest: "https://lcd.testnet.lumera.io",
+  bip44: { coinType: 60 },
+  bech32Config: {
+    bech32PrefixAccAddr: "lumera",
+    bech32PrefixAccPub: "lumerapub",
+    bech32PrefixValAddr: "lumeravaloper",
+    bech32PrefixValPub: "lumeravaloperpub",
+    bech32PrefixConsAddr: "lumeravalcons",
+    bech32PrefixConsPub: "lumeravalconspub",
+  },
+  currencies: [
+    { coinDenom: "LUME", coinMinimalDenom: "ulume", coinDecimals: 6 },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "LUME",
+      coinMinimalDenom: "ulume",
+      coinDecimals: 6,
+      gasPriceStep: { low: 0.025, average: 0.03, high: 0.04 },
+    },
+  ],
+  stakeCurrency: {
+    coinDenom: "LUME",
+    coinMinimalDenom: "ulume",
+    coinDecimals: 6,
+  },
+  features: ["stargate", "ibc-transfer", "eth-address-gen", "eth-key-sign"],
+};
+```
+
+</Accordion>
+
+<Tabs>
+  <Tab title="Keplr">
+    `getKeplrSigner` returns a signer with `signDirect`, `signAmino`, and `signArbitrary` already wired up.
+
+    ```ts keplr-client.ts
+    import {
+      createLumeraClient,
+      getKeplrSigner,
+      isKeplrAvailable,
+    } from "@lumera-protocol/sdk-js";
+    import { CHAIN_ID, LUMERA_CHAIN_INFO } from "./chain-config";
+
+    if (!isKeplrAvailable()) {
+      throw new Error("Please install the Keplr extension");
+    }
+
+    // Register the Lumera chain, then request wallet access
+    await window.keplr.experimentalSuggestChain(LUMERA_CHAIN_INFO);
+
+    const signer = await getKeplrSigner(CHAIN_ID);
+    const [account] = await signer.getAccounts();
+
+    const client = await createLumeraClient({
+      preset: "testnet",
+      signer,
+      address: account.address,
+      gasPrice: "0.025ulume",
+    });
+    ```
+  </Tab>
+  <Tab title="Leap">
+    Leap's auto signer covers transactions. Add `signArbitrary` yourself with a small wrapper.
+
+    ```ts leap-client.ts
+    import { createLumeraClient } from "@lumera-protocol/sdk-js";
+    import { CHAIN_ID, LUMERA_CHAIN_INFO } from "./chain-config";
+
+    // Register the Lumera chain and request wallet access
+    await window.leap.experimentalSuggestChain(LUMERA_CHAIN_INFO);
+    await window.leap.enable(CHAIN_ID);
+
+    // getOfflineSignerAuto provides getAccounts, signAmino, and signDirect.
+    // Cascade also needs signArbitrary for SuperNode auth, so add it here.
+    const offlineSigner = await window.leap.getOfflineSignerAuto(CHAIN_ID);
+    const accounts = await offlineSigner.getAccounts();
+
+    const signer = {
+      ...offlineSigner,
+      async signArbitrary(_chainId: string, signerAddress: string, data: string) {
+        const result = await window.leap.signArbitrary(_chainId, signerAddress, data);
+        return { signed: data, signature: result.signature, pub_key: result.pub_key };
+      },
+    };
+
+    const client = await createLumeraClient({
+      preset: "testnet",
+      signer,
+      address: accounts[0].address,
+      gasPrice: "0.025ulume",
+    });
+    ```
+  </Tab>
+  <Tab title="Node.js mnemonic">
+    Also install `@cosmjs/amino`. A plain `DirectSecp256k1HdWallet` signs transactions but not arbitrary data, so wrap it together with an Amino wallet to add ADR-036 support.
+
+    ```ts node-client.ts
+    import { createLumeraClient } from "@lumera-protocol/sdk-js";
+    import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+    import {
+      Secp256k1HdWallet,
+      makeSignDoc as makeAminoSignDoc,
+    } from "@cosmjs/amino";
+
+    const mnemonic = process.env.LUMERA_MNEMONIC!;
+
+    const directWallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
+      prefix: "lumera",
+    });
+    const aminoWallet = await Secp256k1HdWallet.fromMnemonic(mnemonic, {
+      prefix: "lumera",
+    });
+    const [account] = await directWallet.getAccounts();
+
+    const signer = {
+      getAccounts: () => directWallet.getAccounts(),
+      signDirect: (addr: string, doc: any) => directWallet.signDirect(addr, doc),
+      signAmino: (addr: string, doc: any) => aminoWallet.signAmino(addr, doc),
+      async signArbitrary(chainId: string, signerAddress: string, data: string) {
+        const signDoc = makeAminoSignDoc(
+          [
+            {
+              type: "sign/MsgSignData",
+              value: {
+                signer: signerAddress,
+                data: Buffer.from(data).toString("base64"),
+              },
+            },
+          ],
+          { gas: "0", amount: [] },
+          "",
+          "",
+          0,
+          0
+        );
+        const { signature } = await aminoWallet.signAmino(signerAddress, signDoc);
+        return {
+          signed: data,
+          signature: signature.signature,
+          pub_key: signature.pub_key,
+        };
+      },
+    };
+
+    const client = await createLumeraClient({
+      preset: "testnet",
+      signer: signer as any,
+      address: account.address,
+      gasPrice: "0.025ulume",
+    });
+    ```
+
+    <Warning>
+    Never hardcode a mnemonic. Load it from an environment variable or a secrets manager.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Upload a file
+
+`uploadFile` runs the whole flow. It registers the action on chain, escrows the storage fee, sends the file to a SuperNode, and polls until processing completes. An action is the on-chain record of a storage request. The fee is paid in LUME, so fund your testnet account from the [faucet](/faucet) first.
+
+```ts upload.ts
+const data = new TextEncoder().encode("Hello, Lumera!");
+
+// Optional expiration, 25 hours from now as a Unix timestamp
+const expirationTime = String(Math.floor(Date.now() / 1000) + 25 * 60 * 60);
+
+const result = await client.Cascade.uploader.uploadFile(data, {
+  fileName: "hello.txt",
+  isPublic: true,
+  expirationTime,
+});
+
+console.log("Stored with action ID:", result.action_id);
+```
+
+The `action_id` is the permanent on-chain reference to your file. Save it. You need it for every download.
+
+## Download a file
+
+`download` signs the action ID with ADR-036 to authenticate, then returns a `ReadableStream` of the file bytes.
+
+```ts download.ts
+const actionId = result.action_id; // from the upload
+
+const stream = await client.Cascade.downloader.download(actionId);
+const reader = stream.getReader();
+const chunks: Uint8Array[] = [];
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  if (value) chunks.push(value);
+}
+
+const size = chunks.reduce((total, chunk) => total + chunk.length, 0);
+const bytes = new Uint8Array(size);
+let offset = 0;
+for (const chunk of chunks) {
+  bytes.set(chunk, offset);
+  offset += chunk.length;
+}
+
+console.log(new TextDecoder().decode(bytes));
+```
+
+## Check action status
+
+Query the action to follow its progress on chain.
+
+```ts status.ts
+const action = await client.Blockchain.Action.getAction(actionId);
+console.log("State:", action.state);
+```
+
+The state starts at `PENDING` after registration. It moves to `PROCESSING` while SuperNodes encode and distribute the file, then ends at `DONE`. A failed upload ends at `FAILED` and the escrowed fee is refunded.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="JavaScript SDK reference" icon="code" href="/sdk/javascript-reference">
+    Every method, option, and status value in the SDK.
+  </Card>
+  <Card title="Build a browser app" icon="globe" href="/cascade/guides/browser-app">
+    Wire the SDK into a browser upload flow.
+  </Card>
+  <Card title="Upload lifecycle" icon="arrows-rotate" href="/cascade/concepts/upload-lifecycle">
+    What happens between PENDING and DONE.
+  </Card>
+</CardGroup>

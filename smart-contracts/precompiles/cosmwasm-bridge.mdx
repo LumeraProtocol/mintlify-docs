@@ -1,0 +1,175 @@
+---
+title: "The CosmWasm to EVM bridge"
+sidebarTitle: "CosmWasm bridge"
+description: "Call CosmWasm contracts from Solidity and the reverse through the Wasm precompile."
+---
+
+Lumera Protocol runs CosmWasm and an EVM on the same chain. The Wasm precompile at `0x0903` and a companion plugin in the wasm keeper form a bidirectional bridge between the two runtimes. Solidity contracts can execute and query CosmWasm contracts, and CosmWasm contracts can call and query EVM contracts.
+
+This page covers phase 1 of the bridge, which is what ships today. The EVM is live on testnet (`lumera-testnet-2`) only. Mainnet runs `v1.12.0` and gains the EVM with its upgrade.
+
+## The two directions
+
+| Direction | Mechanism | Entry point |
+|---|---|---|
+| EVM to CosmWasm | Static precompile (`IWasm`) | `0x0000000000000000000000000000000000000903` |
+| CosmWasm to EVM | Custom message and query handlers | JSON `Custom` envelope in `CosmosMsg` and `QueryRequest` |
+
+Both directions share a reentrancy guard and execute as the calling contract, not as the outer user.
+
+## What phase 1 covers
+
+Phase 1 supports non-payable calls in both directions.
+
+- From the EVM you get `execute`, `query`, `contractInfo`, and `rawQuery` against any CosmWasm contract.
+- From CosmWasm you get `evm_call` messages and queries plus an `evm_account` query.
+- No funds move across the boundary. `execute` is non-payable and `evm_call` carries no value field.
+- No instantiation. You cannot deploy a CosmWasm contract from the EVM or an EVM contract from CosmWasm.
+- The reentrancy guard enforces a maximum call depth of 1, so a call cannot cross the boundary twice (no EVM to Wasm to EVM chains).
+- Every CosmWasm to EVM call is capped at 3,000,000 gas or the remaining gas, whichever is smaller.
+
+The [wasm precompile doc](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/precompiles/wasm-precompile.md) in the lumera repo tracks the phase roadmap beyond this.
+
+## EVM to CosmWasm
+
+The interface below comes from [`IWasm.sol`](https://github.com/LumeraProtocol/lumera/blob/master/precompiles/solidity/contracts/interfaces/IWasm.sol) in the lumera repo.
+
+```solidity IWasm.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/// @notice Precompile at 0x0000000000000000000000000000000000000903
+/// @dev Phase 1: non-payable execute, query, contractInfo, rawQuery.
+interface IWasm {
+    /// @notice Emitted when a CosmWasm contract is successfully executed.
+    event WasmExecuted(
+        address indexed caller,
+        string contractAddr,
+        bytes response
+    );
+
+    /// @notice Execute a CosmWasm contract (non-payable, no funds transfer).
+    /// @param contractAddr The bech32 address of the target CosmWasm contract.
+    /// @param msg The JSON-encoded execute message.
+    function execute(
+        string calldata contractAddr,
+        bytes calldata msg
+    ) external returns (bytes memory response);
+
+    /// @notice Query a CosmWasm contract (read-only).
+    function query(
+        string calldata contractAddr,
+        bytes calldata msg
+    ) external view returns (bytes memory response);
+
+    /// @notice Get metadata about a CosmWasm contract.
+    function contractInfo(
+        string calldata contractAddr
+    )
+        external
+        view
+        returns (
+            uint64 codeId,
+            string memory creator,
+            string memory admin,
+            string memory label
+        );
+
+    /// @notice Query a raw storage key from a CosmWasm contract.
+    function rawQuery(
+        string calldata contractAddr,
+        bytes calldata key
+    ) external view returns (bytes memory value);
+}
+```
+
+| Method | Type | Description |
+|---|---|---|
+| `execute` | Transaction | Execute a CosmWasm contract. The caller address is converted to bech32. Non-payable in phase 1. |
+| `query` | View | Smart query a CosmWasm contract. Returns raw JSON bytes. |
+| `contractInfo` | View | Contract metadata. Code ID, creator, admin, and label. |
+| `rawQuery` | View | Read a raw storage key from the contract's KV store. |
+
+### Example
+
+```solidity WasmCaller.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./interfaces/IWasm.sol";
+
+contract WasmCaller {
+    IWasm constant WASM = IWasm(0x0000000000000000000000000000000000000903);
+
+    // Query a CosmWasm counter contract
+    function getCount(string calldata wasmContract) external view returns (bytes memory) {
+        bytes memory queryMsg = '{"get_count":{}}';
+        return WASM.query(wasmContract, queryMsg);
+    }
+
+    // Execute a CosmWasm counter contract
+    function increment(string calldata wasmContract) external returns (bytes memory) {
+        bytes memory execMsg = '{"increment":{}}';
+        return WASM.execute(wasmContract, execMsg);
+    }
+
+    // Check that a contract exists
+    function checkContract(string calldata wasmContract) external view returns (uint64 codeId) {
+        (codeId, , , ) = WASM.contractInfo(wasmContract);
+    }
+}
+```
+
+Messages and responses are raw JSON bytes. Your Solidity code passes the exact execute or query message the CosmWasm contract expects and parses the JSON response itself or hands it back to an off-chain caller.
+
+## CosmWasm to EVM
+
+CosmWasm contracts reach the EVM through the standard `Custom` envelope. No precompile address is involved in this direction.
+
+To call an EVM contract, send a `CosmosMsg::Custom` with an `evm_call` payload.
+
+```json
+{
+  "evm_call": {
+    "contract": "0x1234abcd...",
+    "calldata": "0xa9059cbb000000..."
+  }
+}
+```
+
+The `contract` field is the hex EVM contract address. The `calldata` field is hex-encoded EVM calldata, meaning the function selector plus ABI-encoded arguments. Phase 1 has no `value` field.
+
+To read EVM state, send a `QueryRequest::Custom` with the same `evm_call` shape. It behaves like `eth_call` and returns the hex-encoded return data.
+
+```json
+{"result": "0x<hex-encoded return data>"}
+```
+
+An `evm_account` query returns basic account info for any EVM address.
+
+```json
+{"balance": "<wei string>", "nonce": 0, "is_contract": false}
+```
+
+## Behavior you should know
+
+- **Sender identity.** Cross-runtime calls execute as the calling contract, never as the transaction origin. An EVM contract calling `execute` appears to the CosmWasm side as its own address converted to bech32. A CosmWasm contract calling `evm_call` appears to the EVM side as its own address, so `msg.sender` in the target contract is the wasm contract. Proxy and delegatecall patterns do not propagate across the runtime boundary.
+- **Atomicity.** Failures revert atomically. An EVM to Wasm call snapshots both the multistore and the EVM state journal, and both revert together on failure. A Wasm to EVM call runs in a cache context that the dispatcher discards on failure.
+- **Gas.** Both runtimes settle in Cosmos SDK gas. An EVM to Wasm call deducts the consumed Cosmos gas from the calling contract's gas. A Wasm to EVM call charges the EVM gas used back to the wasm context, capped at 3,000,000 per call.
+- **Events.** Successful `execute` calls emit a `WasmExecuted` EVM log with the caller, the target contract address, and the raw response.
+
+The implementation lives in [precompiles/wasm](https://github.com/LumeraProtocol/lumera/tree/master/precompiles/wasm), [precompiles/crossruntime](https://github.com/LumeraProtocol/lumera/tree/master/precompiles/crossruntime), and `app/wasm_evm_plugin.go` in the lumera repo.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Precompiles overview" icon="cubes" href="/smart-contracts/precompiles/overview">
+    The full address map and when to use each precompile.
+  </Card>
+  <Card title="Action precompile" icon="bolt" href="/smart-contracts/precompiles/action">
+    Drive Cascade and Sense actions from Solidity.
+  </Card>
+  <Card title="Deploy with Remix" icon="rocket" href="/smart-contracts/deploy-with-remix">
+    Deploy and test a contract against Lumera testnet.
+  </Card>
+</CardGroup>

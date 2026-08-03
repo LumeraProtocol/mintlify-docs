@@ -1,0 +1,366 @@
+---
+title: "Standard Cosmos EVM precompiles"
+sidebarTitle: "Standard set"
+description: "Eight precompiles that expose core Cosmos modules to Solidity."
+---
+
+Lumera Protocol enables eight standard precompiles from the Cosmos EVM v0.6.0 framework. They expose core Cosmos SDK modules to Solidity, so contracts can stake, vote, claim rewards, convert addresses, and move tokens over IBC without leaving the EVM.
+
+The set is registered in [`app/evm/precompiles.go`](https://github.com/LumeraProtocol/lumera/blob/master/app/evm/precompiles.go) and uses the upstream implementations from the [cosmos/evm](https://github.com/cosmos/evm) repo. The EVM is live on testnet (`lumera-testnet-2`) only. Mainnet runs `v1.12.0` and gains the EVM with its upgrade.
+
+<Note>
+The Vesting precompile (`0x0000000000000000000000000000000000000803`) is intentionally excluded. The current Cosmos EVM default registry does not provide an implementation for it.
+</Note>
+
+## Shared types
+
+Precompiles that accept pagination or return coins share these Solidity types.
+
+```solidity Types.sol
+struct Coin {
+    string denom;
+    uint256 amount;
+}
+
+struct DecCoin {
+    string denom;
+    uint256 amount;
+    uint8 precision;
+}
+
+struct PageRequest {
+    bytes key;
+    uint64 offset;
+    uint64 limit;
+    bool countTotal;
+    bool reverse;
+}
+
+struct PageResponse {
+    bytes nextKey;
+    uint64 total;
+}
+
+struct Height {
+    uint64 revisionNumber;
+    uint64 revisionHeight;
+}
+```
+
+## P256
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000100` |
+| Gas | Fixed 3,450 |
+
+Verifies NIST P-256 (secp256r1) signatures per [EIP-7212](https://eips.ethereum.org/EIPS/eip-7212). This curve backs WebAuthn passkeys, hardware security modules, and mobile secure enclaves, so contracts can verify signatures from those devices on chain.
+
+There is no Solidity interface. Call it with a raw `STATICCALL` and exactly 160 bytes of input.
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 32 | Message hash |
+| 32 | 32 | Signature `r` |
+| 64 | 32 | Signature `s` |
+| 96 | 32 | Public key `x` |
+| 128 | 32 | Public key `y` |
+
+It returns `uint256(1)` as 32 bytes on success and empty data on failure.
+
+```solidity
+function verifyP256(
+    bytes32 hash,
+    bytes32 r,
+    bytes32 s,
+    bytes32 x,
+    bytes32 y
+) external view returns (bool) {
+    bytes memory input = abi.encodePacked(hash, r, s, x, y);
+    (bool ok, bytes memory result) = address(0x100).staticcall(input);
+    return ok && result.length == 32 && abi.decode(result, (uint256)) == 1;
+}
+```
+
+## Bech32
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000400` |
+| Interface | `Bech32I.sol` |
+
+Converts addresses between hex (EIP-55) and Bech32 (Cosmos) formats. Use it whenever a contract needs to hand a `lumera1...` address to a Cosmos-native module or display one to users.
+
+```solidity Bech32I.sol
+interface Bech32I {
+    /// @dev Convert hex address to bech32 format.
+    function hexToBech32(
+        address addr,
+        string memory prefix
+    ) external returns (string memory bech32Address);
+
+    /// @dev Convert bech32 address to hex format.
+    function bech32ToHex(
+        string memory bech32Address
+    ) external returns (address addr);
+}
+```
+
+```solidity
+Bech32I constant BECH32 = Bech32I(0x0000000000000000000000000000000000000400);
+
+// Convert the caller's EVM address to a Lumera bech32 address
+string memory lumeraAddr = BECH32.hexToBech32(msg.sender, "lumera");
+
+// Convert a Lumera bech32 address back to hex
+address evmAddr = BECH32.bech32ToHex("lumera1abc...");
+```
+
+## Staking
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000800` |
+| Interface | `StakingI.sol` |
+
+Full EVM interface to the Cosmos SDK staking module. Contracts can create validators, manage delegations, and read staking state.
+
+Transaction methods.
+
+| Method | Description |
+|---|---|
+| `createValidator(Description, CommissionRates, uint256, address, string, uint256)` | Create a new validator |
+| `editValidator(Description, address, int256, int256)` | Modify validator description or commission |
+| `delegate(address, string, uint256)` | Delegate tokens to a validator |
+| `undelegate(address, string, uint256)` | Start undelegation, returns `completionTime` |
+| `redelegate(address, string, string, uint256)` | Move delegation between validators |
+| `cancelUnbondingDelegation(address, string, uint256, uint256)` | Cancel an in-progress undelegation |
+
+Query methods.
+
+| Method | Description |
+|---|---|
+| `delegation(address, string)` | Delegation shares and balance |
+| `unbondingDelegation(address, string)` | Unbonding delegation entries |
+| `validator(address)` | Validator info |
+| `validators(string, PageRequest)` | List validators by status |
+| `redelegation(address, string, string)` | A specific redelegation |
+| `redelegations(address, string, string, PageRequest)` | List redelegations with pagination |
+
+It emits the events `CreateValidator`, `Delegate`, `Unbond`, `Redelegate`, `CancelUnbondingDelegation`, and `EditValidator`.
+
+```solidity
+StakingI constant STAKING = StakingI(0x0000000000000000000000000000000000000800);
+
+// Delegate 100 LUME to a validator
+STAKING.delegate(
+    msg.sender,
+    "lumeravaloper1abc...",
+    100 * 1e18  // amount in alume (18 decimals)
+);
+```
+
+## Distribution
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000801` |
+| Interface | `DistributionI.sol` |
+
+Handles staking reward distribution. Contracts can claim rewards, set withdrawal addresses, and read reward balances.
+
+Transaction methods.
+
+| Method | Description |
+|---|---|
+| `claimRewards(address, uint32)` | Claim rewards from up to N validators |
+| `setWithdrawAddress(address, string)` | Set a custom withdrawal address |
+| `withdrawDelegatorRewards(address, string)` | Withdraw rewards from one validator |
+| `withdrawValidatorCommission(string)` | Withdraw validator commission |
+| `fundCommunityPool(address, Coin[])` | Contribute to the community pool |
+| `depositValidatorRewardsPool(address, string, Coin[])` | Deposit to a validator rewards pool |
+
+Query methods.
+
+| Method | Description |
+|---|---|
+| `validatorDistributionInfo(string)` | Validator commission and self-bond rewards |
+| `validatorOutstandingRewards(string)` | Outstanding rewards for a validator |
+| `validatorCommission(string)` | Accumulated commission |
+| `validatorSlashes(string, uint64, uint64, PageRequest)` | Slash events in a height range |
+| `delegationRewards(address, string)` | Rewards for a specific delegation |
+| `delegationTotalRewards(address)` | Total rewards across all delegations |
+| `delegatorValidators(address)` | Validators the account delegates to |
+| `delegatorWithdrawAddress(address)` | Current withdrawal address |
+| `communityPool()` | Community pool balance |
+
+```solidity
+DistributionI constant DISTRIBUTION = DistributionI(0x0000000000000000000000000000000000000801);
+
+// Claim rewards from up to 10 validators
+DISTRIBUTION.claimRewards(msg.sender, 10);
+
+// Check rewards for a specific delegation
+DecCoin[] memory rewards = DISTRIBUTION.delegationRewards(
+    msg.sender, "lumeravaloper1abc..."
+);
+```
+
+## ICS20
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000802` |
+| Interface | `ICS20I.sol` |
+
+Sends IBC fungible token transfers directly from Solidity. This is the primary way EVM contracts move tokens across chains.
+
+The single transaction method is `transfer(string, string, string, uint256, address, string, Height, uint64, string)` with these parameters.
+
+| Parameter | Meaning |
+|---|---|
+| `sourcePort`, `sourceChannel` | IBC routing, for example `"transfer"` and `"channel-0"` |
+| `denom`, `amount` | Token denomination and amount |
+| `sender`, `receiver` | Hex sender and bech32 receiver |
+| `timeoutHeight`, `timeoutTimestamp` | Timeout configuration, 0 disables |
+| `memo` | Optional IBC memo for forwarding or wasm hooks |
+
+Query methods are `denom(string)`, `denoms(PageRequest)`, and `denomHash(string)` for denomination traces. It emits an `IBCTransfer` event.
+
+```solidity
+ICS20I constant ICS20 = ICS20I(0x0000000000000000000000000000000000000802);
+
+// Send 50 LUME to Osmosis
+ICS20.transfer(
+    "transfer",
+    "channel-0",
+    "ulume",
+    50_000_000,          // 50 LUME in ulume
+    msg.sender,
+    "osmo1receiver...",
+    Height(0, 0),        // no height timeout
+    uint64(block.timestamp + 600) * 1_000_000_000, // 10 min timeout
+    ""                   // no memo
+);
+```
+
+## Bank
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000804` |
+| Interface | `IBank.sol` |
+
+Read-only queries for native token balances and supply. It exposes no transaction methods. Token transfers use the normal EVM transfer path or the other precompiles.
+
+```solidity IBank.sol
+struct Balance {
+    address contractAddress;  // ERC20 contract address
+    uint256 amount;
+}
+
+interface IBank {
+    function balances(address account) external view returns (Balance[] memory);
+    function totalSupply() external view returns (Balance[] memory);
+    function supplyOf(address erc20Address) external view returns (uint256);
+}
+```
+
+## Gov
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000805` |
+| Interface | `IGov.sol` |
+
+Full EVM interface to the Cosmos SDK governance module. Contracts can submit proposals, deposit, vote, and read governance state.
+
+Transaction methods.
+
+| Method | Description |
+|---|---|
+| `submitProposal(address, bytes, Coin[])` | Submit a proposal (protoJSON body) |
+| `cancelProposal(address, uint64)` | Cancel an active proposal |
+| `deposit(address, uint64, Coin[])` | Deposit funds to a proposal |
+| `vote(address, uint64, VoteOption, string)` | Vote on a proposal |
+| `voteWeighted(address, uint64, WeightedVoteOption[], string)` | Weighted or split vote |
+
+The `VoteOption` enum values are `Unspecified(0)`, `Yes(1)`, `Abstain(2)`, `No(3)`, and `NoWithVeto(4)`.
+
+Query methods.
+
+| Method | Description |
+|---|---|
+| `getVote(uint64, address)` | A voter's vote on a proposal |
+| `getVotes(uint64, PageRequest)` | All votes for a proposal |
+| `getDeposit(uint64, address)` | Deposit info for a depositor |
+| `getDeposits(uint64, PageRequest)` | All deposits for a proposal |
+| `getTallyResult(uint64)` | Voting tally |
+| `getProposal(uint64)` | Proposal details |
+| `getProposals(uint32, address, address, PageRequest)` | List proposals with filters |
+| `getParams()` | Governance parameters |
+| `getConstitution()` | On-chain constitution text |
+
+```solidity
+IGov constant GOV = IGov(0x0000000000000000000000000000000000000805);
+
+// Vote Yes on proposal #1
+GOV.vote(msg.sender, 1, VoteOption.Yes, "Voting from EVM");
+```
+
+## Slashing
+
+| | |
+|---|---|
+| Address | `0x0000000000000000000000000000000000000806` |
+| Interface | `ISlashing.sol` |
+
+Manages validator jail status. A validator can unjail itself from the EVM, and any contract can read signing info.
+
+```solidity ISlashing.sol
+struct SigningInfo {
+    address validatorAddress;
+    int64 startHeight;
+    int64 indexOffset;
+    int64 jailedUntil;
+    bool tombstoned;
+    int64 missedBlocksCounter;
+}
+
+interface ISlashing {
+    function unjail(address validatorAddress) external returns (bool success);
+    function getSigningInfo(address consAddress) external view returns (SigningInfo memory);
+    function getSigningInfos(PageRequest calldata pagination) external view returns (SigningInfo[] memory, PageResponse memory);
+    function getParams() external view returns (Params memory);
+}
+```
+
+## Address summary
+
+| Precompile | Address | Type |
+|---|---|---|
+| P256 | `0x...0100` | Cryptographic |
+| Bech32 | `0x...0400` | Utility |
+| Staking | `0x...0800` | Module |
+| Distribution | `0x...0801` | Module |
+| ICS20 | `0x...0802` | IBC |
+| Vesting | `0x...0803` | Excluded |
+| Bank | `0x...0804` | Module |
+| Gov | `0x...0805` | Module |
+| Slashing | `0x...0806` | Module |
+
+The full upstream reference with every interface file lives in the [cosmos/evm precompiles source](https://github.com/cosmos/evm) and the [Lumera standard precompiles doc](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/precompiles/standard-precompiles.md).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Action precompile" icon="bolt" href="/smart-contracts/precompiles/action">
+    Drive Cascade and Sense actions from your contracts.
+  </Card>
+  <Card title="SuperNode precompile" icon="server" href="/smart-contracts/precompiles/supernode">
+    Read SuperNode state and metrics on chain.
+  </Card>
+  <Card title="Deploy with Remix" icon="rocket" href="/smart-contracts/deploy-with-remix">
+    Deploy and test a contract against Lumera testnet.
+  </Card>
+</CardGroup>

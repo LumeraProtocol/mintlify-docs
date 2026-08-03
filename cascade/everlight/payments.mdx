@@ -1,0 +1,84 @@
+---
+title: "How Everlight payments work"
+sidebarTitle: "How payments work"
+description: "See how the Everlight SN Pool collects funding and pays SuperNodes for retained Cascade data."
+---
+
+Everlight pays SuperNodes recurring compensation for the Cascade data they retain. This page explains where that money accumulates, when it is paid out, how each SuperNode's share is calculated, and where the funding comes from. Read the [Everlight overview](/cascade/everlight/overview) first if you are new to the model.
+
+<Note>
+Everlight is rolling out in phases. The mechanisms on this page ship through governance-approved chain upgrades, and parameters can change through governance at any time.
+</Note>
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/everlight-flow-light.svg" alt="Everlight funding and payout flow" />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/everlight-flow-dark.svg" alt="Everlight funding and payout flow" />
+
+## The Everlight SN Pool
+
+The Everlight SN Pool is a module account inside `x/supernode`, the module that manages SuperNode registration, ranking, and rewards. There is no separate Everlight module. The pool account accumulates LUME between distributions, and any address can send funds to it with a standard bank transfer. The distribution logic does not care where the balance came from. It pays out whatever the pool holds when a payment period ends.
+
+## Payment periods
+
+Payment periods are measured in block height, not wall-clock time. A governance parameter, `payment_period_blocks`, sets the number of blocks between distributions. At the end of every block the module checks how many blocks have passed since the last distribution. Once the interval has elapsed, the distribution runs automatically in that block. No transaction or off-chain trigger is involved.
+
+Two edge cases are handled cleanly.
+
+- If the pool is empty at the boundary, the period simply advances and SuperNodes receive nothing that period.
+- If no SuperNode is eligible at the boundary, the balance carries over to the next period.
+
+## Proportional distribution
+
+The pool distributes to eligible SuperNodes in proportion to the Cascade data each one retains. The weight metric is `cascade_kademlia_db_bytes`, the number of bytes a SuperNode holds in its Cascade Kademlia store. SuperNodes report this metric through LEP-4, the Lumera Enhancement Proposal that defines self-reported node metrics. See the [LEP repository](https://github.com/LumeraProtocol/lumera/tree/master/docs/leps) for the proposal texts.
+
+```text
+payout = pool_balance * (your_retained_bytes / total_eligible_bytes)
+```
+
+A SuperNode is eligible for a distribution when all of the following hold.
+
+- Its state is `ACTIVE` or `STORAGE_FULL`. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators) for the state rules.
+- Its retained Cascade bytes meet the minimum payment threshold.
+- Its latest metrics report is recent enough to count as fresh.
+
+Reported bytes pass through guardrails before they become payout weight. A smoothing window averages reports over several periods, a growth cap limits how fast a node's reported share can rise, and new SuperNodes ramp up to full weight gradually. These guardrails make point-in-time manipulation of the metric unprofitable.
+
+## Funding sources
+
+The pool draws from several sources, so no single stream is a point of failure.
+
+| Source | How it reaches the pool |
+| --- | --- |
+| Foundation staking rewards | The Foundation claims its own staking rewards and sends them to the pool with a standard bank transfer. No chain change is needed. |
+| Share of action registration fees | A governance parameter routes a share of every action registration fee to the pool. The designed share is 2 percent. |
+| Community Pool transfers | Any token holder can propose a transfer to the pool through governance with `MsgCommunityPoolSpend`. |
+
+Registration fees themselves do not go up. The routed share comes out of the existing fee split, so uploaders pay the same one-time price. You are never billed again after registration.
+
+## Governance parameters
+
+Every economic knob in Everlight is a governance parameter. Token holders can tune the system through standard proposals, without a hard fork.
+
+| Parameter | Controls |
+| --- | --- |
+| `payment_period_blocks` | Blocks between distributions |
+| `registration_fee_share_bps` | Share of action registration fees routed to the pool |
+| `min_cascade_bytes_for_payment` | Minimum retained bytes to qualify for payouts |
+| `measurement_smoothing_periods` | Rolling average window for payout weight |
+| `new_sn_ramp_up_periods` | Ramp-up length for new SuperNodes |
+| `usage_growth_cap_bps_per_period` | Maximum growth rate of reported bytes per period |
+
+Query current values on chain once the parameters are live, and treat any number in this page as changeable by governance.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="For SuperNode operators" icon="server" href="/cascade/everlight/supernode-operators">
+    The STORAGE_FULL state and what payouts mean for your node.
+  </Card>
+  <Card title="Governance" icon="landmark" href="/protocol/governance">
+    How parameter changes are proposed and voted on.
+  </Card>
+  <Card title="How Cascade works" icon="layer-group" href="/cascade/how-cascade-works">
+    The upload flow that Everlight keeps funded.
+  </Card>
+</CardGroup>

@@ -1,0 +1,76 @@
+---
+title: "EVM JSON-RPC reference"
+sidebarTitle: "EVM JSON-RPC"
+description: "Call standard Ethereum JSON-RPC methods on Lumera EVM nodes over HTTP and WebSocket."
+---
+
+Lumera Protocol nodes on EVM enabled networks serve a standard Ethereum JSON-RPC API. HTTP runs on port 8545 and WebSocket on port 8546, both enabled by default on upgraded nodes. Any tool that speaks Ethereum RPC works unchanged. Hardhat, Foundry, Ethers, viem, and MetaMask all connect by pointing at the endpoint and chain ID below.
+
+The EVM is live on testnet today. Mainnet runs `v1.12.0` and gains the EVM JSON-RPC with its [EVM upgrade](/upgrades/evm-upgrade).
+
+## Base URLs and chain ID
+
+| Network | HTTP endpoint | Status |
+|---|---|---|
+| Testnet | `https://evm-rpc.testnet.lumera.io` | Live |
+| Mainnet | `https://evm-rpc.lumera.io` | Answers after the EVM upgrade |
+| Your own node | `http://localhost:8545` | EVM enabled builds (v1.20.0 and later) |
+
+The EVM chain ID is `76857769` on every Lumera network. JSON-RPC returns it as hex `0x494c1a9`. The currency symbol is LUME, exposed to the EVM as the 18 decimal denom `alume`.
+
+WebSocket subscriptions run on port 8546 on nodes you operate yourself.
+
+## Quick checks
+
+Verify connectivity with `eth_chainId` and `eth_blockNumber`.
+
+<CodeGroup>
+```bash eth_chainId
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' | jq -r '.result'
+```
+
+```bash eth_blockNumber
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | jq -r '.result'
+```
+</CodeGroup>
+
+`eth_chainId` returns `0x494c1a9`. `eth_blockNumber` returns the latest height as a hex number.
+
+## Namespaces
+
+Methods are grouped by namespace prefix. The default node configuration enables `eth`, `net`, `web3`, and `rpc`. Node operators can enable additional namespaces such as `debug` and `txpool` in `app.toml`, so their availability depends on the endpoint you call.
+
+The fee market implements EIP-1559 with a dynamic base fee, so fee estimation behaves the way Ethereum tooling expects.
+
+## OpenRPC discovery
+
+The node ships a machine readable catalog of every JSON-RPC method it supports, in [OpenRPC](https://open-rpc.org/) format. The spec regenerates at build time from the RPC implementation, so it always matches the running node. There are two ways to fetch it.
+
+- Call `rpc_discover` (or the alias `rpc.discover`) on the JSON-RPC endpoint.
+- Fetch `/openrpc.json` from the Cosmos REST API port (1317) with a plain GET.
+
+```bash
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}' | jq '.result.info'
+```
+
+The catalog covers about 743 methods with parameters, return types, and examples. Browse and execute them interactively in the [OpenRPC playground](/smart-contracts/openrpc-playground).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Smart contracts overview" icon="file-code" href="/smart-contracts/overview">
+    What the Lumera EVM offers contract developers.
+  </Card>
+  <Card title="OpenRPC playground" icon="compass" href="/smart-contracts/openrpc-playground">
+    Explore every RPC method from the browser.
+  </Card>
+  <Card title="Connect MetaMask" icon="wallet" href="/smart-contracts/connect-metamask">
+    Add the Lumera network to MetaMask.
+  </Card>
+</CardGroup>

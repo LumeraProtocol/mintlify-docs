@@ -1,0 +1,73 @@
+---
+title: "Run a validator on Lumera mainnet"
+sidebarTitle: "Overview"
+description: "Run a validator on lumera-mainnet-1 and help secure the network."
+---
+
+Lumera Protocol is a Cosmos SDK Layer 1 blockchain secured by CometBFT consensus. Validators produce blocks, vote on governance proposals, and maintain the integrity of the network. In return they earn staking rewards and commission from their delegators.
+
+Validators who additionally register as SuperNodes can also provide Cascade storage services and earn fees from file storage operations. This guide covers the base validator setup. See the [SuperNode overview](/supernodes/overview) for upgrading to a SuperNode.
+
+## Network information
+
+| Item | Value |
+|------|-------|
+| Chain ID | `lumera-mainnet-1` |
+| Denom | `ulume` (6 decimals, 1 LUME = 1,000,000 ulume) |
+| Min gas price | `0.025ulume` |
+| Seed node | `f64b9efc5747cc3556bdc281dab930a716dd63af@seeds.lumera.io:26656` |
+| Genesis file | [mainnet/genesis.json](https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/mainnet/genesis.json) |
+| Public RPC | `https://rpc.lumera.io` |
+| Public API (LCD) | `https://lcd.lumera.io` |
+| Public gRPC | `https://grpc.lumera.io` |
+| SN-API | `https://snapi.lumera.io` |
+| Snapshot | [Polkachu snapshots](https://www.polkachu.com/tendermint_snapshots/lumera) (about 11 GB, daily) |
+| Explorer | [portal.lumera.io](https://portal.lumera.io) |
+
+## Binary version
+
+Run the version mainnet is currently on.
+
+```bash
+curl -fsSL https://lumera-rpc.polkachu.com/abci_info | jq -r .result.response.version
+# 1.12.0
+```
+
+Releases ship a prebuilt `linux/amd64` binary together with the CosmWasm shared library and an installer. ARM (including Apple Silicon) is not supported for production nodes.
+
+## Hardware requirements
+
+These are the specifications published in the [lumera-networks repository](https://github.com/LumeraProtocol/lumera-networks) for mainnet.
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 8 cores (x86_64) | 16 cores |
+| RAM | 32 GB | 64 GB |
+| Storage | 2 TB NVMe SSD | 4 TB NVMe SSD |
+| Network | 1 Gbps dedicated | 5 Gbps+ |
+| OS | Ubuntu 22.04 LTS or later | Ubuntu 24.04 LTS or later |
+
+<Warning>
+Use NVMe SSDs. Mechanical drives cannot sustain a live CometBFT node, and SATA SSDs stall under load.
+</Warning>
+
+## What you need
+
+- A VPS or bare-metal server running Ubuntu 22.04 LTS or later (x86_64)
+- At least 1 LUME (1,000,000 ulume) for minimum self-delegation and fees. You will need a significant amount of LUME to enter the active set, which is capped at 50 validators.
+
+## Next steps
+
+The guide runs in three stages. Follow them in order.
+
+<CardGroup cols={3}>
+  <Card title="Node setup" icon="server" href="/validators-mainnet/node-setup">
+    Install `lumerad`, sync the node, and run it under systemd.
+  </Card>
+  <Card title="Create validator" icon="key" href="/validators-mainnet/create-validator">
+    Create a secured wallet, fund it, and submit the validator transaction.
+  </Card>
+  <Card title="Operations" icon="wrench" href="/validators-mainnet/operations">
+    Day-to-day commands, chain upgrades, monitoring, and troubleshooting.
+  </Card>
+</CardGroup>

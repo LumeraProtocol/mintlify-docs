@@ -1,0 +1,157 @@
+---
+title: "Research Archive example app"
+sidebarTitle: "Research Archive"
+description: "Explore a decentralized academic publishing platform built on Cascade."
+---
+
+The [Lumera Research Archive](https://github.com/kaleababayneh/Lumera-Research-Archive) is an open source decentralized academic publishing platform. It is a production grade example of integrating Cascade, the permanent storage service of Lumera Protocol. This page walks through its architecture so you can reuse the same patterns in your own app.
+
+The app supports four things.
+
+- Public paper publishing with permanent archival on Cascade
+- Encrypted private drafts with wallet-based XChaCha20-Poly1305 encryption
+- Secure collaboration through wallet-derived key exchange
+- Paper discovery through LumeScope, a read-only REST aggregator that indexes Cascade actions
+
+To run it locally you need Node.js 18 or later, the Keplr extension, and testnet LUME from the [faucet](/faucet).
+
+## Tech stack
+
+| Component | Technology |
+|-----------|-----------|
+| Runtime | Vite (vanilla TypeScript SPA) |
+| Blockchain SDK | `@lumera-protocol/sdk-js` v0.2.7 |
+| Cosmos | `@cosmjs/proto-signing`, `@cosmjs/stargate` |
+| Encryption | `libsodium-wrappers-sumo` (XChaCha20-Poly1305) |
+| Wallet | Keplr browser extension |
+| Indexer | LumeScope API |
+| Chain | `lumera-testnet-2` |
+
+## Architecture
+
+The key design decision is that there is no backend server. The entire application runs in the browser. It talks to the Lumera blockchain over RPC for transactions and to the SuperNode API for file storage.
+
+## Three file types on Cascade
+
+The app stores three distinct file types on Cascade and tells them apart by filename conventions.
+
+### Published papers
+
+Public, unencrypted academic papers permanently archived on Cascade.
+
+```ts
+const manifest = {
+  title: "My Research Paper",
+  abstract: "A study on...",
+  authors: ["lumera1abc..."],
+  keywords: ["blockchain", "storage"],
+  content: btoa(paperContent), // Base64-encoded plaintext
+  publishedAt: new Date().toISOString(),
+};
+
+const result = await client.Cascade.uploader.uploadFile(
+  new TextEncoder().encode(JSON.stringify(manifest)),
+  {
+    fileName: `${manifest.title}.json`,
+    isPublic: true,
+    taskOptions: { pollInterval: 2000, timeout: 300000 },
+  }
+);
+```
+
+### Encrypted drafts
+
+Private drafts encrypted with a per-document key. The title stays readable as public metadata.
+
+```ts
+const manifest = {
+  type: "draft",
+  draftId: crypto.randomUUID(),
+  title: "Work in Progress", // Public metadata (not encrypted)
+  version: 1,
+  encrypted: true,
+  nonce: sodium.to_base64(nonce),
+  ciphertext: sodium.to_base64(encryptedContent),
+  encryptedDocumentKey: sodium.to_base64(encKeyForOwner),
+  keyNonce: sodium.to_base64(keyNonce),
+};
+
+await client.Cascade.uploader.uploadFile(manifestBytes, {
+  fileName: `draft_${draftId}_v${version}.json`,
+  isPublic: true, // Encrypted, so publicly accessible but unreadable
+});
+```
+
+### Collaboration invitations
+
+Key-exchange files that grant draft access to collaborators.
+
+```ts
+const invitation = {
+  type: "invitation",
+  draftId: draftId,
+  from: ownerAddress,
+  to: collaboratorAddress,
+  encryptedDocumentKey: sodium.to_base64(reEncryptedKey),
+  nonce: sodium.to_base64(inviteNonce),
+};
+
+await client.Cascade.uploader.uploadFile(invitationBytes, {
+  fileName: `invitation_${collaboratorAddress}_${draftId}.json`,
+  isPublic: true,
+});
+```
+
+## Discovery with LumeScope
+
+The app uses [LumeScope](https://github.com/LumeraProtocol/lumescope) to discover files without scanning the entire blockchain.
+
+```ts
+// Fetch all actions by a specific creator
+const response = await fetch(
+  `${LUMESCOPE_API}/v1/actions?creator=${address}&limit=10000&type=ACTION_TYPE_CASCADE`
+);
+const actions = await response.json();
+
+// Filter by state and filename pattern
+const papers = actions.filter(
+  (a) => a.state === "ACTION_STATE_DONE" && !a.fileName?.startsWith("draft_")
+);
+```
+
+## Collaboration flow
+
+Sharing a draft moves a wrapped document key from the owner to the collaborator.
+
+<img className="block dark:hidden mx-auto" src="/images/diagrams/collaboration-flow-light.svg" alt="Collaboration flow" style={{ maxWidth: "280px" }} />
+<img className="hidden dark:block mx-auto" src="/images/diagrams/collaboration-flow-dark.svg" alt="Collaboration flow" style={{ maxWidth: "280px" }} />
+
+The app link carries key material in the URL hash fragment (`#key=...`). Browsers never send the hash fragment to servers, so it stays on the client. That makes the link safe to share over any messaging channel.
+
+## Local state
+
+The app uses `localStorage` for three things.
+
+- Draft metadata (IDs, titles, versions)
+- Encrypted document keys wrapped with the wallet-derived key
+- Collaboration invitations
+
+Cascade is the source of truth for file content. `localStorage` only caches keys and metadata.
+
+## Source code
+
+Browse the full implementation at [github.com/kaleababayneh/Lumera-Research-Archive](https://github.com/kaleababayneh/Lumera-Research-Archive).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Encrypted storage" icon="lock" href="/cascade/guides/encrypted-storage">
+    Implement the wallet-derived encryption pattern used for drafts.
+  </Card>
+  <Card title="Build a browser app" icon="globe" href="/cascade/guides/browser-app">
+    Start your own Vite and Keplr app from scratch.
+  </Card>
+  <Card title="JavaScript SDK reference" icon="book" href="/sdk/javascript-reference">
+    Look up every SDK method the archive calls.
+  </Card>
+</CardGroup>

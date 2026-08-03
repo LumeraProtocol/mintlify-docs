@@ -1,0 +1,142 @@
+---
+title: "Build with Cascade"
+sidebarTitle: "Quickstart"
+description: "Upload your first file to Cascade from TypeScript in a few minutes."
+---
+
+This quickstart takes you from an empty folder to a file stored on Cascade, the pay once, store forever storage service on Lumera Protocol. You install the JavaScript SDK, fund a testnet address, and upload a file from TypeScript.
+
+<Note>
+  This page is for application developers. Node operators can start with the [validator quick start](/quickstart-validator) and the [SuperNode quick start](/quickstart-supernode).
+</Note>
+
+## Prerequisites
+
+You need Node.js 18 or later. The install step shows npm, yarn, and pnpm.
+
+<Steps>
+  <Step title="Install the SDK">
+    Install the Lumera SDK together with the CosmJS signing packages it builds on.
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+    ```
+
+    ```bash yarn
+    yarn add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+    ```
+
+    ```bash pnpm
+    pnpm add @lumera-protocol/sdk-js @cosmjs/proto-signing @cosmjs/stargate
+    ```
+
+    </CodeGroup>
+  </Step>
+  <Step title="Get testnet LUME">
+    Uploads register an action on chain and escrow a small storage fee, so your address needs testnet LUME. Request tokens from the [faucet](/faucet) before you continue.
+  </Step>
+  <Step title="Create a signer and client">
+    Cascade signs upload metadata with ADR-036, the Cosmos standard for arbitrary message signing. CosmJS wallets do not expose it directly, so wrap a direct and an amino wallet in one signer object. Create `upload.ts` with the setup below, using the mnemonic of the address you just funded.
+
+    ```ts upload.ts
+    import { createLumeraClient } from "@lumera-protocol/sdk-js";
+    import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+    import { Secp256k1HdWallet, makeSignDoc as makeAminoSignDoc } from "@cosmjs/amino";
+
+    const MNEMONIC = "your twelve word mnemonic goes here";
+
+    async function main() {
+      const directWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: "lumera" });
+      const aminoWallet = await Secp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: "lumera" });
+      const [account] = await directWallet.getAccounts();
+
+      // Combine direct + amino wallets and add signArbitrary (ADR-036) for Cascade
+      const signer = {
+        getAccounts: () => directWallet.getAccounts(),
+        signDirect: (addr: string, doc: any) => directWallet.signDirect(addr, doc),
+        signAmino: (addr: string, doc: any) => aminoWallet.signAmino(addr, doc),
+        async signArbitrary(chainId: string, signerAddress: string, data: string) {
+          const signDoc = makeAminoSignDoc(
+            [{
+              type: "sign/MsgSignData",
+              value: {
+                signer: signerAddress,
+                data: Buffer.from(data).toString("base64"),
+              },
+            }],
+            { gas: "0", amount: [] },
+            "", // ADR-036 requires empty chain_id
+            "",
+            0,
+            0
+          );
+          const { signature } = await aminoWallet.signAmino(signerAddress, signDoc);
+          return { signed: data, signature: signature.signature, pub_key: signature.pub_key };
+        },
+      };
+
+      const client = await createLumeraClient({
+        preset: "testnet",
+        signer: signer as any,
+        address: account.address,
+        gasPrice: "0.025ulume"
+      });
+
+      // Continued in the next step
+    }
+
+    main();
+    ```
+
+    <Warning>
+      Never hardcode a mnemonic in production code. Load it from an environment variable or a secrets manager.
+    </Warning>
+  </Step>
+  <Step title="Upload a file and print the action ID">
+    Replace the `// Continued in the next step` comment with the upload call.
+
+    ```ts upload.ts
+      // The file to upload
+      const file = new TextEncoder().encode("Hello, Lumera!");
+
+      // Deadline for supernodes to process the upload.
+      // The escrowed fee is refunded if the action is not finalized in time.
+      const expirationTime = String(Math.floor(Date.now() / 1000) + 25 * 60 * 60); // 25 hours from now
+
+      const result = await client.Cascade.uploader.uploadFile(file, {
+        fileName: "hello.txt",
+        isPublic: true,
+        expirationTime
+      });
+
+      console.log("action_id:", result.action_id);
+    ```
+
+    Run the script.
+
+    ```bash
+    npx tsx upload.ts
+    ```
+
+    The printed `action_id` is your permanent on-chain reference to the file. Save it.
+  </Step>
+  <Step title="Verify on the Lumera Portal">
+    Open the testnet [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2) and search for your address to find the registration transaction. The action starts as PENDING, moves to PROCESSING while SuperNodes encode and distribute the file, and finishes as DONE. If it fails or expires, the escrowed fee is refunded.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Build a browser app" icon="window" href="/cascade/guides/browser-app">
+    Use the SDK in the browser with Keplr or Leap as the signer.
+  </Card>
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    Understand the actions, fees, and lifecycle behind this quickstart.
+  </Card>
+  <Card title="JavaScript SDK" icon="code" href="/sdk/javascript">
+    Explore the full client, wallet options, and configuration presets.
+  </Card>
+</CardGroup>

@@ -1,0 +1,131 @@
+---
+title: "Go SDK reference"
+sidebarTitle: "Go reference"
+description: "Config fields, client surfaces, ICA helpers, and crypto utilities in the Lumera Go SDK."
+---
+
+This page lists the public surface of [`github.com/LumeraProtocol/sdk-go`](https://github.com/LumeraProtocol/sdk-go) as documented in the repo. For generated API docs see [pkg.go.dev](https://pkg.go.dev/github.com/LumeraProtocol/sdk-go). For a guided start see the [Go SDK page](/sdk/go).
+
+## Client factory
+
+```go
+import lumerasdk "github.com/LumeraProtocol/sdk-go/client"
+
+client, err := lumerasdk.New(ctx, cfg, kr, opts...)
+defer client.Close()
+```
+
+### Config fields
+
+| Field | Type | Description |
+|---|---|---|
+| `ChainID` | `string` | `lumera-testnet-2` or `lumera-mainnet-1` |
+| `GRPCEndpoint` | `string` | Chain gRPC endpoint, for example `grpc.testnet.lumera.io:443` |
+| `RPCEndpoint` | `string` | CometBFT RPC endpoint |
+| `Address` | `string` | Your bech32 sender address |
+| `KeyName` | `string` | Key name inside the keyring |
+
+Options include `lumerasdk.WithLogger(*zap.Logger)`. The keyring argument is a standard Cosmos SDK `keyring.Keyring`.
+
+### Factory for multiple signers
+
+```go
+factory, err := lumerasdk.NewFactory(cfg, kr)
+alice, err := factory.WithSigner(ctx, aliceAddr, "alice")
+```
+
+`NewFactory` shares one configuration and one set of transports. `WithSigner` returns a per account client. Close each client when done.
+
+## Blockchain surface
+
+`client.Blockchain` wraps the Lumera gRPC API with per module clients.
+
+| Client | Example methods |
+|---|---|
+| `Blockchain.Action` | `GetAction(ctx, actionID)` returns the action record with its state |
+| `Blockchain.SuperNode` | SuperNode registration state and listings |
+
+Action states are `PENDING`, `PROCESSING`, `DONE`, and `FAILED`. Approved cross-chain actions can also reach `APPROVED` after `MsgApproveAction`.
+
+## Cascade surface
+
+`client.Cascade` wraps the SuperNode SDK for file operations.
+
+| Method | Signature shape | Purpose |
+|---|---|---|
+| `Upload` | `Upload(ctx, addr, nil, filePath, opts...)` | Register the action and stream the file to a SuperNode |
+| `Download` | `Download(ctx, actionID, destDir, opts...)` | Retrieve a file by action ID into a directory |
+| `SubscribeToEvents` | `SubscribeToEvents(ctx, ...)` | Receive task lifecycle events instead of polling |
+| `CreateRequestActionMessage` | `CreateRequestActionMessage(ctx, addr, filePath, opts)` | Build a `MsgRequestAction` without broadcasting it |
+| `CreateApproveActionMessage` | `CreateApproveActionMessage(ctx, actionID, opts...)` | Build a `MsgApproveAction` for cross-chain flows |
+
+Upload options for interchain flows include `cascade.WithICACreatorAddress`, `cascade.WithAppPubkey`, and `cascade.WithICASendFunc`. Download accepts `cascade.WithDownloadSignerAddress` to sign with a controller chain key.
+
+### Standalone Cascade client
+
+For interchain account flows you can build the Cascade client directly with owner settings.
+
+```go
+import "github.com/LumeraProtocol/sdk-go/cascade"
+
+cascadeClient, err := cascade.New(ctx, cascade.Config{
+	ChainID:         chainID,
+	GRPCAddr:        grpcAddr,
+	Address:         hostAddr,
+	KeyName:         hostKeyName,
+	ICAOwnerKeyName: controllerKeyName,
+	ICAOwnerHRP:     "cosmos",
+	Timeout:         30 * time.Second,
+}, kr)
+```
+
+## ICA helpers
+
+The `ica` package assembles ICS-27 packets and decodes acknowledgements.
+
+| Function | Purpose |
+|---|---|
+| `PackRequestForICA` | Pack a `MsgRequestAction` into protobuf `Any` bytes |
+| `BuildICAPacketData` | Wrap messages into `InterchainAccountPacketData` for `EXECUTE_TX` |
+| `BuildMsgSendTx` | Build the controller side `MsgSendTx` |
+| `ExtractRequestActionIDsFromAck` | Pull action IDs out of an IBC acknowledgement |
+| `ExtractRequestActionIDsFromTxMsgData` | Same, from decoded `TxMsgData` |
+| `ParseTxHashJSON`, `ExtractPacketInfoFromTxJSON`, `DecodePacketAcknowledgementJSON` | CLI friendly helpers for tx hash, packet info, and acks |
+
+The [interchain accounts concept page](/cascade/concepts/interchain-accounts) walks through the full flow these helpers support.
+
+## Crypto helpers
+
+The `pkg/crypto` package covers keyring setup and signing.
+
+| Helper | Purpose |
+|---|---|
+| `DefaultKeyringParams`, `NewKeyring` | Consistent keyring creation |
+| `KeyType` (`KeyTypeCosmos`, `KeyTypeEVM`) | Select `secp256k1` coin type 118 or `eth_secp256k1` coin type 60 |
+| `LoadKeyring(keyName, mnemonicFile, keyType)` | Create a test keyring from a mnemonic file |
+| `ImportKey(kr, keyName, mnemonicFile, hrp, keyType)` | Import a mnemonic into an existing keyring |
+| `AddressFromKey(kr, keyName, hrp)` | Derive an address for any bech32 prefix |
+| `NewDefaultTxConfig`, `SignTxWithKeyring` | Sign transactions with Cosmos SDK builders |
+
+One keyring can hold both key types under different names. The ICA controller config accepts a separate `HostKeyName` when the controller and host chains use different key types.
+
+```go
+kr, _ := sdkcrypto.NewKeyring(sdkcrypto.DefaultKeyringParams())
+sdkcrypto.ImportKey(kr, "controller-key", "mnemonic.txt", "lumera", sdkcrypto.KeyTypeCosmos)
+sdkcrypto.ImportKey(kr, "host-key", "mnemonic.txt", "inj", sdkcrypto.KeyTypeEVM)
+```
+
+## Examples in the repo
+
+The [examples directory](https://github.com/LumeraProtocol/sdk-go/tree/master/examples) has runnable samples for cascade upload and download, action queries, multi account factories, EVM balance reads, Ethereum format transfers, ERC20 conversion, precompile calls, and ICA request and approve flows.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Go SDK getting started" icon="golang" href="/sdk/go">
+    Install the SDK and run your first upload.
+  </Card>
+  <Card title="Smart contracts" icon="file-code" href="/smart-contracts/overview">
+    What the EVM examples build on.
+  </Card>
+</CardGroup>

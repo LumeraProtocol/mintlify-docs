@@ -1,0 +1,357 @@
+---
+title: "Mainnet validator operations"
+sidebarTitle: "Operations"
+description: "Day-to-day operations, chain upgrades, monitoring, and troubleshooting for a Lumera mainnet validator."
+---
+
+<Warning>
+Double-signing is unrecoverable. If two processes ever sign at the same height with your consensus key, the network permanently tombstones your validator and slashes your stake. Before you start any node, confirm the previous one is fully stopped. This is the single most expensive mistake a validator can make.
+</Warning>
+
+## Quick reference
+
+```bash
+sudo journalctl -fu lumera          # tail logs
+sudo systemctl restart lumera       # restart
+sudo systemctl stop lumera          # stop
+sudo systemctl status lumera        # service state
+
+lumerad status 2>&1 | jq '.sync_info | {latest_block_height, catching_up}'
+lumerad query bank balances $(lumerad keys show validator -a)
+```
+
+Two addresses come up in almost every command. Set them once per shell session.
+
+```bash
+VAL=$(lumerad keys show validator --bech val -a)   # lumeravaloper1...
+ACC=$(lumerad keys show validator -a)              # lumera1...
+```
+
+If you open a new terminal later, run those two lines again before using `$VAL` or `$ACC`.
+
+## Staking operations
+
+Delegate more stake.
+
+```bash
+lumerad tx staking delegate "$VAL" 1000000ulume \
+  --from=validator --chain-id=lumera-mainnet-1 \
+  --gas=auto --gas-adjustment=1.3 --fees=10000ulume -y
+```
+
+Withdraw rewards and commission.
+
+```bash
+lumerad tx distribution withdraw-rewards "$VAL" \
+  --from=validator --commission \
+  --chain-id=lumera-mainnet-1 \
+  --gas=auto --gas-adjustment=1.3 --fees=10000ulume -y
+```
+
+Check what is claimable first.
+
+```bash
+lumerad query distribution commission "$VAL"
+lumerad query distribution rewards "$ACC" "$VAL"
+```
+
+<Note>
+Always leave enough LUME in the account to cover future fees. A validator that cannot pay for an `unjail` transaction stays jailed.
+</Note>
+
+Edit validator metadata. Omit any flag you do not want to change.
+
+```bash
+lumerad tx staking edit-validator \
+  --new-moniker="my-validator" \
+  --website="https://example.com" \
+  --identity="<keybase-16-char-id>" \
+  --security-contact="security@example.com" \
+  --details="Professional Lumera validator" \
+  --from=validator --chain-id=lumera-mainnet-1 \
+  --gas=auto --gas-adjustment=1.3 --fees=10000ulume -y
+```
+
+To change only commission.
+
+```bash
+lumerad tx staking edit-validator --commission-rate="0.08" \
+  --from=validator --chain-id=lumera-mainnet-1 \
+  --gas=auto --gas-adjustment=1.3 --fees=10000ulume -y
+```
+
+<Note>
+Setting a Keybase `identity` makes your logo appear in explorers and delegation dashboards. It is worth doing before you solicit delegation. Commission changes are capped by `commission-max-change-rate` and allowed once per 24 hours.
+</Note>
+
+Unjail after downtime.
+
+```bash
+lumerad query slashing signing-info $(lumerad comet show-validator)
+
+lumerad tx slashing unjail \
+  --from=validator --chain-id=lumera-mainnet-1 \
+  --gas=auto --gas-adjustment=1.3 --fees=10000ulume -y
+```
+
+<Warning>
+Check the `tombstoned` field before you unjail. Tombstoning results from double-signing and is permanent. The validator can never rejoin the active set, and unjail will fail. Fix the root cause before you unjail after downtime, or you will simply be jailed again.
+</Warning>
+
+## Governance
+
+Validators are expected to vote. Delegators who do not vote inherit your vote. Abstaining silently moves their stake too.
+
+```bash
+lumerad query gov proposals --proposal-status voting-period
+lumerad query gov proposal <proposal-id>
+
+lumerad tx gov vote <proposal-id> yes \
+  --from=validator --chain-id=lumera-mainnet-1 \
+  --gas=auto --gas-adjustment=1.3 --fees=10000ulume -y
+```
+
+Valid options are `yes`, `no`, `abstain`, and `no_with_veto`.
+
+## Chain upgrades
+
+Upgrades pass through governance and halt the chain at a set height until validators run the new binary. Missing one means downtime, and eventually a jail and slash.
+
+Watch for pending upgrades.
+
+```bash
+lumerad query upgrade plan          # shows the scheduled plan, if any
+lumerad query gov proposals --proposal-status voting-period
+```
+
+Note the plan `name` and `height`. Both matter below.
+
+### Option A. Cosmovisor (strongly recommended on mainnet)
+
+Cosmovisor swaps the binary automatically at the upgrade height without causing any downtime.
+
+Install Cosmovisor. It is a prebuilt binary, so no Go is required.
+
+```bash
+COSMOVISOR_VERSION=v1.7.1
+cd ~ && curl -fsSL -O "https://github.com/cosmos/cosmos-sdk/releases/download/cosmovisor%2F${COSMOVISOR_VERSION}/cosmovisor-${COSMOVISOR_VERSION}-linux-amd64.tar.gz"
+tar -xzf "cosmovisor-${COSMOVISOR_VERSION}-linux-amd64.tar.gz" cosmovisor
+sudo mv cosmovisor /usr/local/bin/
+cosmovisor version
+```
+
+Initialize the layout with your current binary as the genesis version.
+
+```bash
+export DAEMON_NAME=lumerad
+export DAEMON_HOME=$HOME/.lumera
+cosmovisor init "$(which lumerad)"
+ls "$HOME/.lumera/cosmovisor/genesis/bin"   # should contain lumerad
+```
+
+Point systemd at Cosmovisor.
+
+```bash
+sudo tee /etc/systemd/system/lumera.service > /dev/null <<EOF
+[Unit]
+Description=Lumera Mainnet Validator Node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$USER
+Environment="DAEMON_NAME=lumerad"
+Environment="DAEMON_HOME=$HOME/.lumera"
+Environment="DAEMON_RESTART_AFTER_UPGRADE=true"
+Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=false"
+Environment="UNSAFE_SKIP_BACKUP=true"
+ExecStart=/usr/local/bin/cosmovisor run start --home $HOME/.lumera
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart lumera
+sudo journalctl -fu lumera
+```
+
+Stage the upgrade binary. The directory name must exactly match the upgrade plan `name`, for example `v1.20.1`.
+
+```bash
+UPGRADE_NAME="v1.20.1"     # from: lumerad query upgrade plan
+mkdir -p "$HOME/.lumera/cosmovisor/upgrades/$UPGRADE_NAME/bin"
+
+cd ~/lumera-install
+curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${UPGRADE_NAME}/release_checksum"
+ASSET=$(awk '{print $2}' release_checksum)
+curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${UPGRADE_NAME}/${ASSET}"
+sha256sum -c release_checksum
+tar -xzf "$ASSET"
+cp lumerad "$HOME/.lumera/cosmovisor/upgrades/$UPGRADE_NAME/bin/lumerad"
+sudo cp libwasmvm.x86_64.so /usr/lib/ && sudo ldconfig
+```
+
+Verify the staged binary before the upgrade height arrives.
+
+```bash
+"$HOME/.lumera/cosmovisor/upgrades/$UPGRADE_NAME/bin/lumerad" version
+```
+
+<Warning>
+`DAEMON_ALLOW_DOWNLOAD_BINARIES=false` is deliberate. Letting a node download and run a binary named in an on-chain proposal is a serious security risk. Always stage binaries yourself and verify the checksum. Also note that each Lumera release ships an updated `libwasmvm.x86_64.so` and Cosmovisor swaps only `lumerad`. Copy the new shared library into `/usr/lib` as shown above. Skipping this is a common cause of a node failing to restart right after an upgrade, exactly when you can least afford it.
+</Warning>
+
+### Option B. Manual swap
+
+If you are not using Cosmovisor, you must be present when the chain halts at the upgrade height.
+
+```bash
+sudo systemctl stop lumera
+# Confirm it is really stopped before you continue
+systemctl is-active lumera        # should print: inactive
+
+cd ~/lumera-install
+UPGRADE_NAME="v1.20.1"     # from: lumerad query upgrade plan
+curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${UPGRADE_NAME}/release_checksum"
+ASSET=$(awk '{print $2}' release_checksum)
+curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${UPGRADE_NAME}/${ASSET}"
+sha256sum -c release_checksum
+tar -xzf "$ASSET"
+sudo ./install.sh
+
+lumerad version
+sudo systemctl start lumera
+sudo journalctl -fu lumera
+```
+
+<Warning>
+Always stop the node before you replace the binary. Never start a second instance while the first is running. Two processes using the same `priv_validator_key.json` cause double-signing and permanent tombstoning.
+</Warning>
+
+## Monitoring
+
+Health checks.
+
+```bash
+# Sync state
+lumerad status 2>&1 | jq '.sync_info | {latest_block_height, catching_up}'
+
+# Peers
+curl -fsSL localhost:26657/net_info | jq -r .result.n_peers
+
+# Missed blocks
+lumerad query slashing signing-info $(lumerad comet show-validator) \
+  | jq '{missed_blocks_counter, tombstoned}'
+
+# Disk
+df -h "$HOME/.lumera"
+```
+
+Compare against the live chain.
+
+```bash
+echo "local : $(lumerad status 2>&1 | jq -r .sync_info.latest_block_height)"
+echo "chain : $(curl -fsSL https://lumera-rpc.polkachu.com/status | jq -r .result.sync_info.latest_block_height)"
+```
+
+What to alert on.
+
+| Metric | Alert threshold |
+|--------|-----------------|
+| Block signing rate | Below 95 percent in the signing window |
+| `catching_up` | `true` for more than 5 minutes |
+| Peer count | Below 5 |
+| Free disk | Below 20 percent |
+| `missed_blocks_counter` | Any sustained increase |
+| Block time lag | More than 30 seconds behind wall clock |
+| Process restarts | Any unexpected restart |
+| Pending upgrade plan | Any non-empty `query upgrade plan` |
+
+With `prometheus = true` in `config.toml`, metrics are served on `localhost:26660/metrics`. Scrape them with Prometheus and build alerts in Grafana. Purpose-built options include [tenderduty](https://github.com/blockpane/tenderduty) and [cosmos-validator-watcher](https://github.com/kilnfi/cosmos-validator-watcher). Both page you on missed blocks directly.
+
+<Warning>
+On mainnet, treat alerting as mandatory rather than optional. At minimum, page a human on missed blocks. Catching downtime in minutes instead of hours is the difference between a warning and a slash.
+</Warning>
+
+Routine maintenance.
+
+| Cadence | Task |
+|---------|------|
+| Daily | Check signing rate, sync status, disk headroom |
+| Weekly | Apply OS security patches. Verify key backups are intact |
+| Monthly | Test restoring keys from backup. Review commission and metadata |
+| Per release | Stage the new binary in Cosmovisor before the upgrade height |
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---------|---------------|
+| `error while loading shared libraries: libwasmvm.x86_64.so` | The CosmWasm library is missing or stale. Copy `libwasmvm.x86_64.so` from the extracted release to `/usr/lib` and run `sudo ldconfig`. |
+| `upgrade plan "vX.Y.Z" is scheduled at height N but not registered in this binary` | Your binary is older than the chain. Install the latest release. This panic happens before the SDK reads `--unsafe-skip-upgrades`, so that flag will not get you past it. |
+| Keyring command hangs on a headless server | The `os` backend has no daemon. Use `lumerad config set client keyring-backend file --skip-validate`. |
+| `insufficient fees; got 5000ulume` | Raise the fee to `--fees=10000ulume`, or use `--gas-prices=0.025ulume`. |
+| `create-validator` rejects `--amount` or `--pubkey` | Cosmos SDK v0.50 requires a JSON file. See [create validator](/validators-mainnet/create-validator). |
+| Zero peers right after start | Normal for 2 to 3 minutes. If it persists, read the logs before changing your firewall. |
+| `Couldn't connect to any seeds` or `Error dialing seed ... connection refused` | The seed node is down. `connection refused` is the remote host rejecting you, so this is not your firewall. Stop the node, run `curl -fsSL -o ~/.lumera/config/addrbook.json https://snapshots.polkachu.com/addrbook/lumera/addrbook.json`, then start it. A running node rewrites `addrbook.json` from memory, so it has to be stopped first. |
+| Node stuck at `catching_up: true` | Usually disk I/O or too few peers. Check `df -h`, peer count, and consider re-syncing from a fresh snapshot. |
+| State sync stuck on "discovering snapshots" | No peer is serving snapshots. Fall back to the snapshot method in [node setup](/validators-mainnet/node-setup). |
+| Validator shows `BOND_STATUS_UNBONDED` | Expected until your stake is large enough to enter the capped active set. It is not an error. |
+| Jailed after a restart | Confirm the node resumed signing, then submit `tx slashing unjail`. Check `tombstoned` first. |
+
+## Re-syncing from scratch
+
+If state becomes corrupted, wipe and re-sync. Your keys are untouched by this.
+
+```bash
+sudo systemctl stop lumera
+lumerad comet unsafe-reset-all --home "$HOME/.lumera" --keep-addr-book
+
+SNAP_URL=$(curl -fsSL https://www.polkachu.com/tendermint_snapshots/lumera \
+  | grep -oE 'https://snapshots\.polkachu\.com/snapshots/lumera/lumera_[0-9]+\.tar\.lz4' | head -1)
+curl -o - -L "$SNAP_URL" | lz4 -c -d - | tar -x -C "$HOME/.lumera"
+
+sudo systemctl start lumera
+```
+
+<Note>
+`unsafe-reset-all` deletes chain data and resets the private validator state file. It never touches `priv_validator_key.json` or `node_key.json`. Your validator identity survives.
+</Note>
+
+## Migrating to a new server
+
+The dangerous part is the window where both machines could sign.
+
+1. Set up the new server completely and sync it, without copying the consensus key.
+2. Stop the old node with `sudo systemctl stop lumera` and confirm with `systemctl is-active lumera`.
+3. Confirm the old node has stopped producing signatures in the explorer.
+4. Only then copy `priv_validator_key.json` to the new server and start it.
+5. Delete the key from the old server and disable its service with `sudo systemctl disable --now lumera`.
+
+<Warning>
+Never shortcut step 3. Missing a few blocks during a clean cutover costs almost nothing. Double-signing during a sloppy one ends the validator permanently.
+</Warning>
+
+## Useful links
+
+- [Lumera releases](https://github.com/LumeraProtocol/lumera/releases)
+- [Network configurations](https://github.com/LumeraProtocol/lumera-networks)
+- [Validator operations manual](https://github.com/LumeraProtocol/lumera-networks/blob/master/docs/VALIDATOR_GUIDE.md)
+- [SuperNode operator guide](https://github.com/LumeraProtocol/lumera-networks/blob/master/docs/SUPERNODE_GUIDE.md)
+- [Mainnet explorer](https://portal.lumera.io)
+- [Mainnet snapshots](https://www.polkachu.com/tendermint_snapshots/lumera)
+- [Discord](https://discord.com/invite/lumeraprotocol)
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Run a SuperNode" icon="server" href="/supernodes/overview">
+    Provide Cascade and Sense services alongside your validator.
+  </Card>
+  <Card title="Testnet guide" icon="flask" href="/validators-testnet/overview">
+    Rehearse upgrades and operations on testnet.
+  </Card>
+</CardGroup>

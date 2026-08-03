@@ -1,55 +1,119 @@
 ---
-title: "Lumera Protocol: Cosmos SDK L1 Blockchain Documentation"
-sidebarTitle: "Home"
-description: "Official documentation for Lumera Protocol, a Cosmos SDK Layer 1 blockchain for decentralized storage, AI tooling, and IBC interoperability."
+title: "What is Lumera"
+sidebarTitle: "Introduction"
+description: "Lumera is a Layer 1 blockchain for permanent, provable data and decentralized intelligent services, built on a Validator-SuperNode architecture."
 ---
 
-Welcome to the official Lumera Protocol documentation. Lumera is a Cosmos SDK Layer 1 blockchain evolved from Pastel Network, purpose-built for decentralized permanent storage, AI tooling, and seamless cross-chain interoperability. Whether you are running a validator, operating a SuperNode, building applications with the API, or bridging assets across chains, this documentation guides you through every step.
+Lumera is a Layer 1 blockchain built for permanent data and decentralized intelligent services. Files stored on Lumera are erasure-coded, distributed across a network of independent SuperNodes, and retained indefinitely for a single upfront payment. The network continuously re-verifies that stored data is intact and retrievable, and records those proofs on chain.
 
-## Explore the Docs
+Unlike general-purpose chains, Lumera is purpose-built for workloads that need provable data and verifiable execution. Its defining structural choice is the Validator-SuperNode architecture: validators secure consensus, while SuperNodes, dedicated servers bonded to those validators, perform the heavy work of storing data, verifying content, and running compute. Consensus stays light and fast; storage and computation scale independently of it.
+
+Lumera is building infrastructure for AI agents on this foundation: persistent memory, agent-owned identity, verifiable execution, and settlement. The storage layer, Cascade, is live on mainnet and fully documented here. Documentation for each new capability is added as it ships.
+
+## Key features
 
 <CardGroup cols={2}>
-  <Card title="Introduction" icon="book-open" href="/introduction">
-    Learn what Lumera Protocol is, where it came from, and what makes it uniquely suited for decentralized storage and AI infrastructure.
+  <Card title="Permanent, provable storage" icon="database">
+    Pay once and data is retained indefinitely. SuperNodes must periodically prove they still hold what they are paid to keep, and those proofs are recorded on chain.
   </Card>
-  <Card title="Networks" icon="network-wired" href="/networks">
-    Connect to Lumera mainnet (`lumera-mainnet-1`) or testnet (`lumera-testnet-2`). Find genesis files, seeds, and explorer links.
+
+  <Card title="Validator-SuperNode architecture" icon="server">
+    A Proof-of-Service layer sits alongside Proof-of-Stake consensus, rewarding operators for storage, verification, and compute rather than block production alone.
   </Card>
-  <Card title="Validators" icon="shield-check" href="/validators/overview">
-    Set up and operate a Lumera validator node. Covers hardware requirements, key management, and joining the active set.
+
+  <Card title="Action and Agent framework" icon="diagram-project">
+    A modular execution model where atomic Actions handle storage, verification, and computation, and Agents compose them into autonomous workflows.
   </Card>
-  <Card title="SuperNodes" icon="server" href="/supernodes/overview">
-    Register and run a SuperNode to provide Cascade permanent storage and Sense duplication-detection services—and earn rewards.
+
+  <Card title="Adaptive economics" icon="chart-line">
+    Issuance adjusts block by block against a target bonded ratio, and a share of every transaction fee is burned, tying scarcity to network usage.
   </Card>
-  <Card title="API Reference" icon="code" href="/api/overview">
-    Explore the LumeScope REST API: 16 read-only endpoints for actions, SuperNode metrics, version compatibility, and more.
+
+  <Card title="Interoperable by default" icon="arrows-left-right">
+    Solidity contracts run with standard EVM tooling, and IBC lets applications on other chains use Lumera's services without migrating.
   </Card>
-  <Card title="Lumera Hub" icon="browser" href="/hub/overview">
-    Use the Lumera Hub web, desktop, and mobile client to manage tokens, interact with SuperNodes, and store data permanently.
+
+  <Card title="On-chain governance" icon="landmark">
+    Staked LUME governs protocol parameters, fee structures, issuance, and ecosystem funding through a stake-weighted proposal and voting process.
   </Card>
 </CardGroup>
 
-## What You Can Do
+## The Action and Agent framework
 
-Lumera Protocol gives you a full toolkit for building and participating in decentralized infrastructure. Here is a quick overview of what is possible.
+Lumera's execution model separates atomic work from orchestration. This distinction is fundamental to how the network operates and how it extends.
+
+**Actions** are low-level, stateless operations executed by SuperNodes. Each Action is registered on chain, escrows a fee, moves through a defined lifecycle, and settles when the work is verifiably complete. Actions available today:
+
+| Action | What it does |
+| --- | --- |
+| **Cascade** | Stores data permanently, erasure-coded across SuperNodes with continuous retention proofs |
+| **Sense** | Records verifiable statements about content, starting with near-duplicate and manipulation detection |
+
+**Agents** are higher-level, goal-oriented processes that compose Actions into workflows: retrieving data, verifying it, computing over it, and acting on the result without a human driving each step. Agents are the reason the primitives below them are designed the way they are. An autonomous process needs memory that outlives its session, work it can prove to a counterparty, and settlement that does not depend on a trusted intermediary.
+
+Because Actions are modular and share one lifecycle, registry, and settlement path, new capabilities extend the framework rather than replacing it. Every Action produces the same kind of on-chain evidence, which is what makes composition safe.
+
+## What you can build today
+
+Cascade is live on mainnet. Store any data and it is encoded with RaptorQ erasure coding and spread across economically bonded SuperNodes, so any sufficiently large subset of the pieces can rebuild the original. No single node, and no single company, can lose or delete it. Ongoing retention is funded by Everlight, an endowment mechanism that pays operators for as long as they hold data, which is what makes a one-time payment sustainable.
+
+<img
+  className="block mx-auto dark:hidden"
+  alt="How Cascade works"
+  src="/images/diagrams/how-cascade-works-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="How Cascade works"
+  src="/images/diagrams/how-cascade-works-dark.svg"
+/>
 
 <CardGroup cols={3}>
-  <Card title="Run a Validator" icon="circle-nodes" href="/validators/overview">
-    Secure the network by running a Cosmos SDK validator and earning staking rewards in LUME.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Store your first file from TypeScript in a few minutes.
   </Card>
-  <Card title="Operate a SuperNode" icon="hard-drive" href="/supernodes/overview">
-    Provide Cascade storage and Sense detection services on the SuperNode layer and collect service fees.
+
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The actions, fees, and lifecycle behind permanent storage.
   </Card>
-  <Card title="Build with the API" icon="plug" href="/api/overview">
-    Query decoded Action metadata, SuperNode health, and payment stats via the lightweight LumeScope API aggregator.
-  </Card>
-  <Card title="Use Cascade Storage" icon="database" href="/modules/cascade">
-    Store files permanently on the Lumera network using the Cascade protocol—resilient, decentralized, and content-addressed.
-  </Card>
-  <Card title="Bridge via IBC" icon="arrow-right-arrow-left" href="/networks">
-    Transfer tokens and pass messages across any IBC-enabled Cosmos chain using Lumera's native inter-blockchain communication.
-  </Card>
-  <Card title="Use Lumera Hub" icon="window" href="/hub/overview">
-    Access all network features through the official Lumera Hub interface—available in your browser, on desktop, and on mobile.
+
+  <Card title="SDKs" icon="code" href="/sdk/javascript">
+    Build in TypeScript, Go, or Rust.
   </Card>
 </CardGroup>
+
+## How the network runs
+
+Validators secure the chain through delegated proof of stake, proposing and signing blocks and voting on governance. A validator can also run a SuperNode, earning Proof-of-Service rewards from service fees on top of staking rewards. A SuperNode stays active only while its validator meets the self-stake threshold, which keeps service capacity tied to real economic commitment.
+
+The chain is the control plane: it records requests, escrows fees, tracks results, and holds identity and governance state. SuperNodes are the execution and memory planes: data moves directly between clients and SuperNodes and never passes through consensus. LUME is the native asset for staking, transaction fees, and service payments, and all protocol revenue accrues in it.
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    How the chain, modules, SuperNodes, and clients fit together.
+  </Card>
+
+  <Card title="LUME" icon="coins" href="/token">
+    Token utility, supply mechanics, and staking economics.
+  </Card>
+
+  <Card title="Protocol revenue" icon="receipt" href="/protocol-revenue">
+    The three revenue streams and how fees are distributed and burned.
+  </Card>
+
+  <Card title="Governance" icon="landmark" href="/governance">
+    How proposals, voting, and parameter changes work.
+  </Card>
+</CardGroup>
+
+## Where this is going
+
+Permanent, provable storage is the first of five capabilities Lumera is building for agents:
+
+1. **Memory** - durable, verifiable state that survives sessions, models, and providers. Live today through Cascade.
+2. **Identity** - an on-chain identity an agent owns, with delegated authority and explicit spending limits.
+3. **Verifiable execution** - work that produces a signed receipt, so a counterparty can confirm what ran and what it cost.
+4. **Settlement** - payment that releases only against acknowledged work, with disputes resolved from evidence.
+5. **Trust** - a record compiled from what participants actually did rather than what they claim.
+
+Each capability builds on the last, and each is expressed through the same Action and Agent framework. Everything documented here works today.

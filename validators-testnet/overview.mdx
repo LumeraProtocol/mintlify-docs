@@ -1,0 +1,74 @@
+---
+title: "Run a validator on Lumera testnet"
+sidebarTitle: "Overview"
+description: "Run a validator on lumera-testnet-2 and rehearse before staking on mainnet."
+---
+
+Lumera Protocol is a Cosmos SDK Layer 1 blockchain secured by CometBFT consensus. Validators produce blocks, vote on governance proposals, and maintain the integrity of the network. In return they earn staking rewards and commission from their delegators. Testnet is the place to practice all of it with tokens that have no value.
+
+Validators who additionally register as SuperNodes can also provide Cascade storage services and earn fees from file storage operations. This guide covers the base validator setup. See the [SuperNode overview](/supernodes/overview) for upgrading to a SuperNode.
+
+## Network information
+
+| Item | Value |
+|------|-------|
+| Chain ID | `lumera-testnet-2` |
+| Denom | `ulume` (6 decimals, 1 LUME = 1,000,000 ulume) |
+| Min gas price | `0.025ulume` |
+| Seed node | `faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656` |
+| Genesis file | [testnet-2/genesis.json](https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/testnet-2/genesis.json) |
+| Public RPC | `https://lumera-testnet-rpc.polkachu.com` |
+| Public API (LCD) | `https://lumera-testnet-api.polkachu.com` |
+| Public gRPC | [polkachu.com/testnet_public_grpc](https://www.polkachu.com/testnet_public_grpc) |
+| SN-API | `https://snapi.testnet.lumera.io` |
+| Snapshot | [Polkachu testnet snapshots](https://www.polkachu.com/testnets/lumera/snapshots) (about 55 GB) |
+| Explorer | [portal.testnet.lumera.io](https://portal.testnet.lumera.io/lumera-testnet-2) |
+| Faucet | [faucet.astrostake.xyz/lumera](https://faucet.astrostake.xyz/lumera) |
+
+## Binary version
+
+Run the version testnet is currently on.
+
+```bash
+curl -fsSL https://lumera-testnet-rpc.polkachu.com/abci_info | jq -r .result.response.version
+# 1.20.1
+```
+
+Releases ship a prebuilt `linux/amd64` binary together with the CosmWasm shared library and an installer, so you do not need Go or a compiler. ARM (including Apple Silicon) is not supported for production nodes.
+
+## Hardware requirements
+
+Testnet runs on lighter hardware than mainnet.
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 4 vCPU (x86_64) | 8+ cores |
+| RAM | 8 GB (+ 4 GB swap) | 16 to 32 GB |
+| Storage | 250 GB NVMe/SSD | 500 GB+ NVMe |
+| Network | 1 Gbps | 5 Gbps |
+| OS | Ubuntu 22.04 LTS or later | Ubuntu 24.04 LTS or later |
+
+<Warning>
+Testnet chain data is already about 55 GB and grows continuously. Start at 250 GB and enable pruning. HDDs are not viable. SATA SSDs may stall under load.
+</Warning>
+
+## What you need
+
+- A VPS or bare-metal server running Ubuntu 22.04 LTS or later (x86_64)
+- Testnet LUME from the [faucet](https://faucet.astrostake.xyz/lumera) or the [Lumera Discord](https://discord.com/invite/lumeraprotocol)
+
+## Next steps
+
+The guide runs in three stages. Follow them in order.
+
+<CardGroup cols={3}>
+  <Card title="Node setup" icon="server" href="/validators-testnet/node-setup">
+    Install `lumerad`, sync the node, and run it under systemd.
+  </Card>
+  <Card title="Create validator" icon="key" href="/validators-testnet/create-validator">
+    Create a wallet, fund it from the faucet, and submit the validator transaction.
+  </Card>
+  <Card title="Operations" icon="wrench" href="/validators-testnet/operations">
+    Day-to-day commands, chain upgrades, monitoring, and troubleshooting.
+  </Card>
+</CardGroup>

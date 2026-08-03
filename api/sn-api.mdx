@@ -1,0 +1,248 @@
+---
+title: "SN-API REST gateway reference"
+sidebarTitle: "SN-API"
+description: "Upload and download Cascade files through the REST gateway that fronts the SuperNode network."
+---
+
+SN-API is the REST gateway in front of SuperNodes. It handles Cascade file uploads and downloads over plain HTTPS. The [JavaScript SDK](/sdk/javascript) and the [Rust SDK](/sdk/rust) route all file transfers through it. The [Go SDK](/sdk/go) skips the gateway and talks gRPC directly to SuperNodes on port 4444.
+
+Call SN-API directly when you build in a language without an official SDK or need full control over the HTTP layer. Register the action on chain first. The gateway only moves bytes for actions that already exist.
+
+## Base URLs
+
+| Network | Base URL |
+|---|---|
+| Mainnet | `https://snapi.lumera.io` |
+| Testnet | `https://snapi.testnet.lumera.io` |
+
+The JavaScript SDK picks the endpoint from its `preset` configuration. The Rust SDK reads it from the `SNAPI_BASE` environment variable.
+
+## Authentication
+
+Every endpoint requires an ADR-036 signature. ADR-036 is the Cosmos standard for signing arbitrary data off chain. The SDKs produce these signatures for you. When calling the API directly, follow two steps.
+
+1. Sign the relevant data with ADR-036 `signArbitrary`. Uploads sign the data hash. Downloads sign the action ID.
+2. Include the Base64 encoded signature in the request body.
+
+---
+
+## POST /api/v1/actions/cascade
+
+Starts a Cascade upload. Send the file as `multipart/form-data` after the on-chain registration.
+
+### Form fields
+
+<ParamField body="action_id" type="string" required>
+  Action ID returned by the on-chain registration transaction.
+</ParamField>
+
+<ParamField body="signature" type="string" required>
+  Base64 encoded ADR-036 auth signature.
+</ParamField>
+
+<ParamField body="file" type="binary" required>
+  The file data.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "task_id": "uuid-task-id"
+}
+```
+
+<ResponseField name="task_id" type="string">
+  Upload task identifier. Use it to poll the task endpoints below.
+</ResponseField>
+
+### Status codes
+
+| Code | Meaning |
+|---|---|
+| 200 | Upload started |
+| 400 | Invalid request. Missing fields or bad signature. |
+| 404 | Action not found. Retry after a short delay. |
+| 500 | Server error |
+
+<Note>
+  SuperNodes need a moment to index a freshly registered action. The SDKs retry this endpoint up to 5 times with 3 second delays. Apply the same retry policy when you call it directly.
+</Note>
+
+---
+
+## GET /api/v1/actions/cascade/tasks/\{task_id\}
+
+Returns the full details for an upload task.
+
+### Path parameters
+
+<ParamField path="task_id" type="string" required>
+  Task ID returned by the upload endpoint.
+</ParamField>
+
+### Example response
+
+```json
+{
+  "task_id": "uuid",
+  "status": "processing",
+  "progress": 45,
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### Response fields
+
+<ResponseField name="task_id" type="string">
+  Upload task identifier.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current task state, for example `processing`.
+</ResponseField>
+
+<ResponseField name="progress" type="integer">
+  Completion percentage from 0 to 100.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  RFC 3339 timestamp of task creation.
+</ResponseField>
+
+---
+
+## GET /api/v1/actions/cascade/tasks/\{task_id\}/status
+
+Returns a simplified status body for the same task. Use it in tight polling loops where the full task detail is not needed.
+
+<ParamField path="task_id" type="string" required>
+  Task ID returned by the upload endpoint.
+</ParamField>
+
+---
+
+## POST /api/v1/actions/cascade/\{action_id\}/downloads
+
+Requests a download task for a stored file. The body is JSON.
+
+### Path parameters
+
+<ParamField path="action_id" type="string" required>
+  The on-chain action ID of the stored file.
+</ParamField>
+
+### Request body
+
+<ParamField body="signature" type="string" required>
+  Base64 encoded ADR-036 signature of the action ID.
+</ParamField>
+
+### Example request
+
+```json
+{
+  "signature": "base64-encoded ADR-036 signature of the action_id"
+}
+```
+
+### Example response
+
+```json
+{
+  "task_id": "uuid-download-task-id"
+}
+```
+
+<ResponseField name="task_id" type="string">
+  Download task identifier. Use it with the status and file endpoints below.
+</ResponseField>
+
+---
+
+## GET /api/v1/downloads/cascade/\{task_id\}/status
+
+Streams progress updates as Server-Sent Events (SSE), a one-way HTTP stream of messages. Send `Accept: text/event-stream`.
+
+<ParamField path="task_id" type="string" required>
+  Download task ID returned by the download request endpoint.
+</ParamField>
+
+### Example stream
+
+```text
+data: {"status": "processing", "progress": 0}
+
+data: {"status": "processing", "progress": 50}
+
+data: {"status": "completed", "progress": 100}
+```
+
+In browsers, consume the stream with `EventSource`.
+
+```ts
+const es = new EventSource(
+  `https://snapi.testnet.lumera.io/api/v1/downloads/cascade/${taskId}/status`
+);
+
+es.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log(`Progress: ${data.progress}%`);
+  if (data.status === "completed") {
+    es.close();
+  }
+};
+```
+
+---
+
+## GET /api/v1/downloads/cascade/\{task_id\}/file
+
+Streams the file bytes once the download task completes. The response arrives with `Content-Type: application/octet-stream`.
+
+<ParamField path="task_id" type="string" required>
+  Download task ID returned by the download request endpoint.
+</ParamField>
+
+Consume the response as a `ReadableStream` to keep memory use flat on large files.
+
+---
+
+## Version fallback
+
+The SDKs try versioned paths first (`/api/v1/...`) and fall back to legacy paths (`/api/...`) on a 404. This keeps them compatible across SN-API versions. Prefer the `/api/v1/` prefix when calling the API directly.
+
+## Errors
+
+Error bodies carry a message and a machine readable code.
+
+```json
+{
+  "error": "action not found",
+  "code": "NOT_FOUND"
+}
+```
+
+| Code | Cause |
+|---|---|
+| `NOT_FOUND` | The action does not exist or is not indexed yet |
+| `UNAUTHORIZED` | The ADR-036 signature is invalid |
+| `SERVICE_UNAVAILABLE` | No SuperNode is available to serve the request |
+
+## Rate limits
+
+The public SN-API endpoints may rate limit during high traffic. For high throughput production workloads, run your own SuperNode. The [SuperNode overview](/supernodes/overview) explains the requirements.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Upload lifecycle" icon="arrow-up-from-bracket" href="/cascade/concepts/upload-lifecycle">
+    What happens between registration and DONE.
+  </Card>
+  <Card title="Download lifecycle" icon="download" href="/cascade/concepts/download-lifecycle">
+    How SuperNodes reassemble your file from symbols.
+  </Card>
+  <Card title="Error handling" icon="triangle-exclamation" href="/cascade/error-handling">
+    Retry strategies for uploads and downloads.
+  </Card>
+</CardGroup>

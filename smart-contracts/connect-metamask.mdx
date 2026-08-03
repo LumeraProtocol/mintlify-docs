@@ -1,0 +1,149 @@
+---
+title: "Connect MetaMask to Lumera"
+sidebarTitle: "Connect MetaMask"
+description: "Add the Lumera EVM network to MetaMask and work with both address formats."
+---
+
+MetaMask talks to Lumera through the Ethereum JSON-RPC endpoint that every EVM enabled node serves. This page gives you the network values, a manual setup walkthrough, account import for migrated keys, and fixes for the most common connection errors.
+
+The EVM is live on testnet (`lumera-testnet-2`) only. Mainnet gains the EVM with its upgrade, so point MetaMask at testnet for now. See the [EVM upgrade page](/upgrades/evm-upgrade) for what changes.
+
+## Use the EVM endpoint, not the Cosmos endpoints
+
+<Warning>
+The MetaMask RPC URL is not the same as the Keplr RPC URL. Keplr is a Cosmos wallet and talks to the LCD and CometBFT endpoints. MetaMask talks only to the EVM JSON-RPC endpoint, a separate service on a different port and URL. Pasting a Cosmos URL into MetaMask is the most common reason a connection fails with "could not fetch chain ID".
+</Warning>
+
+| Wallet | Protocol | Testnet URL |
+|---|---|---|
+| Keplr | Cosmos LCD/REST | `https://lumera-testnet-api.polkachu.com` |
+| Keplr | CometBFT RPC | `https://lumera-testnet-rpc.polkachu.com` |
+| MetaMask | EVM JSON-RPC | `https://evm-rpc.testnet.lumera.io` |
+
+Only the EVM JSON-RPC row belongs in a MetaMask network configuration. The Cosmos endpoints never answer `eth_chainId`, so MetaMask cannot use them.
+
+## Network values
+
+Use these values to add Lumera testnet to MetaMask.
+
+| Field | Value |
+|---|---|
+| Network name | A clear label such as `Lumera Testnet EVM` |
+| RPC URL | `https://evm-rpc.testnet.lumera.io` |
+| Chain ID | `76857769` |
+| Currency symbol | `LUME` |
+| Block explorer URL | Leave blank |
+
+The EVM chain ID `76857769` is the same on every Lumera network. JSON-RPC responses return it as hex `0x494c1a9`. The mainnet EVM endpoint is `https://evm-rpc.lumera.io` and starts answering once mainnet completes its EVM upgrade. If you run a node yourself, MetaMask on the same machine can use `http://localhost:8545`.
+
+Verify an endpoint before adding it.
+
+```bash
+curl -H 'content-type: application/json' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' \
+  https://evm-rpc.testnet.lumera.io
+```
+
+The response must include the chain ID in hex.
+
+```json
+{"jsonrpc":"2.0","id":1,"result":"0x494c1a9"}
+```
+
+## Add the network manually
+
+<Steps>
+  <Step title="Open the network selector">
+    Open MetaMask and click the network name in the top left corner.
+  </Step>
+  <Step title="Add a custom network">
+    Choose "Add a custom network". Older versions call it "Add network manually".
+  </Step>
+  <Step title="Enter the network values">
+    Fill in the fields from the table above and save the network.
+  </Step>
+  <Step title="Switch to the new network">
+    Select the network in the selector. MetaMask fetches the chain ID from the RPC URL to confirm it.
+  </Step>
+</Steps>
+
+If MetaMask says it cannot fetch the chain ID, the RPC URL is not an EVM JSON-RPC endpoint or the endpoint is unreachable from your browser. See [troubleshooting](#troubleshooting) below.
+
+<Tip>
+The Lumera Portal can configure the network for you. When you connect MetaMask on the [testnet Portal](https://portal.testnet.lumera.io/lumera-testnet-2), it checks `eth_chainId`, switches with `wallet_switchEthereumChain`, and only shows the "Add network" popup (`wallet_addEthereumChain`) if MetaMask does not know the chain yet. If no MetaMask popup appears, click the MetaMask icon in your browser toolbar. Chrome sometimes suppresses it.
+</Tip>
+
+## One account, two addresses
+
+Lumera uses Ethereum style keys (`eth_secp256k1`, coin type 60). The same account has two representations.
+
+| Representation | Format | Used by |
+|---|---|---|
+| Cosmos address | `lumera1...` | Keplr, Leap, `lumerad`, Cosmos endpoints |
+| Ethereum address | `0x...` | MetaMask, EVM tooling, JSON-RPC |
+
+Both point to the same funds and the same state. Apps like the Lumera Portal show both forms after you connect.
+
+<Note>
+MetaMask may label your native balance as ETH on custom networks. The amount is still your LUME balance. The EVM side reports the 18 decimal denom `alume`, where 1 ulume equals 10^12 alume, so the values line up exactly.
+</Note>
+
+## Import a migrated account
+
+Accounts created before a network's EVM upgrade use coin type 118 and must be migrated on chain before they work in MetaMask. The migration produces a matching `0x...` and `lumera1...` pair on a coin type 60 key. See the [EVM upgrade page](/upgrades/evm-upgrade) for the migration itself, then import the key.
+
+<Steps>
+  <Step title="Open the account list">
+    In MetaMask, open the account selector and choose "Add wallet".
+  </Step>
+  <Step title="Import the key">
+    Choose "Import a wallet" for a 12, 18, or 24 word Secret Recovery Phrase, or "Import an account" for a single private key. Enter the secret for the migrated key.
+  </Step>
+  <Step title="Rename the account">
+    Open the account menu, choose "Rename", and give the account a clear label so you can find it later.
+  </Step>
+</Steps>
+
+<Warning>
+Only import a Secret Recovery Phrase or private key you own and control. Never paste a seed phrase into a website. Enter it only in the MetaMask extension's own import screen.
+</Warning>
+
+## Troubleshooting
+
+### MetaMask cannot fetch the chain ID
+
+Test the RPC URL directly.
+
+```bash
+curl -H 'content-type: application/json' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' \
+  <RPC_URL>
+```
+
+The response must include `"result":"0x494c1a9"`. If it returns `Method not found`, the URL points at CometBFT RPC instead of EVM JSON-RPC. Watch for these common mistakes.
+
+- An LCD URL such as `https://lumera-testnet-api.polkachu.com` is Cosmos REST, not EVM JSON-RPC.
+- A CometBFT URL such as `https://lumera-testnet-rpc.polkachu.com` is consensus RPC, not EVM JSON-RPC.
+- `http://localhost:8545` only works when MetaMask runs on the same machine as the node.
+
+### Requests fail in the browser but curl works
+
+The endpoint likely has a DNS, TLS, or CORS problem. MetaMask rejects invalid HTTPS certificates, and browsers enforce CORS preflight checks that curl skips. If you operate the endpoint, check those three layers from a machine outside the server.
+
+## Running your own public endpoint
+
+Exposing a node's EVM JSON-RPC over HTTPS needs a reverse proxy with TLS, CORS headers, and rate limiting. That setup is an operator task and lives in the [MetaMask configuration guide on GitHub](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/metamask-configuration.md), including nginx examples for hostname based and path based proxies plus WebSocket support.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy with Remix" icon="rocket" href="/smart-contracts/deploy-with-remix">
+    Deploy your first Solidity contract with Remix and MetaMask.
+  </Card>
+  <Card title="Get testnet LUME" icon="faucet" href="/faucet">
+    Fund your account with testnet tokens for gas.
+  </Card>
+  <Card title="EVM upgrade and migration" icon="arrow-up-right-dots" href="/upgrades/evm-upgrade">
+    Migrate a legacy account to the EVM key format.
+  </Card>
+</CardGroup>

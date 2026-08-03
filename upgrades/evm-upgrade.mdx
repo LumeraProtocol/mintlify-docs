@@ -1,0 +1,79 @@
+---
+title: "v1.20.0 EVM upgrade"
+sidebarTitle: "v1.20.0 EVM upgrade"
+description: "The Aurora Convergence release added full EVM support and changed how account keys derive."
+---
+
+The v1.20.0 release, named Aurora Convergence, added full EVM compatibility to Lumera Protocol. It shipped on June 25, 2026 and is live on testnet (`lumera-testnet-2` runs `v1.20.1`). Mainnet still runs `v1.12.0`, so the mainnet upgrade is ahead. This page explains what changed and what users and operators need to do when their network upgrades.
+
+## What changed
+
+- Cosmos EVM v0.6.0 runs Solidity contracts natively alongside Cosmos SDK modules and CosmWasm
+- New modules `x/vm`, `x/feemarket`, `x/precisebank`, `x/erc20`, and `x/evmigration`
+- Key derivation moved from `secp256k1` (coin type 118) to `eth_secp256k1` (coin type 60)
+- An 18 decimal EVM denom `alume` bridges to the native 6 decimal `ulume`
+- Ethereum JSON-RPC, WebSocket, indexer, tracing, and OpenRPC discovery are on by default
+- An EIP-1559 fee market and EVM precompiles for native modules, including Action and SuperNode
+
+See the [smart contracts overview](/smart-contracts/overview) for the developer view of these features.
+
+## Release timeline
+
+| Release | Date | Notes |
+|---|---|---|
+| `v1.20.0` | June 25, 2026 | Aurora Convergence, the EVM upgrade |
+| `v1.20.1` | July 6, 2026 | Fixes on top of v1.20.0 |
+| `v1.20.1-hotfix` | July 14, 2026 | Latest release |
+
+Testnet runs the v1.20 line today. Mainnet remains on `v1.12.0` until its upgrade passes governance, so mainnet accounts and operators do not need to act yet.
+
+## Why accounts migrate
+
+The chain switched its key type at the upgrade. The same mnemonic now derives a different Lumera address, because the BIP44 path changed from coin type 118 to coin type 60.
+
+The `x/evmigration` module moves everything held by your legacy address to your new address in one atomic transaction. The transaction is free of fees. It carries two proofs, an ADR-036 signature from the legacy key and an EIP-191 signature from the new key.
+
+<Warning>
+Migration is irreversible. The legacy account is removed once migration completes. Verify both addresses carefully before you submit.
+</Warning>
+
+After migration one account works in both wallet worlds. Keplr shows the bech32 form (`lumera1...`) and MetaMask shows the hex form (`0x...`). Both point to the same funds. Keplr needs the coin type 60 chain profile and a re-import first.
+
+## Who needs to do what
+
+Each audience has a canonical guide in the lumera repo. The guides below are maintained with the chain code, so follow them rather than copies.
+
+| You are | What to do | Guide |
+|---|---|---|
+| A user with a pre-upgrade account | Migrate through the Portal wizard, the shell scripts, or the raw CLI | [migration.md](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/migration.md) |
+| Holding many accounts | Use the bundled helper scripts with pre-flight checks | [migration-scripts.md](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/migration-scripts.md) |
+| A validator operator | Plan a maintenance window and migrate the operator key | [validator-migration.md](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/validator-migration.md) |
+| A SuperNode operator | Pick one of the two supported migration paths | [supernode-migration.md](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/supernode-migration.md) |
+| A Hermes relayer operator | Re-key Hermes with the new derivation path | [relayer-migration.md](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/relayer-migration.md) |
+| A node operator | Review the new EVM sections of `app.toml` | [node-evm-config-guide.md](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/node-evm-config-guide.md) |
+
+### Notes for validators
+
+Validators migrate with `MsgMigrateValidator`, not `MsgClaimLegacyAccount`. The chain rejects the plain claim message for validator operator addresses. The migration re-keys delegations, distribution state, and any bound SuperNode in one transaction. Your consensus key in `priv_validator_key.json` is not affected. Only the operator key changes.
+
+### Notes for SuperNode operators
+
+Two paths reach the same end state. Path A sets `evm_key_name` in `config.yml` and lets the daemon migrate the account on restart. Path B migrates first through the Portal or the scripts, after which the daemon detects the on-chain record and cleans up locally. Multisig operators must use the offline `lumerad` CLI flow, because the daemon does not drive multi party signing ceremonies.
+
+### Notes for relayer operators
+
+Hermes must re-derive the same key from your mnemonic. Its default derivation does not match the new path, so set the `ethermint` address type with the `ethsecp256k1` proto type in the Hermes config and pass `--hd-path "m/44'/60'/0'/0/0"` when adding the key. The relayer guide covers the full stop, migrate, re-key, and restart sequence.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Smart contracts" icon="file-code" href="/smart-contracts/overview">
+    What you can build now that the EVM is live.
+  </Card>
+  <Card title="Validator operations" icon="shield" href="/validators-mainnet/operations">
+    Day to day validator management on the current release.
+  </Card>
+  <Card title="SuperNode operations" icon="server" href="/supernodes/operations">
+    Run and monitor your SuperNode daemon.
+  </Card>
+</CardGroup>

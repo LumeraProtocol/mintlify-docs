@@ -1,0 +1,40 @@
+---
+title: "Get testnet LUME"
+sidebarTitle: "Faucet"
+description: "Request free testnet LUME from the faucet on the Lumera Portal."
+---
+
+Transactions on the Lumera Protocol testnet need LUME for gas, and Cascade uploads escrow a storage fee. The faucet on the Lumera Portal sends free testnet LUME to your address.
+
+<Steps>
+  <Step title="Get a lumera address">
+    Create a wallet with Keplr, or generate a key from the command line.
+
+    ```bash
+    lumerad keys add my-key
+    ```
+
+    Your address starts with `lumera1`.
+  </Step>
+  <Step title="Request tokens">
+    Open the [Portal faucet](https://portal.testnet.lumera.io/lumera-testnet-2/faucet), paste your address, and submit the request. The community [AstroStake faucet](https://faucet.astrostake.xyz/lumera) is an alternative if the Portal faucet is empty. Faucets limit requests per wallet per day.
+  </Step>
+  <Step title="Verify your balance">
+    Open the [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2) and search for your address. Your balance appears on the account page once the faucet transaction lands.
+  </Step>
+</Steps>
+
+<Warning>
+  Testnet LUME has no value. There is no faucet on mainnet.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Upload your first file to Cascade from TypeScript.
+  </Card>
+  <Card title="Networks" icon="network-wired" href="/networks">
+    Find chain IDs, endpoints, seeds, and genesis files.
+  </Card>
+</CardGroup>

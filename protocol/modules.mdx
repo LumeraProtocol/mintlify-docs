@@ -1,0 +1,77 @@
+---
+title: "Lumera module reference"
+sidebarTitle: "Modules"
+description: "A guided map of the custom, EVM, and standard modules on the Lumera chain."
+---
+
+Lumera Protocol runs on the Cosmos SDK with five custom modules that implement the protocol logic, an EVM module family added by the v1.20.0 upgrade, and the standard Cosmos modules. This page maps each module, the state it holds, its key messages, and where the deeper documentation lives. For how the layers fit together, read the [architecture overview](/architecture).
+
+| Module | Role | Deeper docs |
+|---|---|---|
+| `x/action` | Cascade and Sense action lifecycle | [How Cascade works](/cascade/how-cascade-works) |
+| `x/supernode` | SuperNode registry, ranking, rewards, Everlight pool | [SuperNode overview](/supernodes/overview) |
+| `x/lumeraid` | Identity anchored to Lumera addresses | [Architecture](/architecture) |
+| `x/claim` | Legacy Pastel token claims | Not documented |
+| `x/audit` | Epoch metric reports from SuperNodes | [Everlight for operators](/cascade/everlight/supernode-operators) |
+
+## x/action
+
+`x/action` records every Cascade and Sense request as an action, an on-chain record with a state machine. It escrows the service fee at registration and refunds it if the action fails. States run `PENDING`, `PROCESSING`, then `DONE` or `FAILED`. Cross-chain flows can add `APPROVED` after an explicit approval.
+
+The module stores action records keyed by `action_id`, each with its type, creator, current state, and escrowed fee. Its key messages are `MsgRequestAction` to register an action and `MsgApproveAction` for flows that require approval. Query any record with `lumerad query action action <action-id>`.
+
+Deeper docs live at [how Cascade works](/cascade/how-cascade-works) for storage flows, [Sense](/protocol/sense) for authentication flows, and the [cross-chain overview](/cross-chain/overview) for the approval path.
+
+## x/supernode
+
+`x/supernode` is the source of truth for SuperNodes. It registers nodes, maintains the ranked top list that `x/action` routes work to, tracks operational state and metrics, and pays rewards. A SuperNode must stay tied to an active validator to remain on the list.
+
+The module stores each node's account, endpoint, stake delegation, and state. One state worth knowing is `STORAGE_FULL`, entered when a node's disk usage passes its configured limit. A `STORAGE_FULL` node is excluded from new storage assignments but stays eligible for compute work like Sense and keeps earning Everlight payouts for the data it already holds.
+
+The module also hosts the Everlight SN Pool, a named module account that compensates SuperNodes for retaining Cascade data. Every payment period, measured in block height, the pool pays eligible nodes in proportion to the Cascade data they retain. The [Everlight overview](/cascade/everlight/overview) explains the funding model.
+
+Registration happens on chain with `lumerad tx supernode register-supernode VALOPER SN_ENDPOINT SN_ACCOUNT`, signed by the validator operator. The stake requirement combines validator self delegation and SuperNode account delegation. Check the current minimum with `lumerad query supernode params`. The [registration guide](/supernodes/register) walks the full flow.
+
+## x/lumeraid
+
+`x/lumeraid` anchors identity records to Lumera addresses. There is no separate username. Your address is your identity and your private key controls the record. Signatures follow ADR-036, the Cosmos standard for signing arbitrary data, and authenticate Cascade uploads and downloads. The [architecture page](/architecture) covers how identity threads through the protocol.
+
+## x/claim
+
+`x/claim` handles token claims from the legacy Pastel Network, which Lumera evolved from. The claim flow is not part of the developer surface and is not documented here.
+
+## x/audit
+
+`x/audit` collects epoch reports from SuperNodes. Each epoch, nodes report service metrics defined by LEP-4, including `cascade_kademlia_db_bytes`, the amount of Cascade data a node holds. These reports feed SuperNode ranking and drive Everlight payouts. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
+
+## EVM modules
+
+The v1.20.0 upgrade added Cosmos EVM support through five modules. The EVM is live on testnet today. Mainnet runs v1.12.0 and gains the EVM with its upgrade.
+
+| Module | Role |
+|---|---|
+| `x/vm` | Executes Solidity contracts on the Cosmos EVM |
+| `x/feemarket` | EIP-1559 dynamic base fee for EVM transactions |
+| `x/precisebank` | Bridges the 6 decimal `ulume` denom to the 18 decimal `alume` EVM denom |
+| `x/erc20` | Maps Cosmos tokens to ERC-20 interfaces |
+| `x/evmigration` | Migrates legacy accounts to EVM compatible keys, atomically and fee free |
+
+Start building with the [smart contracts overview](/smart-contracts/overview). The [EVM upgrade page](/upgrades/evm-upgrade) covers what changed at the chain level and the migration path.
+
+## Standard Cosmos modules
+
+Lumera also ships the standard Cosmos SDK modules, which behave as they do on any Cosmos chain. `x/bank` handles transfers, `x/staking` runs delegated proof of stake, `x/gov` runs proposals and voting, `x/distribution` pays staking rewards, and `x/slashing` penalizes misbehaving validators. Governance behavior specific to Lumera is covered on the [governance page](/protocol/governance).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Sense" icon="fingerprint" href="/protocol/sense">
+    Content authentication built on x/action.
+  </Card>
+  <Card title="Governance" icon="check-to-slot" href="/protocol/governance">
+    How proposals change module parameters.
+  </Card>
+  <Card title="EVM upgrade" icon="bolt" href="/upgrades/evm-upgrade">
+    The v1.20.0 upgrade that added the EVM module family.
+  </Card>
+</CardGroup>

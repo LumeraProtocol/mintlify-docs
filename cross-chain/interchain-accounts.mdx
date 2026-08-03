@@ -1,0 +1,147 @@
+---
+title: "Interchain accounts in practice"
+sidebarTitle: "Interchain accounts"
+description: "Run the full ICS-27 Cascade flow from a controller chain with the Go SDK."
+---
+
+This page is the hands-on runbook for driving Cascade over ICS-27. You register an interchain account on Lumera, fund it, send a packed `MsgRequestAction` across IBC, upload the file, and approve the finished action. The theory behind the flow, including why file bytes never touch the IBC channel, is on the [interchain accounts concept page](/cascade/concepts/interchain-accounts). Read it first if ICS-27 is new to you.
+
+Before you start you need three things.
+
+- The [Go SDK](/sdk/go) installed. Its `ica` package assembles the packets.
+- An IBC connection between your controller chain and Lumera with a running relayer. See [relayer setup](/cross-chain/relayer-setup).
+- A funded key on the controller chain.
+
+<Tip>
+The [lumera-ica-client](https://github.com/LumeraProtocol/lumera-ica-client) reference CLI wraps this whole flow. Run it first if you want to see a working end to end example before writing code.
+</Tip>
+
+## Step 1. Register the interchain account
+
+Your controller chain's ICA controller module opens a channel to Lumera and creates the account. On CosmWasm chains a contract can own the account through [cw-ica-controller](https://github.com/srdtrk/cw-ica-controller). Once the channel handshake completes, query the controller module for the host address. It is a normal `lumera1...` address, controlled only by your chain.
+
+## Step 2. Fund the ICA address
+
+The ICA address pays the fee escrow for every action it registers. Send `ulume` to it before you submit anything. Current fees are 10000 ulume base plus 10 ulume per KB, about 0.02 LUME per MB. Governance can change these parameters.
+
+You can top the address up from any Lumera account, or over IBC from a treasury on the controller chain. On testnet, the [faucet](/faucet) covers experimentation.
+
+<Warning>
+An underfunded ICA address makes registrations fail on the host side. Monitor its balance and alert before it runs out.
+</Warning>
+
+## Step 3. Build and pack the MsgRequestAction
+
+Create a Cascade client configured with the ICA owner settings. `ICAOwnerHRP` is the bech32 prefix of your controller chain.
+
+```go
+import "github.com/LumeraProtocol/sdk-go/cascade"
+
+cascadeClient, err := cascade.New(ctx, cascade.Config{
+	ChainID:         "lumera-testnet-2",
+	GRPCAddr:        "grpc.testnet.lumera.io:443",
+	Address:         hostAddr,
+	KeyName:         hostKeyName,
+	ICAOwnerKeyName: controllerKeyName,
+	ICAOwnerHRP:     "cosmos", // bech32 prefix of the controller chain
+	Timeout:         30 * time.Second,
+}, kr)
+```
+
+Build the action message without broadcasting it, then pack it for ICA delivery.
+
+```go
+import "github.com/LumeraProtocol/sdk-go/ica"
+
+// Build a MsgRequestAction for the ICA address without broadcasting it
+msg, err := cascadeClient.CreateRequestActionMessage(ctx, icaAddr, filePath, opts)
+
+// Pack it into protobuf Any bytes
+packedMsg := ica.PackRequestForICA(msg)
+
+// Wrap it into InterchainAccountPacketData for EXECUTE_TX
+packetData := ica.BuildICAPacketData(packedMsg)
+```
+
+## Step 4. Send the packet from the controller chain
+
+Submit the packet with `MsgSendTx` on the controller chain. `BuildMsgSendTx` assembles it for you, and your controller chain signer broadcasts it. You can also submit the same packet data through your controller chain's CLI if you prefer scripts.
+
+```go
+// Build the controller side MsgSendTx, then broadcast it with your controller chain signer
+sendTx := ica.BuildMsgSendTx(owner, connectionID, packetData)
+```
+
+The relayer delivers the packet. Lumera's ICA host module unpacks the `MsgRequestAction` and executes it, and the ICA address pays the escrow.
+
+## Step 5. Extract the action ID from the acknowledgement
+
+The IBC acknowledgement carries the registration result back to the controller chain.
+
+```go
+actionIDs := ica.ExtractRequestActionIDsFromAck(ackData)
+```
+
+If you drive the flow from scripts, the `ica` package also ships `ParseTxHashJSON`, `ExtractPacketInfoFromTxJSON`, and `DecodePacketAcknowledgementJSON` for decoding CLI transaction output.
+
+## Step 6. Upload the file
+
+The ICA address has no user-held private key, so uploads authenticate with an application level keypair instead. Generate the keypair on the controller side. The public key travels with the action as `app_pubkey`, and the private key signs the upload. Pass the ICA options to `Upload`.
+
+```go
+res, err := cascadeClient.Upload(ctx, addr, nil, filePath,
+    cascade.WithICACreatorAddress(icaAddr),
+    cascade.WithAppPubkey(pubkey),
+    cascade.WithICASendFunc(sendFunc),
+)
+```
+
+`WithICASendFunc` takes the callback the SDK invokes when it needs to send an ICA message from your controller chain. The file itself streams over gRPC directly to SuperNodes. It never crosses the IBC channel.
+
+Track progress with `SubscribeToEvents`, or poll `GetAction` until the state moves from `PENDING` through `PROCESSING` to `DONE`. A `FAILED` action refunds the escrowed fee.
+
+## Step 7. Download the file
+
+Downloads are authenticated too. Sign the request with a controller chain key by passing the signer address.
+
+```go
+_, err := cascadeClient.Download(ctx, actionID, destDir,
+    cascade.WithDownloadSignerAddress(controllerAddr),
+)
+```
+
+## Step 8. Approve the action
+
+Cross-chain actions support a final confirmation step. After the action reaches `DONE`, build a `MsgApproveAction`, pack it, and send it through the same ICA path. The action then moves to `APPROVED`.
+
+```go
+// Build and pack the approval, then send it in a second MsgSendTx
+approveMsg, err := cascadeClient.CreateApproveActionMessage(ctx, actionID)
+packedApprove := ica.PackApproveForICA(approveMsg)
+```
+
+Wait for the acknowledgement, then query the action until its state reads `APPROVED`.
+
+<Note>
+The [sdk-go examples directory](https://github.com/LumeraProtocol/sdk-go/tree/master/examples) contains runnable samples for the ICA request and approve flows.
+</Note>
+
+## Operational notes
+
+- **Control plane isolation.** IBC packets carry only metadata and fee escrow. File data moves on the direct gRPC data plane.
+- **Data plane authentication.** Uploads and downloads use application level signatures, independent of the ICA address.
+- **Relayer health.** Every step that crosses IBC waits on the relayer. A backed up relayer stalls registrations and approvals, so keep ICA writes off any user-facing hot path.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Relayer setup" icon="arrows-left-right" href="/cross-chain/relayer-setup">
+    Run the Hermes relayer this flow depends on.
+  </Card>
+  <Card title="Integration patterns" icon="sitemap" href="/cross-chain/patterns">
+    When contract driven ICA is the right choice, and when it is not.
+  </Card>
+  <Card title="Go SDK reference" icon="gears" href="/sdk/go-reference">
+    Every ICA helper and Cascade option in one place.
+  </Card>
+</CardGroup>

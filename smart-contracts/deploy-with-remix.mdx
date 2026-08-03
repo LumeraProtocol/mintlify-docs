@@ -1,0 +1,201 @@
+---
+title: "Deploy a contract with Remix"
+sidebarTitle: "Deploy with Remix"
+description: "Compile, deploy, and call a Solidity contract on Lumera with Remix and MetaMask."
+---
+
+[Remix IDE](https://remix.ethereum.org) compiles and deploys Solidity from the browser with no local toolchain. This walkthrough deploys a small counter contract on Lumera and exercises reads, writes, events, and reverts.
+
+The EVM is live on testnet (`lumera-testnet-2`) only. Mainnet gains the EVM with its [upgrade](/upgrades/evm-upgrade), so deploy to testnet for now.
+
+## Prerequisites
+
+- The MetaMask browser extension, configured with the Lumera testnet network. Follow [Connect MetaMask](/smart-contracts/connect-metamask) first.
+- Testnet LUME in your MetaMask account for gas. Get some from the [faucet](/faucet).
+
+MetaMask must use the EVM JSON-RPC URL `https://evm-rpc.testnet.lumera.io` with chain ID `76857769` and currency symbol `LUME`. A Cosmos LCD or CometBFT RPC URL cannot answer `eth_chainId` and will not work.
+
+## Deploy the counter contract
+
+<Steps>
+  <Step title="Create the contract in Remix">
+    Open [Remix IDE](https://remix.ethereum.org). In the File Explorer panel on the left, create a new file called `Counter.sol` and paste this code.
+
+    ```solidity Counter.sol
+    // SPDX-License-Identifier: MIT
+    pragma solidity ^0.8.20;
+
+    /// @title Counter - A simple counter contract for testing Lumera EVM
+    /// @notice Demonstrates basic state reads and writes on Lumera
+    contract Counter {
+        uint256 private _count;
+        address public owner;
+
+        event CountChanged(address indexed caller, uint256 newCount);
+
+        constructor(uint256 initialCount) {
+            _count = initialCount;
+            owner = msg.sender;
+        }
+
+        /// @notice Returns the current count
+        function get() public view returns (uint256) {
+            return _count;
+        }
+
+        /// @notice Increments the counter by 1
+        function increase() public {
+            _count += 1;
+            emit CountChanged(msg.sender, _count);
+        }
+
+        /// @notice Decrements the counter by 1 (reverts on underflow)
+        function decrease() public {
+            require(_count > 0, "Counter: cannot decrease below zero");
+            _count -= 1;
+            emit CountChanged(msg.sender, _count);
+        }
+
+        /// @notice Sets the counter to an arbitrary value
+        /// @param newCount The new counter value
+        function set(uint256 newCount) public {
+            _count = newCount;
+            emit CountChanged(msg.sender, _count);
+        }
+    }
+    ```
+  </Step>
+  <Step title="Compile the contract">
+    Open the Solidity Compiler tab (second icon in the left sidebar). Set the compiler version to `0.8.20` or later to match the pragma, then click "Compile Counter.sol". A green checkmark appears next to the file name when compilation succeeds.
+  </Step>
+  <Step title="Connect Remix to MetaMask">
+    Open the Deploy and Run Transactions tab (third icon in the left sidebar). In the Environment dropdown, select "Injected Provider - MetaMask". MetaMask prompts you to connect. Pick the account you want to use and click "Connect".
+
+    Verify three things before deploying.
+
+    - The Account field shows your MetaMask address.
+    - The Balance shows your LUME balance.
+    - The network indicator shows `Custom (76857769)`, the Lumera EVM chain ID.
+  </Step>
+  <Step title="Deploy">
+    Select `Counter` in the Contract dropdown. Enter `0` (or any initial count) as the constructor argument next to the Deploy button, then click "Deploy". MetaMask opens a contract creation transaction. Review the gas estimate and click "Confirm". When the transaction confirms, the contract appears under Deployed Contracts at the bottom of the panel.
+  </Step>
+</Steps>
+
+## Interact with the contract
+
+Expand the deployed contract to see its functions. Remix color codes them. Blue buttons are read-only `view` functions with no gas cost and no MetaMask popup. Orange buttons change state, cost gas, and trigger a MetaMask confirmation.
+
+<Steps>
+  <Step title="Read the current count">
+    Click "get". The result appears below the button.
+
+    ```text
+    0: uint256: 0
+    ```
+  </Step>
+  <Step title="Increment the counter">
+    Click "increase" and confirm the transaction in MetaMask. Click "get" again to verify the count is now `1`.
+  </Step>
+  <Step title="Set a specific value">
+    Enter a value such as `42` in the input next to "set", click "set", and confirm in MetaMask. "get" now returns `42`.
+  </Step>
+  <Step title="Decrement the counter">
+    Click "decrease" and confirm in MetaMask. "get" returns `41`.
+  </Step>
+  <Step title="Test the underflow guard">
+    Set the counter to `0`, then click "decrease". The transaction reverts with `Counter: cannot decrease below zero`. MetaMask may warn about the likely failure before you confirm.
+  </Step>
+  <Step title="Check the owner">
+    The contract records the deployer as `owner`. Click the blue "owner" button, the auto generated getter for the public state variable. It returns your MetaMask address.
+  </Step>
+</Steps>
+
+## Inspect transactions
+
+### In Remix
+
+Each transaction appears in the Remix terminal at the bottom of the screen. Click an entry to expand its details.
+
+- Transaction hash, click to copy
+- From and to addresses
+- Gas used
+- Decoded input showing the function called and its arguments
+- Logs showing the emitted `CountChanged` events
+
+### Over JSON-RPC
+
+Query the transaction receipt from the node.
+
+```bash
+# Replace TX_HASH with the transaction hash from Remix
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["TX_HASH"],"id":1}' | jq '.'
+```
+
+The `CountChanged` event fires on every state change. Count the logs for your contract.
+
+```bash
+# Replace CONTRACT_ADDRESS with the deployed contract address
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc":"2.0",
+    "method":"eth_getLogs",
+    "params":[{"address":"CONTRACT_ADDRESS","fromBlock":"0x0","toBlock":"latest"}],
+    "id":1
+  }' | jq '.result | length'
+```
+
+## Troubleshooting
+
+### MetaMask shows the wrong chain ID
+
+Confirm the MetaMask network uses chain ID `76857769`. If you run your own node and upgraded it from a pre-EVM binary, the config migration adds the `[evm]` section to `app.toml` automatically on first startup. The node configuration details live in the [EVM user guides on GitHub](https://github.com/LumeraProtocol/lumera/tree/master/docs/evm-integration/user-guides).
+
+### Transaction fails with "nonce too low"
+
+MetaMask may cache nonces. Open MetaMask settings, go to Advanced, and use "Clear activity tab data" to reset the nonce cache for the current network.
+
+### Transaction pending indefinitely
+
+Check that the node is producing blocks.
+
+```bash
+curl -s -X POST https://evm-rpc.testnet.lumera.io \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | jq '.result'
+```
+
+If the block number is not advancing, the node is stalled or consensus is not running.
+
+### Gas estimation fails
+
+The Lumera EVM uses an EIP-1559 fee market. If estimation fails, set the gas parameters manually in MetaMask's advanced transaction settings.
+
+### "Internal JSON-RPC error" on deploy
+
+Check the Remix console for the full error. Common causes include the following.
+
+- Insufficient LUME balance for gas
+- Contract code exceeds the block gas limit
+- Constructor arguments missing or of the wrong type
+
+## Going further
+
+Deploy an OpenZeppelin ERC-20 template the same way to create a token on Lumera. For production workflows, point Hardhat or Foundry at the same JSON-RPC endpoint. Contracts can also call native chain features like staking, governance, and Cascade through precompiles.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Precompiles" icon="microchip" href="/smart-contracts/precompiles/overview">
+    Call native Lumera modules from Solidity at fixed addresses.
+  </Card>
+  <Card title="OpenRPC playground" icon="magnifying-glass" href="/smart-contracts/openrpc-playground">
+    Explore every JSON-RPC method the node supports.
+  </Card>
+  <Card title="EVM JSON-RPC reference" icon="code" href="/api/evm-jsonrpc">
+    Endpoints and methods for scripting against the EVM.
+  </Card>
+</CardGroup>

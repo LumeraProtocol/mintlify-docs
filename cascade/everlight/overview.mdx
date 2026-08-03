@@ -1,0 +1,58 @@
+---
+title: "Cascade Everlight overview"
+sidebarTitle: "Overview"
+description: "Learn how Everlight funds ongoing Cascade storage from a single upfront payment."
+---
+
+Everlight is the retention economics behind Cascade, the permanent storage service of Lumera Protocol. It pays SuperNodes ongoing compensation for the Cascade data they keep, so the network can afford to hold your files long after you upload them. You still pay once. Everlight changes how that payment keeps working over time.
+
+<Note>
+Everlight is rolling out in phases. The chain-side pieces ship through governance-approved upgrades. This page describes the model, not a delivery schedule.
+</Note>
+
+## The problem it solves
+
+Cascade charges one fee when you register a file. See [How Cascade works](/cascade/how-cascade-works) for that flow. Storage, however, is not a one-time cost. The SuperNodes that hold your data pay for disk, bandwidth, and hardware replacement every month, for as long as the data exists.
+
+Without ongoing funding, every upload creates a storage obligation that nobody is paid to meet. Operators would carry the cost themselves, and the permanence promise would rest on goodwill instead of economics. Everlight closes that gap. It turns the one-time fee model into a funded, recurring compensation stream for the operators who actually retain the data.
+
+## The promise
+
+The user-facing contract is simple.
+
+> Pay once. Stored as long as the network sustains it.
+
+Three things follow from that sentence.
+
+- Registration is a one-time payment. There are no subscriptions and no renewals.
+- Retention is funded, not assumed. A dedicated pool pays SuperNodes every payment period for the Cascade bytes they hold.
+- The guarantee is honest. Under normal conditions data is expected to persist indefinitely, but the current model is best-effort rather than a bounded time commitment.
+
+A later evolution of Everlight adds an endowment. Part of a registration payment would be staked, and the staking yield would fund retention for a guaranteed minimum period, with best-effort retention continuing beyond it. That keeps the pay-once experience while adding a bounded guarantee. The endowment is a design direction, not a shipped feature, and no launch date is committed.
+
+## How it works
+
+Everlight adds two mechanisms to the protocol.
+
+1. **The Everlight SN Pool.** A module account inside `x/supernode` that collects LUME from several funding sources. Every payment period it distributes to eligible SuperNodes in proportion to the Cascade data each one retains. [How Everlight payments work](/cascade/everlight/payments) covers the pool, the periods, and the funding sources.
+2. **The STORAGE_FULL state.** A SuperNode that fills its disk stops receiving new storage assignments but keeps serving the data it holds, keeps earning Everlight payouts for that data, and stays available for compute work. [Everlight for SuperNode operators](/cascade/everlight/supernode-operators) covers the state machine and payout eligibility.
+
+## What changes for you
+
+If you upload to Cascade, nothing changes. You register an action, pay one fee, and upload your file exactly as before. Everlight works behind the scenes to fund the retention of what you stored.
+
+If you run a SuperNode, Everlight is new revenue. You earn recurring payouts for the Cascade data you retain, on top of the existing action fees. Start with the [SuperNode overview](/supernodes/overview) if you are new to operating one.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="How payments work" icon="coins" href="/cascade/everlight/payments">
+    The pool, payment periods, and funding sources.
+  </Card>
+  <Card title="For SuperNode operators" icon="server" href="/cascade/everlight/supernode-operators">
+    The STORAGE_FULL state and payout eligibility.
+  </Card>
+  <Card title="How Cascade works" icon="layer-group" href="/cascade/how-cascade-works">
+    Follow an upload from registration to permanent storage.
+  </Card>
+</CardGroup>

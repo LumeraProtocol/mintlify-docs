@@ -1,0 +1,228 @@
+---
+title: "Create a mainnet validator"
+sidebarTitle: "Create validator"
+description: "Create a secured wallet, fund it, and register your validator on lumera-mainnet-1."
+---
+
+Your node must be running and fully synced before you register. Check it first.
+
+```bash
+lumerad status 2>&1 | jq '.sync_info | {latest_block_height, catching_up}'
+# catching_up must be false
+```
+
+If you have not completed [node setup](/validators-mainnet/node-setup), do that first.
+
+## Step 1. Set the keyring backend
+
+On a headless server the default `os` keyring has no daemon to talk to. It will appear to hang. On mainnet use the `file` backend, which encrypts keys on disk behind a passphrase.
+
+```bash
+lumerad config set client keyring-backend file --skip-validate
+lumerad config set client chain-id lumera-mainnet-1 --skip-validate
+```
+
+<Warning>
+Do not use the `test` backend on mainnet. It stores keys in plaintext. Anyone who reads the filesystem takes your funds. That includes a backup, a snapshot, or a compromised process. The `file` backend prompts for a passphrase on every signing operation. That friction is the point.
+</Warning>
+
+<Note>
+For larger stake, keep the operator key off the validator. Generate and sign from a separate secured machine, or use a Ledger hardware wallet with `--ledger`. The operator key only signs occasional transactions. It does not have to live beside the node.
+</Note>
+
+## Step 2. Create a wallet
+
+```bash
+lumerad keys add validator
+```
+
+You are prompted to set a keyring passphrase. Then you see your address and a 24-word mnemonic.
+
+```
+- address: lumera1abc...
+  name: validator
+
+**Important** write this mnemonic phrase in a safe place.
+word1 word2 word3 ... word24
+```
+
+<Warning>
+Record the 24-word mnemonic offline, now. It is shown exactly once. Write it on paper or store it in a hardware backup. Never put it in a file on the server, a password manager sync, or a screenshot. Whoever holds this phrase controls your stake.
+</Warning>
+
+You have two addresses. They are two encodings of the same key.
+
+```bash
+# Account address. Receives tokens.
+lumerad keys show validator -a
+# lumera1...
+
+# Operator address. Identifies the validator in staking commands.
+lumerad keys show validator --bech val -a
+# lumeravaloper1...
+```
+
+Staking queries use the `lumeravaloper1...` form.
+
+## Step 3. Fund the wallet
+
+There is no mainnet faucet. Transfer LUME to the account address from Step 2 from an exchange or an existing wallet.
+
+Confirm it arrived.
+
+```bash
+lumerad query bank balances $(lumerad keys show validator -a)
+```
+
+The protocol minimum is 1 LUME, which is 1,000,000 ulume, plus fees. The active set is capped at 50 validators and ranked by total stake. To actually enter it you need enough stake to displace the smallest bonded validator. Check the current floor before you commit.
+
+```bash
+lumerad query staking validators --status BOND_STATUS_BONDED -o json \
+  | jq -r '[.validators[].tokens | tonumber] | sort | .[0:5]'
+```
+
+<Note>
+Send a small test transfer first and confirm it lands before you move your full stake. An address typo is unrecoverable.
+</Note>
+
+## Step 4. Create the validator
+
+Cosmos SDK v0.50 takes a JSON file rather than individual CLI flags. Build it.
+
+```bash
+cat > ~/validator.json <<EOF
+{
+  "pubkey": $(lumerad comet show-validator),
+  "amount": "1000000ulume",
+  "moniker": "my-validator",
+  "identity": "",
+  "website": "",
+  "security": "",
+  "details": "",
+  "commission-rate": "0.10",
+  "commission-max-rate": "0.20",
+  "commission-max-change-rate": "0.01",
+  "min-self-delegation": "1"
+}
+EOF
+
+cat ~/validator.json
+```
+
+Set `moniker` to your own name. Raise `amount` to your intended self-delegation before you submit.
+
+| Field | Meaning | Notes |
+|-------|---------|-------|
+| `pubkey` | Consensus public key | Read from `priv_validator_key.json` by `comet show-validator` |
+| `amount` | Initial self-delegation | `1000000ulume` is 1 LUME |
+| `commission-rate` | Your cut of delegator rewards | `0.10` is 10 percent |
+| `commission-max-rate` | Ceiling on commission | Immutable after creation |
+| `commission-max-change-rate` | Max change per 24 hours | Immutable after creation |
+| `min-self-delegation` | Floor you must keep staked, in `ulume` | `1` means 1 ulume, not 1 LUME. Dropping below unbonds you |
+
+<Warning>
+`commission-max-rate` and `commission-max-change-rate` can never be changed after creation. Delegators evaluate both. Setting the max rate too low limits you forever. Setting it too high deters delegation. Decide deliberately before you submit.
+</Warning>
+
+<Note>
+Older guides show `--amount` and `--pubkey` flags on `create-validator`. Those were removed in Cosmos SDK v0.50. They now fail. The JSON file above is the current form.
+</Note>
+
+Submit the transaction.
+
+```bash
+lumerad tx staking create-validator ~/validator.json \
+  --from=validator \
+  --chain-id=lumera-mainnet-1 \
+  --gas=auto \
+  --gas-adjustment=1.3 \
+  --fees=10000ulume \
+  -y
+```
+
+A successful broadcast returns `code: 0`. Any non-zero `code` means the transaction was rejected. The `raw_log` field explains why.
+
+<Warning>
+The commonly cited `--fees=5000ulume` is often rejected with `insufficient fees`. Use `10000ulume` or higher. You can also let the node compute the fee. Replace `--fees` with `--gas-prices=0.025ulume`.
+</Warning>
+
+## Step 5. Verify
+
+```bash
+lumerad query staking validator $(lumerad keys show validator --bech val -a)
+```
+
+| Status | Meaning |
+|--------|---------|
+| `BOND_STATUS_BONDED` | In the active set and signing blocks |
+| `BOND_STATUS_UNBONDED` | Registered but not in the active set yet |
+| `BOND_STATUS_UNBONDING` | Leaving the active set |
+
+<Note>
+A new validator normally starts unbonded. The active set is capped at 50 and ranked by total stake. You stay unbonded until your delegation is large enough to displace the smallest bonded validator.
+</Note>
+
+Confirm the registered consensus key is the one your node actually signs with. If these differ, the validator will never sign a block no matter what its status says.
+
+```bash
+lumerad query staking validator $(lumerad keys show validator --bech val -a) -o json | jq -r .consensus_pubkey.key
+lumerad comet show-validator | jq -r .key
+# The two must be identical
+```
+
+Once bonded, check that you are signing.
+
+```bash
+lumerad query slashing signing-info $(lumerad comet show-validator)
+```
+
+`missed_blocks_counter` should stay near zero. `tombstoned` must be `false`.
+
+<Warning>
+Watch the first hour closely. If `missed_blocks_counter` climbs steadily, your node is not signing. Sustained downtime leads to jailing and a slash of your stake.
+</Warning>
+
+## Verification checklist
+
+```bash
+# Node healthy and synced
+systemctl is-active lumera
+lumerad status 2>&1 | jq -r .sync_info.catching_up          # false
+
+# Validator registered
+lumerad query staking validator $(lumerad keys show validator --bech val -a) \
+  | jq '{moniker: .description.moniker, status, tokens, jailed}'
+
+# Signing, once bonded
+lumerad query slashing signing-info $(lumerad comet show-validator) \
+  | jq '{missed_blocks_counter, tombstoned, jailed_until}'
+
+# Balance left for fees
+lumerad query bank balances $(lumerad keys show validator -a)
+```
+
+## Back up everything
+
+Before you walk away, make sure you have all three stored offline and test-restored.
+
+1. The 24-word mnemonic from Step 2
+2. `~/.lumera/config/priv_validator_key.json`
+3. `~/.lumera/config/node_key.json`
+
+<Warning>
+Never restore `priv_validator_key.json` onto a second running machine. Two nodes signing with the same consensus key is double-signing. The network detects it, permanently tombstones the validator, and slashes the stake. When you migrate servers, confirm the old node is fully stopped and its key removed before the new one starts.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="Operations" icon="wrench" href="/validators-mainnet/operations">
+    Day-to-day commands, upgrades, monitoring, and troubleshooting.
+  </Card>
+  <Card title="Run a SuperNode" icon="server" href="/supernodes/overview">
+    Provide Cascade and Sense services for extra rewards.
+  </Card>
+  <Card title="Testnet guide" icon="flask" href="/validators-testnet/overview">
+    Rehearse the full setup on testnet first.
+  </Card>
+</CardGroup>

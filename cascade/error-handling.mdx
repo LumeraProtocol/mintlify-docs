@@ -1,0 +1,238 @@
+---
+title: "Handle Cascade errors"
+sidebarTitle: "Error handling"
+description: "Diagnose common Cascade failures, tune retries and timeouts, and understand automatic refunds."
+---
+
+Cascade uploads touch two systems, the Lumera Protocol chain and the SuperNode network, so errors can surface in several places. This page lists the failures you are most likely to hit, the fix for each one, and how the SDK handles retries, timeouts, and refunds.
+
+## Common errors
+
+### RPC connection errors
+
+If the Lumera RPC node is down or unreachable, client creation and blockchain transactions fail.
+
+```ts
+try {
+  const client = await createLumeraClient({ preset: "testnet", signer, address, gasPrice: "0.025ulume" });
+} catch (err) {
+  // "Failed to connect to RPC endpoint" or "ECONNREFUSED"
+  console.error("Cannot reach RPC node. Check your network or try a different endpoint.");
+}
+```
+
+Switch to a different RPC endpoint, or wait and retry. You can pass a custom endpoint instead of the preset.
+
+```ts
+const client = await createLumeraClient({
+  chainId: "lumera-testnet-2",
+  rpcUrl: "https://lumera-testnet-rpc.polkachu.com",
+  lcdUrl: "https://lumera-testnet-api.polkachu.com",
+  snapiUrl: "https://snapi.testnet.lumera.io",
+  signer,
+  address,
+  gasPrice: "0.025ulume",
+});
+```
+
+### Insufficient funds
+
+Uploads need LUME to pay the action fee. An empty wallet fails with this error.
+
+```text
+"insufficient funds: 0ulume is smaller than 50000ulume"
+```
+
+Fund your wallet with testnet tokens from the [faucet](/faucet) before uploading.
+
+### Keplr extension not found
+
+The user has not installed Keplr, or the page loaded before the extension injected `window.keplr`. Wait for the extension before you access it.
+
+```ts
+async function waitForKeplr(timeout = 3000): Promise<boolean> {
+  if (window.keplr) return true;
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), timeout);
+    window.addEventListener("keplr_keystorechange", () => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+}
+```
+
+### Wallet popup rejected
+
+Keplr and Leap ask the user to approve every signature request. A click on Reject surfaces as an error.
+
+```ts
+try {
+  await client.Cascade.uploader.uploadFile(file, params);
+} catch (err) {
+  if (err.message?.includes("Request rejected")) {
+    console.error("Please approve the signature request to continue");
+  }
+}
+```
+
+Prompt the user to try again and approve the popup. Cascade requests ADR-036 signatures for authentication, not transactions. Consider a pre-sign dialog that explains what is being signed. One upload can trigger several popups, one each for the layout, the index, and auth.
+
+### SuperNodes unavailable
+
+The task fails when no SuperNodes are online to handle your request.
+
+```text
+"Task failed with status: sdk:supernodes_unavailable"
+```
+
+Wait a few minutes and retry. This usually means the testnet SuperNodes are temporarily down or overloaded.
+
+### Upload timeout
+
+Large files or slow networks can push a task past the default timeout of 5 minutes.
+
+```text
+"Task timed out after 300000ms"
+```
+
+Increase the timeout in `taskOptions`.
+
+```ts
+const result = await client.Cascade.uploader.uploadFile(file, {
+  fileName: "large-file.zip",
+  isPublic: true,
+  expirationTime: String(Math.floor(Date.now() / 1000) + 86400),
+  taskOptions: {
+    timeout: 600000, // 10 minutes
+  },
+});
+```
+
+### Action not registered
+
+The transaction went through, but the SDK could not find the `action_registered` event in the response.
+
+```text
+"action_registered event not found in transaction. Available events: coin_spent, coin_received, transfer, message, tx"
+```
+
+This usually means the upload started too soon after the client was created, or the transaction failed silently on chain. Work through three checks.
+
+1. Add a short delay before uploading so the chain can finalize the transaction.
+2. Confirm the transaction succeeded on [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2).
+3. Make sure you hold enough funds for the action fee. The transaction may have failed on gas.
+
+### Action not found
+
+The action was registered on chain, but the SuperNode has not indexed it yet, or the action ID is invalid. SN-API responds with a 404.
+
+```ts
+try {
+  const stream = await client.Cascade.downloader.download("99999");
+} catch (err) {
+  // HttpError with statusCode 404
+  console.error("Action not found. Check the Action ID.");
+}
+```
+
+The SDK retries this automatically with 5 attempts and 3-second delays. If the error persists, work through these steps.
+
+1. Verify the action exists on chain in [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2).
+2. Increase the timeout in `taskOptions`.
+3. Try a different SN-API endpoint.
+
+### Download failed or empty stream
+
+The SuperNodes could not reconstruct the file. This happens with very recent uploads that are still processing, or with actions that have expired.
+
+1. Wait a few minutes after upload before you attempt a download.
+2. Verify the action status with `client.Blockchain.Action.getAction(actionId)`.
+3. Check that `state === "ACTION_STATE_DONE"`.
+
+### Private file access denied
+
+A wallet that did not upload a private file cannot download it.
+
+```text
+"failed to verify download signature"
+```
+
+Only the wallet that uploaded the file can download it when `isPublic: false`. Connect with the wallet that created the action.
+
+## Automatic refunds
+
+The storage fee is escrowed on chain when you register an action. The protocol refunds it to your wallet automatically in two cases.
+
+- The upload fails and the action ends in a failed state.
+- The action expires because no SuperNode finalized it before its `expirationTime`.
+
+You do not file a claim or send another transaction. The refund is part of the protocol.
+
+## Built-in retries
+
+The SDK retries failed HTTP requests with exponential backoff, which doubles the wait after each attempt. The defaults are listed below.
+
+| Setting | Default |
+| --- | --- |
+| Max attempts | `3` |
+| Initial delay | `1000ms` |
+| Max delay | `30000ms` |
+| Backoff multiplier | `2x` |
+| Retryable status codes | `408, 429, 500, 502, 503, 504` |
+
+You can override the defaults when you create the client.
+
+```ts
+const client = await createLumeraClient({
+  preset: "testnet",
+  signer,
+  address,
+  gasPrice: "0.025ulume",
+  http: {
+    timeout: 60000,
+    retry: {
+      maxAttempts: 5,
+      initialDelay: 2000,
+    },
+  },
+});
+```
+
+<Note>
+File uploads and downloads skip automatic retries because the request body or response stream can only be consumed once. The SDK retries everything else automatically, such as status checks and metadata queries.
+</Note>
+
+## Task options and status polling
+
+SuperNodes process upload and download tasks asynchronously. The SDK polls the task status until the task completes, then returns the result. Two settings control the polling.
+
+```ts
+taskOptions: {
+  timeout: 300000,    // 5 min default, how long to wait before giving up
+  pollInterval: 2000, // 2s default, how often to check task status
+}
+```
+
+<Warning>
+If an upload times out, the task may still be processing on the SuperNode. Do not retry immediately or you may create a duplicate action on chain.
+</Warning>
+
+## Getting help
+
+| Channel | Where |
+| --- | --- |
+| Discord | [discord.com/invite/lumeraprotocol](https://discord.com/invite/lumeraprotocol) |
+| GitHub issues | [LumeraProtocol/sdk-js](https://github.com/LumeraProtocol/sdk-js/issues) |
+| Lumera Portal | [portal.testnet.lumera.io](https://portal.testnet.lumera.io/lumera-testnet-2) |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Upload lifecycle" icon="cloud-arrow-up" href="/cascade/concepts/upload-lifecycle">
+    See every phase of an upload in detail.
+  </Card>
+  <Card title="Download lifecycle" icon="cloud-arrow-down" href="/cascade/concepts/download-lifecycle">
+    Learn how files are reconstructed and streamed back.
+  </Card>
+</CardGroup>
