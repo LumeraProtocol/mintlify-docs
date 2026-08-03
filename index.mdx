@@ -1,55 +1,119 @@
 ---
-title: "What is Lumera Protocol"
+title: "What is Lumera"
 sidebarTitle: "Introduction"
-description: "Lumera Protocol is a Cosmos SDK Layer 1 blockchain for permanent storage and AI powered content services."
+description: "Lumera is a Layer 1 blockchain for permanent, provable data and decentralized intelligent services, built on a Validator-SuperNode architecture."
 ---
 
-Lumera Protocol is a Layer 1 blockchain built on the Cosmos SDK. It makes permanent file storage and AI powered content services native features of the chain. The LUME token pays for staking, transaction fees, and storage.
+Lumera is a Layer 1 blockchain built for permanent data and decentralized intelligent services. Files stored on Lumera are erasure-coded, distributed across a network of independent SuperNodes, and retained indefinitely for a single upfront payment. The network continuously re-verifies that stored data is intact and retrievable, and records those proofs on chain.
 
-The chain also ships CosmWasm smart contracts, IBC connections to the wider Cosmos ecosystem, and EVM support.
+Unlike general-purpose chains, Lumera is purpose-built for workloads that need provable data and verifiable execution. Its defining structural choice is the Validator-SuperNode architecture: validators secure consensus, while SuperNodes, dedicated servers bonded to those validators, perform the heavy work of storing data, verifying content, and running compute. Consensus stays light and fast; storage and computation scale independently of it.
 
-## Cascade
+Lumera is building infrastructure for AI agents on this foundation: persistent memory, agent-owned identity, verifiable execution, and settlement. The storage layer, Cascade, is live on mainnet and fully documented here. Documentation for each new capability is added as it ships.
 
-Cascade is Lumera's permanent storage service with a pay once, store forever model. Your file is encoded with RaptorQ erasure coding and spread across the network, and any large enough subset of the pieces can rebuild it.
+## Key features
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/how-cascade-works-light.svg" alt="How Cascade works" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/how-cascade-works-dark.svg" alt="How Cascade works" />
+<CardGroup cols={2}>
+  <Card title="Permanent, provable storage" icon="database">
+    Pay once and data is retained indefinitely. SuperNodes must periodically prove they still hold what they are paid to keep, and those proofs are recorded on chain.
+  </Card>
 
-## Sense
+  <Card title="Validator-SuperNode architecture" icon="server">
+    A Proof-of-Service layer sits alongside Proof-of-Stake consensus, rewarding operators for storage, verification, and compute rather than block production alone.
+  </Card>
 
-Sense is Lumera's AI powered content authentication service. It detects near-duplicate media and manipulated content across the network.
+  <Card title="Action and Agent framework" icon="diagram-project">
+    A modular execution model where atomic Actions handle storage, verification, and computation, and Agents compose them into autonomous workflows.
+  </Card>
+
+  <Card title="Adaptive economics" icon="chart-line">
+    Issuance adjusts block by block against a target bonded ratio, and a share of every transaction fee is burned, tying scarcity to network usage.
+  </Card>
+
+  <Card title="Interoperable by default" icon="arrows-left-right">
+    Solidity contracts run with standard EVM tooling, and IBC lets applications on other chains use Lumera's services without migrating.
+  </Card>
+
+  <Card title="On-chain governance" icon="landmark">
+    Staked LUME governs protocol parameters, fee structures, issuance, and ecosystem funding through a stake-weighted proposal and voting process.
+  </Card>
+</CardGroup>
+
+## The Action and Agent framework
+
+Lumera's execution model separates atomic work from orchestration. This distinction is fundamental to how the network operates and how it extends.
+
+**Actions** are low-level, stateless operations executed by SuperNodes. Each Action is registered on chain, escrows a fee, moves through a defined lifecycle, and settles when the work is verifiably complete. Actions available today:
+
+| Action | What it does |
+| --- | --- |
+| **Cascade** | Stores data permanently, erasure-coded across SuperNodes with continuous retention proofs |
+| **Sense** | Records verifiable statements about content, starting with near-duplicate and manipulation detection |
+
+**Agents** are higher-level, goal-oriented processes that compose Actions into workflows: retrieving data, verifying it, computing over it, and acting on the result without a human driving each step. Agents are the reason the primitives below them are designed the way they are. An autonomous process needs memory that outlives its session, work it can prove to a counterparty, and settlement that does not depend on a trusted intermediary.
+
+Because Actions are modular and share one lifecycle, registry, and settlement path, new capabilities extend the framework rather than replacing it. Every Action produces the same kind of on-chain evidence, which is what makes composition safe.
+
+## What you can build today
+
+Cascade is live on mainnet. Store any data and it is encoded with RaptorQ erasure coding and spread across economically bonded SuperNodes, so any sufficiently large subset of the pieces can rebuild the original. No single node, and no single company, can lose or delete it. Ongoing retention is funded by Everlight, an endowment mechanism that pays operators for as long as they hold data, which is what makes a one-time payment sustainable.
+
+<img
+  className="block mx-auto dark:hidden"
+  alt="How Cascade works"
+  src="/images/diagrams/how-cascade-works-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="How Cascade works"
+  src="/images/diagrams/how-cascade-works-dark.svg"
+/>
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Store your first file from TypeScript in a few minutes.
+  </Card>
+
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The actions, fees, and lifecycle behind permanent storage.
+  </Card>
+
+  <Card title="SDKs" icon="code" href="/sdk/javascript">
+    Build in TypeScript, Go, or Rust.
+  </Card>
+</CardGroup>
 
 ## How the network runs
 
-Validators secure the chain through delegated proof of stake. Validators can also run a SuperNode, a companion daemon that provides Cascade and Sense services and earns proof of service rewards. The `v1.20.0` release added EVM support, live on testnet today, so Solidity contracts deploy with standard [EVM tooling](/smart-contracts/overview).
+Validators secure the chain through delegated proof of stake, proposing and signing blocks and voting on governance. A validator can also run a SuperNode, earning Proof-of-Service rewards from service fees on top of staking rewards. A SuperNode stays active only while its validator meets the self-stake threshold, which keeps service capacity tied to real economic commitment.
 
-Lumera is the evolution of Pastel Network, rebuilt as a Cosmos chain.
-
-## Start here
+The chain is the control plane: it records requests, escrows fees, tracks results, and holds identity and governance state. SuperNodes are the execution and memory planes: data moves directly between clients and SuperNodes and never passes through consensus. LUME is the native asset for staking, transaction fees, and service payments, and all protocol revenue accrues in it.
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Upload your first file to Cascade from TypeScript in a few minutes.
-  </Card>
-  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
-    Learn the actions, fees, and lifecycle behind permanent storage.
-  </Card>
-  <Card title="SDKs" icon="code" href="/sdk/javascript">
-    Build in TypeScript, Go, or Rust with the official SDKs.
-  </Card>
-  <Card title="Run a validator" icon="shield-check" href="/quickstart-validator">
-    Secure the network and earn staking rewards in LUME.
-  </Card>
-  <Card title="Run a SuperNode" icon="server" href="/quickstart-supernode">
-    Provide Cascade and Sense services and earn proof of service rewards.
-  </Card>
   <Card title="Architecture" icon="sitemap" href="/architecture">
-    See how the base chain, custom modules, and SuperNode layer fit together.
+    How the chain, modules, SuperNodes, and clients fit together.
   </Card>
-  <Card title="Smart contracts" icon="file-code" href="/smart-contracts/overview">
-    Deploy Solidity with MetaMask, Remix, and standard EVM tooling.
+
+  <Card title="LUME" icon="coins" href="/token">
+    Token utility, supply mechanics, and staking economics.
   </Card>
-  <Card title="Cross-chain" icon="arrows-left-right" href="/cross-chain/overview">
-    Use Cascade from other chains over IBC or an API pattern.
+
+  <Card title="Protocol revenue" icon="receipt" href="/protocol-revenue">
+    The three revenue streams and how fees are distributed and burned.
+  </Card>
+
+  <Card title="Governance" icon="landmark" href="/governance">
+    How proposals, voting, and parameter changes work.
   </Card>
 </CardGroup>
+
+## Where this is going
+
+Permanent, provable storage is the first of five capabilities Lumera is building for agents:
+
+1. **Memory** - durable, verifiable state that survives sessions, models, and providers. Live today through Cascade.
+2. **Identity** - an on-chain identity an agent owns, with delegated authority and explicit spending limits.
+3. **Verifiable execution** - work that produces a signed receipt, so a counterparty can confirm what ran and what it cost.
+4. **Settlement** - payment that releases only against acknowledged work, with disputes resolved from evidence.
+5. **Trust** - a record compiled from what participants actually did rather than what they claim.
+
+Each capability builds on the last, and each is expressed through the same Action and Agent framework. Everything documented here works today.

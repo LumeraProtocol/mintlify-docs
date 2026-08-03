@@ -6,20 +6,28 @@ description: "How the base chain, custom modules, SuperNode layer, and clients f
 
 Lumera Protocol is organized into four layers. The base chain provides consensus and three execution environments. Custom modules add storage, identity, and SuperNode coordination. The SuperNode layer does the heavy off-chain work. Client applications surface all of it to users. This page walks through each layer and how they interact.
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/protocol-stack-light.svg" alt="Lumera protocol stack" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/protocol-stack-dark.svg" alt="Lumera protocol stack" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="Lumera protocol stack"
+  src="/images/diagrams/protocol-stack-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Lumera protocol stack"
+  src="/images/diagrams/protocol-stack-dark.svg"
+/>
 
 ## Base layer
 
 The base layer handles block production, consensus, accounts, governance, and smart contract execution.
 
-**Cosmos SDK v0.53.6** is the chain framework, the same one behind Cosmos Hub and Osmosis. It brings CometBFT consensus with fast finality, the standard modules (`x/bank`, `x/staking`, `x/gov`, `x/distribution`), and automatic gRPC and REST APIs for every module. The whole node ships as the single `lumerad` binary.
+**Cosmos SDK v0.53.6** is the chain framework. It brings CometBFT consensus with fast finality, the standard modules (`x/bank`, `x/staking`, `x/gov`, `x/distribution`), and automatic gRPC and REST APIs for every module. The whole node ships as the single `lumerad` binary.
 
 **CosmWasm** runs Rust smart contracts compiled to WebAssembly, sandboxed with deterministic gas metering.
 
 **IBC** connects Lumera to other Cosmos chains for token transfers and arbitrary messages. Interchain accounts (ICS-27) let external chains drive Cascade remotely. See [interchain accounts](/cascade/concepts/interchain-accounts).
 
-**Cosmos EVM** runs Solidity contracts with standard Ethereum tooling. It arrived with the v1.20.0 upgrade and is live on testnet, with the mainnet upgrade ahead. One private key operates both an EVM address (`0x...`) and a bech32 address (`lumera1...`). The [smart contracts overview](/smart-contracts/overview) covers it in depth.
+**Cosmos EVM** runs Solidity contracts with standard Ethereum tooling. One private key operates both an EVM address (`0x...`) and a bech32 address (`lumera1...`). The [smart contracts overview](/smart-contracts/overview) covers it in depth.
 
 ## Two node types
 
@@ -36,11 +44,11 @@ The chain is the control plane. It records requests, escrows fees, and tracks re
 Four custom modules implement the protocol logic. The EVM upgrade added support modules (`x/vm`, `x/feemarket`, `x/precisebank`, `x/erc20`, `x/evmigration`) documented on the [EVM upgrade page](/upgrades/evm-upgrade). This table is a map, not deep documentation. The linked pages cover the developer workflows.
 
 | Module | What it does |
-|---|---|
+| --- | --- |
 | `x/action` | Manages the lifecycle of Cascade and Sense actions from registration to approval |
 | `x/supernode` | Registers SuperNodes, ranks the active top list, tracks metrics, and pays rewards |
 | `x/lumeraid` | Anchors decentralized identities to Lumera addresses |
-| `x/claim` | Handles token claims from the legacy Pastel Network |
+| `x/claim` | Handles legacy token claims and migration |
 
 ### The action lifecycle
 
@@ -77,7 +85,7 @@ Cascade is permanent file storage with a pay once, store forever model. The Supe
 
 ### Sense
 
-Sense is AI powered content authentication. SuperNodes compute a perceptual fingerprint of submitted media, a feature vector that captures what the content looks like rather than its exact bytes. They compare it against the network's registered assets and record a similarity verdict on chain. Slightly altered copies still match, which plain hashing cannot do.
+Sense is the network's attestation service for content. SuperNodes compute a perceptual fingerprint of submitted media, a feature vector that captures what the content looks like rather than its exact bytes. They compare it against the network's registered assets and record a similarity verdict on chain. Slightly altered copies still match, which plain hashing cannot do.
 
 Sense results include a similarity score between 0 and 1, the list of near duplicate candidates, and the fingerprint hash. All of it is permanently queryable, which makes Sense useful for originality checks, provenance records, and duplicate prevention in marketplaces. Sense actions cost less than Cascade because only the analysis result is stored, not the file.
 
@@ -101,9 +109,11 @@ The [SDKs](/sdk/javascript) wrap the chain APIs and the SuperNode protocol for J
   <Card title="Upload lifecycle" icon="arrows-rotate" href="/cascade/concepts/upload-lifecycle">
     The full journey of a Cascade upload through these layers.
   </Card>
+
   <Card title="Smart contracts" icon="file-code" href="/smart-contracts/overview">
     The EVM environment on the base layer.
   </Card>
+
   <Card title="Run a validator" icon="shield" href="/validators-mainnet/overview">
     Join the consensus layer.
   </Card>
