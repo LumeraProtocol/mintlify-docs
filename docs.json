@@ -57,16 +57,16 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Introduction",
+            "group": "Overview",
             "icon": "book-open",
             "pages": [
               "index",
               "architecture",
               "networks",
+              "token",
+              "protocol-revenue",
               "ecosystem",
-              "untitled-page-3",
-              "untitled-page-4",
-              "untitled-page"
+              "governance"
             ]
           },
           {
@@ -254,6 +254,18 @@
     {
       "source": "/introduction",
       "destination": "/"
+    },
+    {
+      "source": "/untitled-page",
+      "destination": "/protocol-revenue"
+    },
+    {
+      "source": "/untitled-page-3",
+      "destination": "/token"
+    },
+    {
+      "source": "/untitled-page-4",
+      "destination": "/governance"
     },
     {
       "source": "/modules/overview",
