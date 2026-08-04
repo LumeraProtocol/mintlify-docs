@@ -1,0 +1,152 @@
+---
+title: "Agent Memory"
+sidebarTitle: "Overview"
+description: "Append-only, client-encrypted memory for autonomous agents, anchored in Cascade with retention proven on chain."
+---
+
+<Note>
+  This page documents a design that is published ahead of availability. The architecture, data model, and durability semantics below are settled. The client libraries are not yet released, and this page intentionally carries no dates and no pricing. It describes how the system is built, not something you can install today.
+</Note>
+
+Agent Memory is a memory layer for autonomous agents built directly on [Cascade](/cascade/how-cascade-works). An agent appends to a log, the log is sealed into immutable objects anchored on chain, and the network can be asked to prove that any given object is still retrievable.
+
+It is a client surface over an existing Protocol Service rather than a new protocol capability. Everything beneath the client runs on mainnet today. There are **no new chain modules** anywhere in the design, which is the reason its behavior can be described with this much precision before release.
+
+## Why agents need this
+
+An agent that loses its state between invocations cannot be held to a decision it made earlier. That much is obvious, and hosted memory products solve it.
+
+What they do not solve is the second problem. When memory is load-bearing, the agent's owner eventually needs to answer a question about the past: what did this agent know, when did it know it, and can you show me that the record has not been altered since. A hosted store answers that with a service agreement. It cannot answer it with evidence, because the store is also the party being asked.
+
+Agent Memory separates those roles. The record is append-only and content-addressed, so alteration is detectable. Retention is funded by [Everlight](/cascade/everlight/overview) and evidenced by storage challenges, so continued possession is demonstrated by parties other than the one making the claim.
+
+## System layers
+
+```text
+  Agent frameworks (LangGraph, Claude Code, and similar hosts)
+        │  MCP connector          │  framework memory provider
+        ▼                         ▼
+  ┌─────────────────────────────────────────────────────┐
+  │  Agent Memory client (Python, TypeScript)           │  ← encryption
+  │  entries · sealing policy · keys · verification     │    boundary
+  └───────────────┬─────────────────────┬───────────────┘
+       gateway mode                self-custody mode
+                │                         │
+  ┌─────────────▼─────────────┐           │
+  │  Hosted gateway           │           │
+  │  staging log · sealer     │           │
+  │  per-developer fee accounts│          │
+  └─────────────┬─────────────┘           │
+                └────────────┬────────────┘
+                             ▼
+  ┌─────────────────────────────────────────────────────┐
+  │  Lumera mainnet (unchanged)                         │
+  │  Cascade actions, LEP-5 commitments, fees           │
+  │  SuperNodes, RaptorQ symbols, storage challenges    │
+  │  Everlight retention funding                        │
+  └─────────────────────────────────────────────────────┘
+```
+
+Two modes exist because two different developers exist. Gateway mode hides keys, gas, and SuperNode routing entirely, so a developer never touches a wallet. Self-custody mode removes the gateway from the path and has the client anchor directly. The data written is identical either way, and a log created in one mode remains readable in the other.
+
+## Data model
+
+Three objects, one invariant.
+
+| Object | What it is |
+| --- | --- |
+| **Entry** | The atomic unit an agent writes. Small, from bytes to tens of kilobytes. Addressed by `entry_cid = BLAKE3(entry bytes)` |
+| **Segment** | A set of sequenced entries sealed into one immutable object and anchored as a single Cascade action |
+| **Manifest** | A periodic checkpoint mapping entry CID to its segment, offset, and length. Manifests are themselves stored in Cascade and hash-linked into a chain |
+
+The invariant is that the log is **append-only**. Entries are never edited and never deleted. A correction is a new entry that supersedes an earlier one, which means the history of what the agent believed remains intact and auditable rather than being overwritten.
+
+Sealing entries into segments is what makes the economics work. One chain action per entry would be unaffordable. One action per sealed segment, with the manifest providing individual addressability, gives per-entry granularity at per-segment cost.
+
+The latest manifest CID is the portable root of the entire log.
+
+## Durability states
+
+The design refuses to present a fast acknowledgement as durability. Every entry is in exactly one of three states, and the client always reports which.
+
+```text
+accepted ──► anchored(block H) ──► proven(block X)
+```
+
+| State | Meaning | Backed by |
+| --- | --- | --- |
+| `accepted` | Held in the gateway's replicated staging log, or the client's local buffer in self-custody mode. Fast acknowledgement | Gateway infrastructure only |
+| `anchored(H)` | The segment's Cascade action finalized at block H. LEP-5 possession proofs verified on chain, fee paid, retention funding engaged | Chain, SuperNodes, and Everlight |
+| `proven(X)` | The most recent storage challenge covering the segment passed at block X | Ongoing challenge evidence |
+
+The window between `accepted` and `anchored` is the only centralized durability window in the system. It is handled by keeping it short and by never describing it as anything else. A write returns `accepted`, and an acknowledged write is not represented as funded permanence.
+
+This distinction is the point of the design rather than a caveat attached to it.
+
+## Encryption
+
+Encryption is on by default and is not a configuration option.
+
+The client generates a log key and encrypts each entry before any bytes leave the agent's process. The gateway, the SuperNodes, and the chain see ciphertext only. Retention proofs operate on ciphertext and are unaffected, which produces the useful property that the network proves it is still holding data it cannot read.
+
+The consequence is stated plainly rather than buried. **Losing the log key means losing the memory.** There is no escrow and no recovery path in the design.
+
+Logs can optionally be created public, in plaintext, for cases where visible content is the purpose. Private is the default.
+
+## Proving retention
+
+This is the capability that does not exist in a hosted memory product.
+
+Because every segment is a Cascade action, an object CID resolves to an action, and that action resolves to on-chain evidence. That gives a direct answer to a question a service agreement can only assert: _this object was last proven retrievable at block X._
+
+The chain of evidence behind that statement is verifiable independently. LEP-5 availability commitments prove possession at finalization, and ongoing storage challenges test retention afterward. Both are described in [Cascade](/cascade/how-cascade-works).
+
+## Portability
+
+A manifest CID plus the log key is the whole memory.
+
+Anyone holding both can reconstruct the log from Cascade without the gateway, without the client library, and without Lumera's cooperation. Verification runs offline against the manifest chain.
+
+This is what distinguishes portable memory from exportable memory. An export is a copy a vendor chooses to give you. A manifest root is the object itself.
+
+## The client surface
+
+Described as capabilities rather than signatures, because the API is not yet published.
+
+- Append an entry, returning its CID, sequence number, and state
+- Read recent entries, or entries since a point in the log
+- Fetch and decrypt a specific entry by CID
+- Force a seal, producing segment receipts
+- Query the durability state of any entry
+- Request a retention proof for an entry
+- Export the manifest root
+- Verify a manifest offline, with no gateway involved
+
+The same shape is provided in Python and TypeScript. Framework integrations expose a subset of these as tools, including an MCP connector for hosts that support it.
+
+## What this does not do
+
+Stated as design scope, not fine print.
+
+- **No semantic recall.** Recency and lookup only. Retrieval by meaning is not provided, and applications that need it build it above this layer.
+- **No hot mutable state.** This is the durable tier. Mutable, low-latency state is a separate tier in the [Durable Memory](/intelligence-layer/durable-memory) architecture.
+- **No multi-writer logs.** One writer per log. Shared memory across agents requires delegation and the hot tier.
+- **No sharing or access control lists.** Sharing a log means handing over the manifest CID and the key, which works but is manual.
+- **No key escrow or recovery.**
+- **No durability claim for `accepted`** beyond the stated staging behavior.
+
+The design sells provenance and permanence. It does not claim retrieval quality.
+
+## How it settles
+
+Anchoring a segment is an ordinary Cascade action and is priced as one, using the existing base plus per-kilobyte fee. No new billing rail is introduced, and no separate subscription exists in the design. Pricing for the hosted gateway is not yet published.
+
+<CardGroup cols={2}>
+  <Card title="Cascade" icon="database" href="/cascade/how-cascade-works">
+    The storage service Agent Memory anchors to.
+  </Card>
+
+  <Card title="Durable Memory" icon="layer-group" href="/intelligence-layer/durable-memory">
+    Where this sits in the Protocol architecture.
+  </Card>
+</CardGroup>

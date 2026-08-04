@@ -93,6 +93,7 @@
               {
                 "group": "Durable Memory",
                 "pages": [
+                  "untitled-page-9",
                   {
                     "group": "Cascade",
                     "icon": "database",
@@ -122,7 +123,12 @@
                       }
                     ]
                   },
-                  "untitled-page-9",
+                  {
+                    "group": "Agent Memory",
+                    "pages": [
+                      "untitled-page-11"
+                    ]
+                  },
                   {
                     "group": "Everlight",
                     "pages": [
