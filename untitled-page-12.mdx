@@ -1,0 +1,99 @@
+---
+title: "Actions and the Action Lifecycle"
+description: "How work is requested on Lumera, the states an action moves through, and why the lifecycle is the Protocol's extension point."
+---
+
+An Action is the unit of work on Lumera. Every Protocol Service request becomes an action, which is an on-chain record with an identifier, a creator, a state machine, and an escrowed fee.
+
+Actions are handled by `x/action`. The module is deliberately service-agnostic. It knows how to register work, hold a fee, route the request to operators, verify completion, and settle. It does not know what the work is.
+
+## Action types
+
+Two types exist today, and both run through the same lifecycle.
+
+| Type | Work performed | Priced by |
+| --- | --- | --- |
+| **Cascade** | Erasure-code a file and store it permanently across the SuperNode mesh | Size of the data |
+| **Sense** | Evaluate media for near duplicates and record a verdict | Size of the data and the analysis performed |
+
+The difference between them is what SuperNodes do in the execution phase. Registration, escrow, verification, and settlement are identical. That is what makes adding a service type a smaller change than it appears, and it is the clearest example of the Protocol growing by composition rather than reinvention.
+
+## The record on chain
+
+Each action is stored keyed by `action_id` and carries its type, creator, current state, and escrowed fee. You can read any of it directly.
+
+```bash
+lumerad query action action <action-id>
+```
+
+The `action_id` is returned in an `action_registered` event when the registering transaction is included, and it remains the permanent on-chain handle for the work.
+
+## States
+
+```text
+PENDING ──► PROCESSING ──► DONE
+    │            │
+    └────────────┴────────► FAILED
+```
+
+| State | Meaning |
+| --- | --- |
+| `PENDING` | Registered on chain and the fee is escrowed. No operator has begun work |
+| `PROCESSING` | One or more SuperNodes are executing the request |
+| `DONE` | Completion was verified on chain. The escrowed fee is released |
+| `FAILED` | The action failed or expired. The escrow returns to the creator |
+| `APPROVED` | Used by cross-chain flows that require an explicit approval step before settlement |
+
+The terminal states are what a caller should build against. `DONE` means the chain verified completion, not that an operator claimed it.
+
+## The lifecycle
+
+<Steps>
+  <Step title="Register">
+    The creator submits `MsgRequestAction` with the action type, the service metadata, an expiration, and the fee. The chain validates the message, escrows the fee, and emits the `action_id`.
+
+    For Cascade, registration also carries the content hash and an availability commitment. See [How Cascade works](/cascade/how-cascade-works).
+  </Step>
+  <Step title="Assign">
+    `x/action` routes the request to the ranked top set of SuperNodes maintained by `x/supernode`. Rank is a function of stake and performance, so assignment is a consequence of on-chain state rather than a negotiation.
+  </Step>
+  <Step title="Execute">
+    Selected SuperNodes perform the work in the Execution Plane. Data moves directly between the client and the operators and does not pass through consensus, which is why throughput here is not bounded by block time.
+  </Step>
+  <Step title="Finalize">
+    An operator submits the finalization message with whatever evidence the action type requires. For Cascade that includes Merkle proofs for the chunks committed at registration, which the chain verifies before accepting the finalization.
+  </Step>
+  <Step title="Settle">
+    On verified finalization the state becomes `DONE` and the escrow releases to the participating SuperNodes. If finalization never arrives before expiration, or verification fails, the state becomes `FAILED` and the escrow returns. See [Escrow and settlement](/intelligence-layer/economic-coordination/escrow-and-settlement).
+  </Step>
+</Steps>
+
+## Expiration
+
+Every action carries an expiration supplied at registration. It is a deadline for operators to complete the work, and it exists so escrowed funds cannot be held indefinitely by inaction.
+
+An expired action fails and refunds. A caller therefore never has capital stranded by an unresponsive operator, which is what makes it safe to register work with a party you have no relationship with.
+
+## Why the lifecycle matters architecturally
+
+The lifecycle is the Protocol's extension point. A new capability arrives as a new action type moving through these same states, priced the same way, escrowed the same way, and settled on the same conditions.
+
+That has a practical consequence worth internalizing. What you learn from integrating one service transfers to the next. The verification evidence differs by type, and everything around it does not.
+
+<CardGroup cols={2}>
+  <Card title="Escrow and settlement" icon="scale-balanced" href="/intelligence-layer/economic-coordination/escrow-and-settlement">
+    What happens to the fee at each state transition.
+  </Card>
+
+  <Card title="Service pricing" icon="tag" href="/intelligence-layer/economic-coordination/service-pricing">
+    How the fee is calculated.
+  </Card>
+
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The lifecycle applied to permanent storage.
+  </Card>
+
+  <Card title="Module reference" icon="cube" href="/protocol/modules">
+    `x/action` state and messages.
+  </Card>
+</CardGroup>

@@ -1,0 +1,81 @@
+---
+title: "Escrow and Settlement"
+description: "How the Protocol holds a service fee during execution and releases it only against verified completion."
+---
+
+Settlement on Lumera is conditional. A service fee is committed on chain before work begins and released only when the chain has verified that the work completed.
+
+The mechanism is escrow, and it is what allows a requester and an operator with no relationship to transact safely.
+
+## Escrow at registration
+
+When an action is registered, its fee is transferred out of the creator's account and held by the Protocol. This happens in the same transaction that creates the action, before any operator sees the request.
+
+Two things are true from that moment. The creator's funds are committed and cannot be spent elsewhere. The operator's compensation exists but is contingent.
+
+Neither party is exposed to the other's good behavior. The requester is not trusting an operator to deliver after payment, and the operator is not performing work on the promise of payment.
+
+## Release on verified completion
+
+The escrow releases when an action reaches `DONE`, which requires the chain to accept a finalization message carrying whatever evidence that action type demands.
+
+For Cascade that evidence is Merkle proofs for the chunks committed at registration. An operator that never received the file cannot produce them, so it cannot reach `DONE`, so it cannot be paid. The economic consequence is enforced by verification rather than by dispute.
+
+Payment goes to the SuperNodes that served the action.
+
+## Refund on failure or expiration
+
+If verification fails, or the action expires before finalization, the state becomes `FAILED` and the escrow returns to the creator automatically.
+
+No claim is filed and no counterparty has to cooperate. The refund is a consequence of the state transition, evaluated by the chain against the on-chain record.
+
+This is the property that makes the write path safe to retry. A failed upload costs a transaction fee, not the service fee.
+
+## Where the fee goes
+
+The released fee does not all reach the serving operators. A share of every action registration fee is routed to the Everlight SN Pool, governed by `registration_fee_share_bps` and designed at 2 percent.
+
+That routing is what connects one-time payment to long-lived obligation. The fee that pays for storing a file also contributes to the pool that compensates operators for continuing to hold it. See [Everlight](/cascade/everlight/overview).
+
+Registration fees do not increase to fund this. The share comes out of the existing split.
+
+## Service fees and gas are different
+
+Two payments occur when you register an action, and conflating them causes confusion when reconciling costs.
+
+| Payment | What it pays for | Where it goes |
+| --- | --- | --- |
+| Service fee | The work itself. Escrowed, then released or refunded | Serving SuperNodes, with a share to the Everlight pool |
+| Transaction fee | Including the transaction in a block | Validators and delegators, with a share burned |
+
+The service fee is refundable. Gas is not, because the transaction was processed regardless of whether the work succeeded. Distribution of both is covered in [Protocol Economics](/protocol-revenue).
+
+## The approval path
+
+Some flows insert an explicit approval before settlement. In those cases the action moves to `APPROVED` through `MsgApproveAction`, and the escrow releases on that approval rather than on finalization alone.
+
+This exists primarily for cross-chain requests, where the party that pays and the party that authorizes completion are not the same account. See [Cross-chain overview](/cross-chain/overview).
+
+## Why this is a Protocol capability
+
+The alternative is bilateral. Every provider bills its own customers, every customer holds an account with every provider, and every new counterparty is a commercial negotiation.
+
+That model cannot support software acting without supervision, because negotiation is precisely what an autonomous caller cannot do. Moving settlement into the Protocol removes it. The Protocol is counterparty to both sides, so there is no invoice to dispute and no receivable to chase.
+
+<CardGroup cols={2}>
+  <Card title="Action Lifecycle" icon="arrows-rotate" href="/intelligence-layer/verifiable-execution/actions">
+    The state transitions escrow is tied to.
+  </Card>
+
+  <Card title="Service pricing" icon="tag" href="/intelligence-layer/economic-coordination/service-pricing">
+    How the escrowed amount is determined.
+  </Card>
+
+  <Card title="Protocol Economics" icon="receipt" href="/protocol-revenue">
+    Where fees go once released.
+  </Card>
+
+  <Card title="Everlight" icon="infinity" href="/cascade/everlight/overview">
+    The pool a share of every fee funds.
+  </Card>
+</CardGroup>

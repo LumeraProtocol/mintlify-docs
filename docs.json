@@ -148,13 +148,16 @@
               {
                 "group": "Verifiable Execution",
                 "pages": [
-                  "untitled-page-4"
+                  "untitled-page-4",
+                  "untitled-page-12"
                 ]
               },
               {
                 "group": "Economic Coordination",
                 "pages": [
-                  "untitled-page-5"
+                  "untitled-page-5",
+                  "untitled-page-13",
+                  "untitled-page-14"
                 ]
               },
               {
@@ -226,7 +229,8 @@
                   "supernodes/overview",
                   "supernodes/node-setup",
                   "supernodes/register",
-                  "supernodes/operations"
+                  "supernodes/operations",
+                  "untitled-page-15"
                 ]
               }
             ]

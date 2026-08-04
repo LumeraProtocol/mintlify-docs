@@ -1,0 +1,92 @@
+---
+title: "Service Pricing"
+description: "How Protocol Service fees are calculated, what they include, and which parameters governance controls."
+---
+
+Protocol Service fees are priced by the resource consumed and quoted in LUME. There is no subscription, no tier, and no recurring charge for a completed action.
+
+## How a Cascade fee is calculated
+
+Cascade is priced with a base fee plus a per-size component.
+
+```text
+fee = base_fee + (fee_per_kb × ceil(size_in_bytes / 1024))
+```
+
+Current parameters are a base of 10,000 `ulume` plus 10 `ulume` per KB. For a 1 MB file that is roughly 0.02 LUME.
+
+`ulume` is the base denomination. One LUME is 1,000,000 `ulume`.
+
+| File size | Approximate fee |
+| --- | --- |
+| 100 KB | 0.011 LUME |
+| 1 MB | 0.02 LUME |
+| 10 MB | 0.11 LUME |
+| 100 MB | 1.03 LUME |
+
+Treat these as current values. Every parameter is governable, and the authoritative numbers live on chain.
+
+## How a Sense fee differs
+
+Sense is priced by the size of the data and the analysis performed, and it costs less than storing the same file through Cascade. The reason is what persists. Sense records an analysis result rather than retaining the submitted media, so the network takes on no long-term retention obligation.
+
+This is the general rule behind Protocol pricing. Fees track the obligation created, not the size of the request.
+
+## What the fee includes and excludes
+
+**Included.** Encoding, distribution across the SuperNode mesh, verification at finalization, and the contribution to long-term retention funding. For Cascade, retrieval is not separately metered.
+
+**Excluded.** The transaction fee that gets your registration into a block. That is gas, it is paid at the network minimum gas price, currently `0.025ulume`, and it is not refundable if the action later fails.
+
+## One payment, not a subscription
+
+A completed Cascade action is never billed again. Continued retention is funded by [Everlight](/cascade/everlight/overview), which draws from protocol reward flows, a share of registration fees, and endowment yield rather than from the uploader.
+
+This is why permanence can be priced once. The obligation is funded by a mechanism designed for it, instead of by a fee that has already been spent.
+
+## Failed actions refund
+
+If an action fails verification or expires before finalization, the escrowed service fee returns to the creator. You pay gas for the attempt and nothing for the service. See [Escrow and settlement](/intelligence-layer/economic-coordination/escrow-and-settlement).
+
+## Governance parameters
+
+Pricing is set by on-chain parameters, so it changes by proposal rather than by announcement.
+
+| Parameter | Controls |
+| --- | --- |
+| Base action fee | The fixed component of a service fee |
+| Fee per KB | The size-dependent component |
+| `registration_fee_share_bps` | Share of the fee routed to the Everlight pool |
+| Minimum gas price | The floor for transaction fees |
+
+Query current values before quoting a cost to anyone.
+
+```bash
+lumerad query action params
+```
+
+## Estimating cost in an application
+
+Two practical notes for anyone building a cost model.
+
+Round up. The per-KB component applies to whole kilobytes, so many small objects cost more in aggregate than the same bytes batched into fewer, larger ones. Applications writing frequent small records usually batch before anchoring.
+
+Budget for gas separately. It is small relative to the service fee for large files and proportionally significant for very small ones.
+
+<CardGroup cols={2}>
+  <Card title="Escrow and settlement" icon="scale-balanced" href="/intelligence-layer/economic-coordination/escrow-and-settlement">
+    What happens to the fee after registration.
+  </Card>
+
+  <Card title="Governance" icon="landmark" href="/governance">
+    How pricing parameters change.
+  </Card>
+
+  <Card title="LUME" icon="coins" href="/token">
+    The asset fees are denominated in.
+  </Card>
+
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The action a Cascade fee pays for.
+  </Card>
+</CardGroup>

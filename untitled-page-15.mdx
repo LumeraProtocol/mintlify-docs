@@ -1,0 +1,102 @@
+---
+title: "Compliance and Enforcement"
+description: "The states a SuperNode can occupy, how storage claims are challenged, and what happens when a node fails."
+---
+
+A SuperNode earns by serving actions and retaining data. This page covers what the Protocol checks, what it does when a node fails a check, and what an operator controls.
+
+Two enforcement systems apply to the same machine and are frequently confused.
+
+| System | Scope | Penalty |
+| --- | --- | --- |
+| `x/slashing` | Your **validator's** consensus duties, including downtime and double signing | Slashed stake and jailing |
+| `x/audit` and `x/supernode` | Your **SuperNode's** service obligations, including storage retention | Exclusion from work and loss of payouts |
+
+Consensus faults cost stake. Service faults cost income. Because a SuperNode must stay bound to an active validator, a jailed or unbonded validator also removes its SuperNode from the ranked list.
+
+## Node states
+
+| State | New storage assignments | Compute work | Everlight payouts |
+| --- | --- | --- | --- |
+| `ACTIVE` | Eligible | Eligible | Paid |
+| `STORAGE_FULL` | Excluded | Eligible | Paid for held data |
+| `POSTPONED` | Excluded | Excluded | Not eligible |
+
+`STORAGE_FULL` exists because a full disk is not misbehavior. A node that has filled its allocation still holds its Cascade data and can still serve compute. It keeps earning on what it holds and stays eligible for Sense and inference work. Only new storage stops.
+
+The transitions are strict, and the more restrictive state always wins.
+
+```text
+ACTIVE ........ storage full, nothing else failing ..... STORAGE_FULL
+ACTIVE ........ any other violation ................... POSTPONED
+STORAGE_FULL .. storage freed ......................... ACTIVE
+STORAGE_FULL .. another violation appears ............. POSTPONED
+```
+
+A node enters `STORAGE_FULL` when `disk_usage_percent` exceeds `max_storage_usage_percent` and nothing else is failing. Both are governable parameters.
+
+## Epoch reports
+
+`x/audit` collects a report from each SuperNode every epoch. Reports carry the service metrics defined by LEP-4, including `cascade_kademlia_db_bytes`, the volume of Cascade data a node holds.
+
+These reports feed two systems. They drive rank, which determines which nodes receive actions, and they set Everlight payout weight.
+
+Reported volume is self-declared, so it passes through guardrails before it becomes payout weight. A smoothing window averages reports across periods, a growth cap limits how quickly a node's reported share can rise, and new nodes ramp to full weight gradually. Freshness is also required. A stale report makes a node ineligible for that distribution.
+
+## Storage challenges
+
+Self-reported volume establishes how much a node claims to hold. Challenges establish whether it actually holds it.
+
+Challenges run on an epoch cycle over the SuperNode mesh on port 4445. Challenger, recipient, and observer roles are all selected deterministically from on-chain state, so no node chooses who audits it. The challenged node returns a hash computed over a byte range of a stored artifact, observers independently verify the response, and the outcome is accepted on observer quorum. Results are batched into the epoch health report rather than submitted as individual transactions.
+
+Repair already exists alongside this. It is gated by request, verify, and commit, and reconstructed content is validated against the expected hash before it is persisted, so a repair cannot silently write wrong data.
+
+## The direction of enforcement
+
+LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved and changes how challenge evidence is used. Operators should understand it because it changes what gets you penalized.
+
+The coverage model changes. One third of active SuperNodes are challenged per epoch, deterministically selected, and each challenged node receives one compound challenge containing a recent-ticket and an old-ticket subchallenge. Testing both separately answers two different questions, namely whether a node ingests new assignments and whether it silently drops cold data later.
+
+Byte sampling changes. Instead of a fixed leading kilobyte, challenges sample four deterministic 256-byte ranges, which removes any benefit from retaining only the start of a file.
+
+Most importantly, scoring separates into three independent signals.
+
+| Score | Drives | Notes |
+| --- | --- | --- |
+| Node suspicion | Audit enforcement against an operator | Decays over epochs. Escalates on repeated distinct failures |
+| Ticket deterioration | Repair scheduling for a piece of data | Not a penalty. A ticket can deteriorate without any single node being at fault |
+| Reporter reliability | Trust in what a node reports about others | Penalizes an operator whose reports diverge from network consensus |
+
+Separating node suspicion from ticket deterioration is the design point. Whether to penalize an operator and whether to repair data are different questions, and they no longer share a signal.
+
+Node suspicion maps to graduated action, from elevated challenge rate through watch and probation to postponement. Recovery requires both score decay and a run of clean passes.
+
+The reporter score matters for honest operators too. Reporting failures that rechecks overturn, or persistently reporting worse outcomes than the rest of the network sees, reduces the weight of your reports and can make you temporarily ineligible as a challenger.
+
+Track status in the [LEP repository](https://github.com/LumeraProtocol/lumera/tree/master/docs/leps).
+
+## What an operator controls
+
+1. **Stay bound to a bonded validator.** Under LEP-3 the combined validator self-delegation and SuperNode account delegation must meet `minimum_stake_for_sn`. Check it with `lumerad query supernode params`.
+2. **Keep disk headroom.** `STORAGE_FULL` protects revenue on data you already hold, but only `ACTIVE` nodes receive new assignments that grow it.
+3. **Keep reports fresh.** A missed or stale report forfeits a distribution regardless of how much you retain.
+4. **Actually retain the data.** Challenges sample randomly across recent and old assignments. Partial retention is caught probabilistically and the evidence accumulates.
+5. **Stay current.** Enforcement behavior arrives through governance-approved upgrades. Keep the node on current releases with `sn-manager`.
+
+<CardGroup cols={2}>
+  <Card title="Operations guide" icon="wrench" href="/supernodes/operations">
+    Monitoring, upgrades, and troubleshooting.
+  </Card>
+
+  <Card title="Everlight for operators" icon="coins" href="/cascade/everlight/supernode-operators">
+    Payout eligibility and the STORAGE\_FULL state.
+  </Card>
+
+  <Card title="Cascade" icon="database" href="/cascade/how-cascade-works">
+    What your node is storing and proving.
+  </Card>
+
+  <Card title="Register" icon="signature" href="/supernodes/register">
+    Stake requirements and registration.
+  </Card>
+</CardGroup>
