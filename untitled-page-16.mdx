@@ -1,0 +1,114 @@
+---
+title: "LumeraID"
+description: "How identity works on Lumera today: addresses as identities, ADR-036 signatures, and how access to private objects is enforced."
+---
+
+LumeraID is the Protocol's identity primitive. This page covers how it behaves today and what you need to do to work with it. For why identity is the root of the Intelligence Layer and where the claim model is heading, see [Identity](/intelligence-layer/identity).
+
+## Your address is your identity
+
+There is no separate identity registration and no username. A Lumera address is a LumeraID, and the private key that controls the address controls the identity.
+
+Identity records are anchored to addresses by `x/lumeraid`. Nothing needs to be created before you can act. If you can sign for an address, you have an identity the Protocol recognizes.
+
+The practical consequence is that identity and key custody are the same problem. Losing the key does not lock you out of an account you can recover through support. It removes your ability to act as that identity at all.
+
+## What identity is used for today
+
+Identity is checked wherever the Protocol needs to know that a request comes from a party entitled to make it.
+
+| Operation | What identity proves |
+| --- | --- |
+| Registering an action | The transaction signer is the creator and pays the fee |
+| Uploading to Cascade | The uploader controls the account that registered the action |
+| Retrieving a private object | The requester is permitted to read it |
+
+The first is ordinary transaction signing. The second and third are not, because they happen over HTTP against a SuperNode rather than as a transaction on chain. Those use ADR-036.
+
+## ADR-036 signatures
+
+ADR-036 is the Cosmos standard for signing arbitrary data. It produces a signature that proves control of a key without submitting a transaction.
+
+Cascade uses it because upload and download are direct calls to a SuperNode. A SuperNode needs to verify you control the registering account before it accepts bytes or serves a private object, and requiring a transaction for that would add a block of latency and a gas cost to every data operation.
+
+What gets signed differs by operation.
+
+| Operation | Signed payload |
+| --- | --- |
+| Upload | The `data_hash` of the file |
+| Download | The `action_id` of the stored object |
+
+The signature travels with the request. The SuperNode recovers the signer and checks it against the on-chain action record.
+
+### Producing one
+
+Two details trip people up, and both come from the standard rather than from Lumera.
+
+**The `chain_id` must be empty.** ADR-036 signs data that is not bound to a chain, so the sign document carries an empty string. Passing your real chain ID produces a signature the SuperNode will reject.
+
+**CosmJS does not expose `signArbitrary` on a direct wallet.** Protobuf signing and amino signing are separate paths, and ADR-036 requires amino. The usual approach is to hold both a direct wallet for transactions and an amino wallet for arbitrary signing, and expose both through one signer object.
+
+The sign document takes a fixed shape.
+
+```ts
+const signDoc = makeAminoSignDoc(
+  [{
+    type: "sign/MsgSignData",
+    value: {
+      signer: signerAddress,
+      data: Buffer.from(payload).toString("base64"),
+    },
+  }],
+  { gas: "0", amount: [] },  // no fee, nothing is broadcast
+  "",                        // chain_id must be empty for ADR-036
+  "",                        // memo
+  0,                         // account number
+  0                          // sequence
+);
+```
+
+Browser wallets such as Keplr and Leap implement `signArbitrary` directly, so in a browser context you call it and skip the wrapper. The [Quickstart](/quickstart) shows the server-side construction, and [Build a browser app](/cascade/guides/browser-app) shows the wallet path.
+
+## Public and private objects
+
+Every Cascade action carries a visibility flag set at registration.
+
+A **private** object requires a valid ADR-036 signature resolving to a permitted identity before a SuperNode will serve it. This is why private data can live on a public network. The encoded symbols are distributed across independent operators, but retrieval is gated on identity.
+
+A **public** object is served without a signature. Use it when open availability is the point.
+
+Visibility is not encryption. A private object is access-controlled, not unreadable. For data whose contents must never be visible to operators, encrypt client-side before upload. The network then provably retains bytes it cannot read. See [Store encrypted files on Cascade](/cascade/guides/encrypted-storage).
+
+## Signing agents and applications
+
+Because identity is just an address with a key, non-human participants use the same mechanism. An agent with its own keypair has its own LumeraID, distinct from its operator's, and its actions are attributable to it rather than to whoever deployed it.
+
+That separation is worth setting up deliberately even now. Actions registered under a shared operator key are indistinguishable from each other in the on-chain record, and the record is what later capabilities read. Giving each agent its own identity today costs nothing and preserves attribution you cannot reconstruct afterward.
+
+Scoped delegation, which lets an owner grant an agent bounded authority rather than a copy of a key, is described in [Identity](/intelligence-layer/identity) as part of the claim model.
+
+## Key handling
+
+A few consequences follow from identity being key-controlled.
+
+- **Never hardcode a mnemonic.** Load it from an environment variable or a secrets manager. The Quickstart says this in a warning for a reason.
+- **Use separate keys for separate roles.** A validator operator key, a SuperNode account key, and an application signing key should not be the same key.
+- **Treat key loss as identity loss.** There is no recovery path outside your own backups.
+
+<CardGroup cols={2}>
+  <Card title="Identity" icon="fingerprint" href="/intelligence-layer/identity">
+    Why identity is the root of the architecture.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    A working ADR-036 signer in context.
+  </Card>
+
+  <Card title="Browser app guide" icon="window" href="/cascade/guides/browser-app">
+    Signing with Keplr or Leap.
+  </Card>
+
+  <Card title="Module reference" icon="cube" href="/protocol/modules">
+    What `x/lumeraid` stores.
+  </Card>
+</CardGroup>
