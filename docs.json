@@ -85,20 +85,20 @@
               {
                 "group": "Overview",
                 "pages": [
-                  "untitled-page-2",
-                  "untitled-page-7",
-                  "untitled-page-8"
+                  "intelligence-layer/overview",
+                  "intelligence-layer/principles",
+                  "intelligence-layer/capabilities"
                 ]
               },
               {
                 "group": "Durable Memory",
                 "pages": [
-                  "untitled-page-9",
+                  "intelligence-layer/durable-memory",
                   {
                     "group": "Cascade",
                     "icon": "database",
                     "pages": [
-                      "untitled-page-10",
+                      "cascade/overview",
                       "cascade/installation",
                       "cascade/client-setup",
                       "cascade/error-handling",
@@ -126,7 +126,7 @@
                   {
                     "group": "Agent Memory",
                     "pages": [
-                      "untitled-page-11"
+                      "intelligence-layer/durable-memory/agent-memory"
                     ]
                   },
                   {
@@ -142,30 +142,30 @@
               {
                 "group": "Identity",
                 "pages": [
-                  "untitled-page-3",
-                  "untitled-page-16"
+                  "intelligence-layer/identity",
+                  "intelligence-layer/identity/lumeraid"
                 ]
               },
               {
                 "group": "Verifiable Execution",
                 "pages": [
-                  "untitled-page-4",
-                  "untitled-page-12"
+                  "intelligence-layer/verifiable-execution",
+                  "intelligence-layer/verifiable-execution/actions"
                 ]
               },
               {
                 "group": "Economic Coordination",
                 "pages": [
-                  "untitled-page-5",
-                  "untitled-page-13",
-                  "untitled-page-14"
+                  "intelligence-layer/economic-coordination",
+                  "intelligence-layer/economic-coordination/escrow-and-settlement",
+                  "intelligence-layer/economic-coordination/service-pricing"
                 ]
               },
               {
                 "group": "Trust",
                 "pages": [
-                  "untitled-page-6",
-                  "untitled-page-17"
+                  "intelligence-layer/trust",
+                  "intelligence-layer/trust/trust-graph"
                 ]
               }
             ]
@@ -232,7 +232,7 @@
                   "supernodes/node-setup",
                   "supernodes/register",
                   "supernodes/operations",
-                  "untitled-page-15"
+                  "supernodes/enforcement"
                 ]
               }
             ]
@@ -320,18 +320,6 @@
     {
       "source": "/introduction",
       "destination": "/"
-    },
-    {
-      "source": "/untitled-page",
-      "destination": "/protocol-revenue"
-    },
-    {
-      "source": "/untitled-page-3",
-      "destination": "/token"
-    },
-    {
-      "source": "/untitled-page-4",
-      "destination": "/governance"
     },
     {
       "source": "/modules/overview",
