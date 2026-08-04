@@ -1,17 +1,25 @@
 ---
 title: "How Everlight payments work"
-sidebarTitle: "How payments work"
+sidebarTitle: "How Payments Work"
 description: "See how the Everlight SN Pool collects funding and pays SuperNodes for retained Cascade data."
 ---
 
 Everlight pays SuperNodes recurring compensation for the Cascade data they retain. This page explains where that money accumulates, when it is paid out, how each SuperNode's share is calculated, and where the funding comes from. Read the [Everlight overview](/cascade/everlight/overview) first if you are new to the model.
 
 <Note>
-Everlight is rolling out in phases. The mechanisms on this page ship through governance-approved chain upgrades, and parameters can change through governance at any time.
+  Everlight is rolling out in phases. The mechanisms on this page ship through governance-approved chain upgrades, and parameters can change through governance at any time.
 </Note>
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/everlight-flow-light.svg" alt="Everlight funding and payout flow" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/everlight-flow-dark.svg" alt="Everlight funding and payout flow" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="Everlight funding and payout flow"
+  src="/images/diagrams/everlight-flow-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Everlight funding and payout flow"
+  src="/images/diagrams/everlight-flow-dark.svg"
+/>
 
 ## The Everlight SN Pool
 
@@ -73,11 +81,13 @@ Query current values on chain once the parameters are live, and treat any number
 
 <CardGroup cols={2}>
   <Card title="For SuperNode operators" icon="server" href="/cascade/everlight/supernode-operators">
-    The STORAGE_FULL state and what payouts mean for your node.
+    The STORAGE\_FULL state and what payouts mean for your node.
   </Card>
+
   <Card title="Governance" icon="landmark" href="/protocol/governance">
     How parameter changes are proposed and voted on.
   </Card>
+
   <Card title="How Cascade works" icon="layer-group" href="/cascade/how-cascade-works">
     The upload flow that Everlight keeps funded.
   </Card>

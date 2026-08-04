@@ -1,6 +1,6 @@
 ---
 title: "Set up the Cascade client"
-sidebarTitle: "Client setup"
+sidebarTitle: "Client Setup"
 description: "Create a Lumera client with network presets, custom endpoints, and a wallet signer."
 ---
 
@@ -171,7 +171,7 @@ const client = await createLumeraClient({
 ```
 
 <Warning>
-Never hardcode mnemonics. Use environment variables or a secrets manager.
+  Never hardcode mnemonics. Use environment variables or a secrets manager.
 </Warning>
 
 ## Configuration options
@@ -215,7 +215,7 @@ Set `gasPrice` to `0.025ulume`. That is the minimum gas price on both networks.
 | `mainnet` | `lumera-mainnet-1` | `https://rpc.lumera.io` | `https://lcd.lumera.io` | `https://snapi.lumera.io` |
 
 <Note>
-The public mainnet RPC and LCD endpoints are coming soon. Use the `testnet` preset while you build and test.
+  The public mainnet RPC and LCD endpoints are coming soon. Use the `testnet` preset while you build and test.
 </Note>
 
 ### Custom endpoints
@@ -293,9 +293,11 @@ See [Go SDK](/sdk/go) for uploads, downloads, and event subscriptions in Go.
   <Card title="Upload lifecycle" icon="cloud-arrow-up" href="/cascade/concepts/upload-lifecycle">
     See every phase of an upload in detail.
   </Card>
+
   <Card title="Error handling" icon="triangle-exclamation" href="/cascade/error-handling">
     Diagnose failures and tune retries and timeouts.
   </Card>
+
   <Card title="Browser app guide" icon="globe" href="/cascade/guides/browser-app">
     Build a browser upload app with Keplr.
   </Card>

@@ -1,6 +1,6 @@
 ---
 title: "Cascade download lifecycle"
-sidebarTitle: "Download lifecycle"
+sidebarTitle: "Download Lifecycle"
 description: "How the SDK authenticates, tracks, and streams a file download from SuperNodes."
 ---
 
@@ -22,7 +22,7 @@ To retrieve a file from Cascade, Lumera Protocol's permanent storage service, yo
     ```text
     POST /api/v1/actions/cascade/{action_id}/downloads
     Content-Type: application/json
-
+    
     {
       "signature": "base64-encoded ADR-036 signature"
     }
@@ -35,7 +35,7 @@ To retrieve a file from Cascade, Lumera Protocol's permanent storage service, yo
 
     ```text
     GET /api/v1/downloads/cascade/{task_id}/status
-
+    
     data: {"status": "processing", "progress": 45}
     data: {"status": "processing", "progress": 80}
     data: {"status": "completed", "progress": 100}
@@ -55,17 +55,17 @@ To retrieve a file from Cascade, Lumera Protocol's permanent storage service, yo
 
     ```ts
     const stream = await client.Cascade.downloader.download(actionId);
-
+    
     // Read the stream
     const reader = stream.getReader();
     const chunks: Uint8Array[] = [];
-
+    
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       chunks.push(value);
     }
-
+    
     // Reassemble into a single buffer
     const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
     const result = new Uint8Array(totalLength);
@@ -74,7 +74,7 @@ To retrieve a file from Cascade, Lumera Protocol's permanent storage service, yo
       result.set(chunk, offset);
       offset += chunk.length;
     }
-
+    
     // Decode as text (if applicable)
     const text = new TextDecoder().decode(result);
     ```
@@ -84,7 +84,7 @@ To retrieve a file from Cascade, Lumera Protocol's permanent storage service, yo
 ## Download task states
 
 | Status | Meaning |
-|--------|---------|
+| --- | --- |
 | `sdk:download_completed` | File ready for streaming |
 | `sdk:completed` | Generic success |
 | `sdk:download_failure` | Reconstruction failed |
@@ -129,9 +129,11 @@ The SN-API client tries versioned endpoints first (`/api/v1/...`). On a 404 resp
   <Card title="Upload lifecycle" icon="upload" href="/cascade/concepts/upload-lifecycle">
     What happens between selecting a file and permanent storage.
   </Card>
+
   <Card title="Erasure coding" icon="shield-halved" href="/cascade/concepts/erasure-coding">
     How SuperNodes reconstruct your file from a subset of symbols.
   </Card>
+
   <Card title="JavaScript SDK reference" icon="code" href="/sdk/javascript-reference">
     Full method reference for uploads, downloads, and task options.
   </Card>

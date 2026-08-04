@@ -1,0 +1,77 @@
+---
+title: "Identity"
+sidebarTitle: "Overview"
+description: "How the Protocol represents participants, delegates authority, and records verifiable claims about them."
+---
+
+Identity is the root of the Intelligence Layer. Every other capability consumes it, and it consumes nothing above it.
+
+The reason is mechanical rather than philosophical. Authorization needs a subject. Escrow needs an account to draw against. A receipt needs a signer. A reputation record needs something stable to attach to. Without a durable notion of who is acting, none of the other capabilities can be expressed.
+
+## What protocol identity is
+
+A participant on Lumera is represented by a **LumeraID**, an on-chain identity controlled by its holder's keys.
+
+The set of things that can hold an identity is deliberately wide. People, applications, autonomous agents, datasets, and service providers are all participants in the same sense. An agent is not a secondary object owned by a user account. It is a principal that can be granted authority, hold a balance, sign work, and accumulate a record of its own.
+
+Identity here is not a user profile. A profile describes someone. A LumeraID is what permissions attach to, what receipts are signed against, and what the Protocol checks before releasing a private record or a payment.
+
+## Claims
+
+State is added to an identity through **claims**, which are on-chain transactions that assert something verifiable.
+
+| Claim type | Purpose |
+| --- | --- |
+| Profile | Establishes and updates the identity's own published record |
+| Key rotation | Replaces keys without abandoning the identity or its history |
+| Delegation | Transfers scoped authority from one identity to another |
+| Capability grant | Defines which operations a holder is permitted to perform |
+| Application and asset identity | Extends identity to software and to data |
+| Attestation | Records a verifiable statement made by one participant about another |
+| Revocation | Withdraws a grant or invalidates a prior claim |
+
+Because claims are transactions, they inherit the properties of the Control Plane. They are ordered, public in structure, attributable to a signer, and permanent. An authorization decision made against them can be replayed and audited later.
+
+Two consequences matter in practice. Key rotation means a compromised key does not destroy an accumulated record, which is what makes long-lived agent identity viable. Revocation means authority can be withdrawn as explicitly as it was granted.
+
+## Delegated authority
+
+Delegation is what makes autonomous operation safe to permit.
+
+An owner does not hand an agent unrestricted control. An owner grants a scoped capability, on chain, to a specific identity. The grant states what may be done and within what limits. It can be narrowed, and it can be revoked.
+
+Grants compose. If an enterprise delegates authority to an agent, and that agent grants a narrower capability to a specialist it engages, the chain holds a verifiable path from the original authority to the final actor. Any party can inspect that path and see where the authority came from and where it stops.
+
+This is why authority is a Control Plane concern. Delegation must be strongly consistent, because two conflicting views of what an agent is allowed to do is not a degraded experience, it is a security failure.
+
+## What identity does not own
+
+The boundary is as important as the function.
+
+Identity owns identity, delegation, capability, attestation, and revocation. It does not own application data, working state, model selection, or memory. Those belong to other capabilities and other planes.
+
+Keeping the boundary strict is what keeps the dependency graph acyclic. If identity began storing mutable application state, everything that depends on identity would inherit that state's failure modes.
+
+## Attestation
+
+An attestation is a claim by one participant about another, recorded on chain and attributable to its author.
+
+It is a general mechanism rather than a single feature. Content authenticity results are one kind of attestation. An operator vouching for a peer, a verifier confirming that an execution conformed to its declared shape, or an enterprise certifying that an agent passed review are all the same shape of record.
+
+Attestations are the raw material the [Trust](/intelligence-layer/trust) record is compiled from. Identity produces the statements. Trust interprets them.
+
+## How it fits the rest of the Protocol
+
+Identity is not a new subsystem bolted alongside the chain. It is a Protocol Module holding identity records and claims in the Control Plane, checked by other modules during the Action Lifecycle.
+
+When a private artifact is retrieved from [Cascade](/cascade/how-cascade-works), the request must carry a signature that resolves to an identity permitted to read it. That is identity doing its job inside an existing flow, not a parallel access system.
+
+<CardGroup cols={2}>
+  <Card title="Trust" icon="chart-network" href="/intelligence-layer/trust">
+    How claims and receipts compile into reputation.
+  </Card>
+
+  <Card title="Verifiable Execution" icon="circle-check" href="/intelligence-layer/verifiable-execution">
+    How authority is checked when work is performed.
+  </Card>
+</CardGroup>

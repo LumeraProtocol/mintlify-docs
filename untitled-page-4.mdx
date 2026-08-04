@@ -1,0 +1,77 @@
+---
+title: "Verifiable Execution"
+sidebarTitle: "Overview"
+description: "How work is requested, performed by SuperNodes, evidenced by receipts, and settled only on confirmed completion."
+---
+
+Verifiable Execution is the capability that lets one participant rely on work performed by another without trusting the party that performed it.
+
+It is the existing Action framework applied to a wider range of work. The lifecycle does not change. A request is registered on chain, a fee is escrowed, SuperNodes in the Execution Plane perform the work, and settlement follows confirmed completion. Storage was the first kind of work to move through that lifecycle. It is not the only kind it can carry.
+
+## Actions and Agents
+
+Two terms do distinct jobs, and the distinction is the basis of the whole model.
+
+An **Action** is a single unit of work with an on-chain record and a defined lifecycle. It is stateless and atomic. It has a requester, a fee, a set of SuperNodes that serve it, and a terminal state.
+
+An **Agent** is a process that pursues a goal by composing Actions. It retrieves state, requests work, evaluates results, and acts on them, without a person driving each step.
+
+The Protocol commits Actions. Agents are the reason Actions need to be composable, evidenced, and settleable without human supervision. Agents are not a privileged category inside the Protocol. They are participants, with identities, that use the same interfaces anything else uses.
+
+## Why execution is verifiable
+
+The Protocol does not ask a requester to trust the operator that served them. It makes completion demonstrable.
+
+Three properties do the work.
+
+**Escrow before execution.** The fee is committed on chain when the Action is registered, before any work begins. The requester's funds are locked and the operator's compensation is contingent. Neither side is exposed to the other's good behavior.
+
+**A receipt for each step.** Work produces signed evidence attributable to the identity that performed it. A receipt is a commitment to what happened, not a copy of the content. It records that a step occurred, by whom, over what inputs, with what result shape.
+
+**Settlement gated on acknowledgment.** Payment releases when completion is confirmed against the on-chain record. Failed or expired Actions refund the escrow. The requester is not paying for a promise, and the operator is not serving on credit.
+
+Together these mean a requester can verify that work happened without having watched it happen, and without a relationship with the operator.
+
+## Verification and its limits
+
+Verification is deliberately scoped to what can be checked objectively.
+
+Some work is reproducible. A deterministic computation with declared inputs and outputs can be re-executed by an independent SuperNode and compared. Disagreement is a provable fault.
+
+Some work is not. A model producing an answer is not reproducible in that sense, and no amount of re-execution settles whether the answer was good.
+
+The Protocol handles the two cases differently rather than pretending they are the same. What is objectively checkable is verified and can carry penalties. That includes timeouts, missing or invalid receipts, wrong versions, unavailable artifacts, deterministic mismatches, and policy violations. What is subjective is not slashed. It flows to the [Trust](/intelligence-layer/trust) record, where a history of outcomes prices it over time.
+
+## Authority is graded
+
+An answer from a model is not a permission. The architecture makes that explicit by grading what a result entitles a caller to do.
+
+| Result | Authority it carries |
+| --- | --- |
+| Advisory result | An answer with a trace and a receipt. No automatic effect. |
+| Verified advisory result | An independent check confirmed structure, citations, and policy compliance. Higher confidence, still advisory. |
+| Deterministic result | Reproducible by independent nodes. Objective authority. |
+| Action plan | A structured recommendation with preconditions and limits. The calling application decides. |
+| Protocol-native effect | Reserved for tightly scoped operations, and only where identity, escrow, audit, and rollback semantics are established. |
+
+The practical consequence for a developer is that irreversible effects stay in the application. The Protocol returns signed results and plans. The application revalidates and executes. That ordering is intentional, and it is what makes the model safe to build on before a trust record has depth.
+
+## Composition
+
+Work that no single Action completes is expressed as composition rather than as a new subsystem.
+
+A composed workflow is published as a content-addressed, versioned bundle. The chain registers its hash and metadata. The payload is stored in [Cascade](/cascade/how-cascade-works). Invoking it means invoking a specific version by hash, which makes an execution reproducible and auditable rather than incidental.
+
+Execution follows a runner and verifier pattern. One SuperNode executes. An independent SuperNode checks what is objectively checkable, including structure, schema conformance, declared citations, policy compliance, and any deterministic steps by replay. Payment depends on lifecycle completion, never on a judgment about answer quality.
+
+A composed result is trustworthy because each component is individually evidenced, individually settled, and individually auditable. It is not trustworthy because the arrangement is elaborate.
+
+<CardGroup cols={2}>
+  <Card title="Economic Coordination" icon="scale-balanced" href="/intelligence-layer/economic-coordination">
+    How escrow and settlement are funded.
+  </Card>
+
+  <Card title="Identity" icon="fingerprint" href="/intelligence-layer/identity">
+    How authority is granted and checked.
+  </Card>
+</CardGroup>

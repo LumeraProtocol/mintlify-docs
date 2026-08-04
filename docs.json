@@ -74,43 +74,87 @@
             "icon": "rocket",
             "pages": [
               "quickstart",
+              "faucet",
               "quickstart-validator",
-              "quickstart-supernode",
-              "faucet"
+              "quickstart-supernode"
             ]
           },
           {
-            "group": "Cascade",
-            "icon": "database",
+            "group": "The Intelligence Layer",
             "pages": [
-              "cascade/how-cascade-works",
-              "cascade/installation",
-              "cascade/client-setup",
-              "cascade/error-handling",
               {
-                "group": "Concepts",
+                "group": "Overview",
                 "pages": [
-                  "cascade/concepts/erasure-coding",
-                  "cascade/concepts/upload-lifecycle",
-                  "cascade/concepts/download-lifecycle",
-                  "cascade/concepts/interchain-accounts"
+                  "untitled-page-2",
+                  "untitled-page-7",
+                  "untitled-page-8"
                 ]
               },
               {
-                "group": "Guides",
+                "group": "Durable Memory",
                 "pages": [
-                  "cascade/guides/browser-app",
-                  "cascade/guides/nodejs",
-                  "cascade/guides/research-archive",
-                  "cascade/guides/encrypted-storage"
+                  {
+                    "group": "Cascade",
+                    "icon": "database",
+                    "pages": [
+                      "untitled-page-10",
+                      "cascade/installation",
+                      "cascade/client-setup",
+                      "cascade/error-handling",
+                      {
+                        "group": "Concepts",
+                        "pages": [
+                          "cascade/how-cascade-works",
+                          "cascade/concepts/erasure-coding",
+                          "cascade/concepts/upload-lifecycle",
+                          "cascade/concepts/download-lifecycle",
+                          "cascade/concepts/interchain-accounts"
+                        ]
+                      },
+                      {
+                        "group": "Guides",
+                        "pages": [
+                          "cascade/guides/browser-app",
+                          "cascade/guides/nodejs",
+                          "cascade/guides/research-archive",
+                          "cascade/guides/encrypted-storage"
+                        ]
+                      }
+                    ]
+                  },
+                  "untitled-page-9",
+                  {
+                    "group": "Everlight",
+                    "pages": [
+                      "cascade/everlight/overview",
+                      "cascade/everlight/payments",
+                      "cascade/everlight/supernode-operators"
+                    ]
+                  }
                 ]
               },
               {
-                "group": "Everlight",
+                "group": "Identity",
                 "pages": [
-                  "cascade/everlight/overview",
-                  "cascade/everlight/payments",
-                  "cascade/everlight/supernode-operators"
+                  "untitled-page-3"
+                ]
+              },
+              {
+                "group": "Verifiable Execution",
+                "pages": [
+                  "untitled-page-4"
+                ]
+              },
+              {
+                "group": "Economic Coordination",
+                "pages": [
+                  "untitled-page-5"
+                ]
+              },
+              {
+                "group": "Trust",
+                "pages": [
+                  "untitled-page-6"
                 ]
               }
             ]
@@ -147,37 +191,42 @@
             ]
           },
           {
-            "group": "Validators (Mainnet)",
-            "icon": "shield",
+            "group": "Operate the Network",
             "pages": [
-              "validators-mainnet/overview",
-              "validators-mainnet/node-setup",
-              "validators-mainnet/create-validator",
-              "validators-mainnet/operations"
+              {
+                "group": "Validators (Mainnet)",
+                "icon": "shield",
+                "pages": [
+                  "validators-mainnet/overview",
+                  "validators-mainnet/node-setup",
+                  "validators-mainnet/create-validator",
+                  "validators-mainnet/operations"
+                ]
+              },
+              {
+                "group": "Validators (Testnet)",
+                "icon": "shield-halved",
+                "pages": [
+                  "validators-testnet/overview",
+                  "validators-testnet/node-setup",
+                  "validators-testnet/create-validator",
+                  "validators-testnet/operations"
+                ]
+              },
+              {
+                "group": "SuperNodes",
+                "icon": "server",
+                "pages": [
+                  "supernodes/overview",
+                  "supernodes/node-setup",
+                  "supernodes/register",
+                  "supernodes/operations"
+                ]
+              }
             ]
           },
           {
-            "group": "Validators (Testnet)",
-            "icon": "shield-halved",
-            "pages": [
-              "validators-testnet/overview",
-              "validators-testnet/node-setup",
-              "validators-testnet/create-validator",
-              "validators-testnet/operations"
-            ]
-          },
-          {
-            "group": "SuperNodes",
-            "icon": "server",
-            "pages": [
-              "supernodes/overview",
-              "supernodes/node-setup",
-              "supernodes/register",
-              "supernodes/operations"
-            ]
-          },
-          {
-            "group": "Cross-chain",
+            "group": "Interoperability",
             "icon": "arrows-left-right",
             "pages": [
               "cross-chain/overview",
@@ -187,27 +236,32 @@
             ]
           },
           {
-            "group": "Network upgrades",
-            "icon": "arrow-up-right-dots",
+            "group": "Applications",
             "pages": [
-              "upgrades/evm-upgrade"
+              {
+                "group": "Lumera Hub",
+                "icon": "wallet",
+                "pages": [
+                  "hub/overview",
+                  "hub/wallet"
+                ]
+              }
             ]
           },
           {
-            "group": "Protocol",
+            "group": "Protocol Reference",
             "icon": "diagram-project",
             "pages": [
-              "protocol/sense",
               "protocol/modules",
-              "protocol/governance"
-            ]
-          },
-          {
-            "group": "Lumera Hub",
-            "icon": "wallet",
-            "pages": [
-              "hub/overview",
-              "hub/wallet"
+              "protocol/sense",
+              "protocol/governance",
+              {
+                "group": "Network upgrades",
+                "icon": "arrow-up-right-dots",
+                "pages": [
+                  "upgrades/evm-upgrade"
+                ]
+              }
             ]
           }
         ]

@@ -1,5 +1,5 @@
 ---
-title: "Run a validator"
+title: "Run a Validator"
 sidebarTitle: "Run a validator"
 description: "What it takes to run a Lumera validator, condensed to one page."
 ---
@@ -10,18 +10,18 @@ This page is the condensed orientation. The full runbooks with every command liv
 
 ## What you need
 
-A dedicated x86_64 server and some LUME. The table shows the published minimums for each network. The overview pages list the recommended specs.
+A dedicated x86\_64 server and some LUME. The table shows the published minimums for each network. The overview pages list the recommended specs.
 
 | Component | Testnet | Mainnet |
-|-----------|---------|---------|
-| CPU | 4 vCPU (x86_64) | 8 cores (x86_64) |
+| --- | --- | --- |
+| CPU | 4 vCPU (x86\_64) | 8 cores (x86\_64) |
 | RAM | 8 GB | 32 GB |
 | Storage | 250 GB NVMe SSD | 2 TB NVMe SSD |
 | Network | 1 Gbps | 1 Gbps dedicated |
 | OS | Ubuntu 22.04 LTS or later | Ubuntu 22.04 LTS or later |
 
 <Warning>
-Use NVMe SSDs. HDDs cannot sustain a live CometBFT node. ARM (including Apple Silicon) is not supported for production nodes.
+  Use NVMe SSDs. HDDs cannot sustain a live CometBFT node. ARM (including Apple Silicon) is not supported for production nodes.
 </Warning>
 
 On testnet you get free LUME from the [faucet](/faucet). On mainnet you need at least 1 LUME for the minimum self-delegation and fees, and far more than that to enter the active set.
@@ -30,7 +30,7 @@ On testnet you get free LUME from the [faucet](/faucet). On mainnet you need at 
 
 Five stages take you from an empty server to a bonded validator.
 
-- **Provision a server.** Ubuntu 22.04 LTS or later on x86_64 hardware that meets the table above.
+- **Provision a server.** Ubuntu 22.04 LTS or later on x86\_64 hardware that meets the table above.
 - **Install `lumerad` from the prebuilt release.** Each release ships a linux/amd64 binary, the CosmWasm shared library, and an installer, so you do not need Go or a compiler.
 - **Sync from a snapshot.** Polkachu publishes snapshots for both networks. This is much faster than replaying every block from genesis.
 - **Create and fund a key.** This wallet pays transaction fees and holds your self-delegation.
@@ -50,7 +50,7 @@ Practice on testnet first. Tokens are free, mistakes cost nothing, and the proce
 - [Mainnet validator guide](/validators-mainnet/overview) covers `lumera-mainnet-1`, currently on `v1.12.0`.
 
 <Note>
-The active set is capped at 50 validators ranked by total stake. Joining it means attracting more bonded stake than the smallest active validator, which your validator then displaces.
+  The active set is capped at 50 validators ranked by total stake. Joining it means attracting more bonded stake than the smallest active validator, which your validator then displaces.
 </Note>
 
 ## Next steps
@@ -59,9 +59,11 @@ The active set is capped at 50 validators ranked by total stake. Joining it mean
   <Card title="Testnet guide" icon="flask" href="/validators-testnet/overview">
     Rehearse the full setup with tokens that have no value.
   </Card>
+
   <Card title="Mainnet guide" icon="server" href="/validators-mainnet/overview">
     Go to production with real stake on `lumera-mainnet-1`.
   </Card>
+
   <Card title="Run a SuperNode" icon="rocket" href="/quickstart-supernode">
     Extend your validator with storage and compute services.
   </Card>

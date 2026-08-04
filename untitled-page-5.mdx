@@ -1,0 +1,61 @@
+---
+title: "Economic Coordination"
+description: "How the Protocol funds work, holds it in escrow, and settles it without bilateral relationships between participants."
+sidebarTitle: "Overview"
+---
+
+Economic Coordination is the capability that lets participants pay and be paid without establishing a relationship with each other first.
+
+It exists because payment is not incidental to autonomous work. It is part of the same transaction. An Action that cannot be funded cannot be requested, and an operator that cannot be paid on confirmed completion has no reason to serve. The Protocol treats funding, escrow, and settlement as a coordination problem it owns rather than one it leaves to its participants.
+
+## Why coordination belongs to the Protocol
+
+Consider the alternative. If every provider handled its own billing, an agent using ten services would hold ten accounts, ten credentials, and ten separate trust assumptions. Adding a provider would mean a new commercial relationship. Switching would mean unwinding one. Every provider would be a point of failure for the agent's ability to transact at all.
+
+That model does not survive contact with autonomous operation. It puts a negotiation in the path of every new counterparty, and negotiation is the thing an agent cannot do unsupervised.
+
+Moving coordination into the Protocol removes the negotiation. A participant funds once. Consumption draws against that balance wherever it happens on the network. A provider is paid by the Protocol on confirmed completion rather than by the requester on trust. Neither side has to have met.
+
+## Escrow
+
+Escrow is the mechanism that makes this safe in both directions.
+
+When an Action is registered, its fee is committed on chain before work begins. The requester's funds are locked and cannot be spent elsewhere. The operator's compensation is real but contingent on completion.
+
+If the Action completes and is confirmed, the escrow releases to the SuperNodes that served it. If it fails or expires, the escrow returns to the requester. Neither outcome depends on either party's cooperation after the fact, because the condition is evaluated against the on-chain record.
+
+This is the same discipline documented in the Action Lifecycle. Economic Coordination generalizes it rather than introducing a second payment path.
+
+## Settlement is gated, not promised
+
+Settlement follows confirmation. Payment flows for work the chain can see was completed.
+
+The consequence is that a requester never needs to trust an operator's invoice, and an operator never needs to chase a payment. There is no accounts-receivable relationship between participants, because the Protocol is the counterparty to both sides of the exchange.
+
+Fees are quoted in LUME and denominated by the resource consumed. Where the fee goes once released, and how it splits between operators, validators, and the burn, is documented in [Protocol Economics](/protocol-revenue).
+
+## Two settlement modes, kept separate
+
+Not all obligations have the same shape, and the Protocol does not fund them the same way.
+
+**Metered settlement** covers work with a defined beginning and end. A request is escrowed, performed, confirmed, and settled. Cost tracks consumption.
+
+**Sustained funding** covers obligations that outlive the payment that created them. Permanent storage is the clearest case. A one-time fee cannot pay an operator to hold data indefinitely, because the obligation continues after the payment is exhausted. [Everlight](/cascade/everlight/overview) is the mechanism for that class, funded through protocol reward flows, fee shares, and endowment yield.
+
+Conflating the two would be a design error in both directions. Per-use fees cannot fund permanence. An endowment cannot meter individual requests. Keeping them separate is what allows the Protocol to make a durable promise without accumulating an unpriced liability.
+
+## Relationship to Protocol Services
+
+Every Protocol Service is priced, escrowed, and settled through the same path. A service is not a separate商 arrangement with its own billing. It is an Action type with a fee schedule.
+
+The practical effect for a developer is that adding a capability to an application does not add a commercial integration. If the capability exists as a Protocol Service, it is already payable from the same balance, on the same terms, with the same evidence.
+
+<CardGroup cols={2}>
+  <Card title="LUME" icon="coins" href="/token">
+    The asset fees are denominated and settled in.
+  </Card>
+
+  <Card title="Protocol Economics" icon="receipt" href="/protocol-revenue">
+    How fees are distributed once settled.
+  </Card>
+</CardGroup>

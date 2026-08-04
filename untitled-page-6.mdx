@@ -1,0 +1,74 @@
+---
+title: "Trust"
+description: "How the Protocol turns identity, receipts, and settlement history into a verifiable record participants can use to evaluate each other."
+sidebarTitle: "Overview"
+---
+
+Trust is the capability that lets a participant evaluate a counterparty it has no relationship with.
+
+It is the last of the five capabilities to become useful, because it is derived rather than designed. Identity provides the subject. Execution and settlement provide the evidence. Trust is what accumulates when those records are read together over time.
+
+## Why trust becomes a protocol concern
+
+When software is operated by people, trust is a human judgment. A developer picks a provider based on its reputation, reads the output, and forms a view.
+
+Autonomous operation removes the person from that loop. An agent selecting another agent for a subtask, consuming data from a source it did not vet, or committing a budget based on an analysis it cannot review has no way to make that judgment. Brand does not help. Neither does a self-reported rating.
+
+What is needed instead is a record of behavior that cannot be authored by its subject. That requirement is what makes trust a protocol capability rather than an application feature. Only the Protocol sees the whole event stream, and only the Protocol can anchor it to identity in a way that cannot be forged.
+
+## Compiled from protocol events
+
+The trust record is not submitted. It is compiled from things that already happen.
+
+| Source | What it evidences |
+| --- | --- |
+| Identity claims and delegations | Who a participant is and whose authority it holds |
+| Attestations | Verifiable statements other participants made about it |
+| Signed receipts | Work performed, attributable to the identity that performed it |
+| Settlements | Obligations that were met and paid |
+| Disputes and penalties | Obligations that were not |
+| Retention proofs | Data still held, demonstrated repeatedly over time |
+
+Each of these is already produced by another capability. Trust adds interpretation, not new instrumentation. That is why it is composition rather than a new subsystem.
+
+The properties that follow are structural. A record of ten thousand acknowledged Actions cannot be fabricated, because producing it requires spending real LUME and performing real work that others independently confirmed. A retention history cannot be back-dated, because the proofs are on chain. Behavior is expensive to fake in a way that self-reported reputation is not.
+
+## Reputation is a vector, not a score
+
+Collapsing a participant's history into one number would discard the information that makes it useful.
+
+An agent may have an extensive, clean record for research work and no record at all for handling capital. Those are different questions, and the distinction is exactly what a caller needs. The trust record is therefore multi-dimensional and context-dependent. It is also time-weighted, because recent behavior is more predictive than old behavior.
+
+The practical consequence is that trust is an input to routing and selection rather than a badge. A caller asks whether this participant has a record in the specific context at hand.
+
+## Trust composes through delegation
+
+Because authority is granted on chain, trust follows the same paths authority does.
+
+If an enterprise delegates to an agent, and that agent grants a narrower capability to a specialist, there is a verifiable chain from the original authority to the final actor. The record can weigh that path. Trust extends past direct relationships without anyone having to assert it.
+
+Reputation is also portable. It attaches to a LumeraID rather than to a venue, so a record earned in one context carries into another. Key rotation preserves it, which is what allows a long-lived identity to accumulate history without becoming brittle.
+
+## Commitments, not content
+
+The trust record is built from commitments, metadata, and outcomes. It is not built from stored inputs and outputs.
+
+A receipt commits to what happened. It does not publish what was said. Content stays off chain and reachable only under identity-gated authorization. This is a deliberate boundary. A trust record that required publishing the work it evaluated would make the record and the privacy of its subject mutually exclusive, and the Protocol declines that trade.
+
+## Where trust begins
+
+Trust does not have to wait for an execution layer to exist, because storage already produces the right kind of evidence.
+
+Every participant storing data on the network generates behavioral records from its first write. Retention challenges passed and failed, settlements, and retrieval patterns are all anchored to identity and all objectively checkable. Those are the first edges of the record.
+
+This is the practical reason Durable Memory is the capability to build against first. It is useful on its own, and using it produces the evidence every later capability reads.
+
+<CardGroup cols={2}>
+  <Card title="Identity" icon="fingerprint" href="/intelligence-layer/identity">
+    The subject that trust attaches to.
+  </Card>
+
+  <Card title="Durable Memory" icon="database" href="/intelligence-layer/durable-memory">
+    The capability that seeds the record today.
+  </Card>
+</CardGroup>

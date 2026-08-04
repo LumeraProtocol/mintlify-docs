@@ -1,6 +1,6 @@
 ---
 title: "Handle Cascade errors"
-sidebarTitle: "Error handling"
+sidebarTitle: "Error Handling"
 description: "Diagnose common Cascade failures, tune retries and timeouts, and understand automatic refunds."
 ---
 
@@ -200,7 +200,7 @@ const client = await createLumeraClient({
 ```
 
 <Note>
-File uploads and downloads skip automatic retries because the request body or response stream can only be consumed once. The SDK retries everything else automatically, such as status checks and metadata queries.
+  File uploads and downloads skip automatic retries because the request body or response stream can only be consumed once. The SDK retries everything else automatically, such as status checks and metadata queries.
 </Note>
 
 ## Task options and status polling
@@ -215,7 +215,7 @@ taskOptions: {
 ```
 
 <Warning>
-If an upload times out, the task may still be processing on the SuperNode. Do not retry immediately or you may create a duplicate action on chain.
+  If an upload times out, the task may still be processing on the SuperNode. Do not retry immediately or you may create a duplicate action on chain.
 </Warning>
 
 ## Getting help
@@ -232,6 +232,7 @@ If an upload times out, the task may still be processing on the SuperNode. Do no
   <Card title="Upload lifecycle" icon="cloud-arrow-up" href="/cascade/concepts/upload-lifecycle">
     See every phase of an upload in detail.
   </Card>
+
   <Card title="Download lifecycle" icon="cloud-arrow-down" href="/cascade/concepts/download-lifecycle">
     Learn how files are reconstructed and streamed back.
   </Card>

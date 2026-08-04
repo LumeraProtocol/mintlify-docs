@@ -1,6 +1,6 @@
 ---
 title: "Interchain accounts and Cascade"
-sidebarTitle: "Interchain accounts"
+sidebarTitle: "Interchain Accounts"
 description: "Use Cascade storage from any IBC-connected Cosmos chain through ICS-27."
 ---
 
@@ -14,8 +14,16 @@ This opens cross-chain use cases.
 
 ## How it works
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/interchain-accounts-light.svg" alt="Interchain Accounts (ICA) Flow" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/interchain-accounts-dark.svg" alt="Interchain Accounts (ICA) Flow" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="Interchain Accounts (ICA) Flow"
+  src="/images/diagrams/interchain-accounts-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Interchain Accounts (ICA) Flow"
+  src="/images/diagrams/interchain-accounts-dark.svg"
+/>
 
 The flow has six steps.
 
@@ -88,9 +96,11 @@ lumera-ica-client download --action-id <id>
   <Card title="Go SDK" icon="gears" href="/sdk/go">
     Install and configure the Go SDK used for ICA flows.
   </Card>
+
   <Card title="Upload lifecycle" icon="upload" href="/cascade/concepts/upload-lifecycle">
     What happens after the action registers on-chain.
   </Card>
+
   <Card title="How Cascade works" icon="diagram-project" href="/cascade/how-cascade-works">
     The end-to-end Cascade storage model in one page.
   </Card>

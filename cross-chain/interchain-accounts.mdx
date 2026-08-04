@@ -1,6 +1,6 @@
 ---
 title: "Interchain accounts in practice"
-sidebarTitle: "Interchain accounts"
+sidebarTitle: "Interchain Accounts"
 description: "Run the full ICS-27 Cascade flow from a controller chain with the Go SDK."
 ---
 
@@ -13,7 +13,7 @@ Before you start you need three things.
 - A funded key on the controller chain.
 
 <Tip>
-The [lumera-ica-client](https://github.com/LumeraProtocol/lumera-ica-client) reference CLI wraps this whole flow. Run it first if you want to see a working end to end example before writing code.
+  The [lumera-ica-client](https://github.com/LumeraProtocol/lumera-ica-client) reference CLI wraps this whole flow. Run it first if you want to see a working end to end example before writing code.
 </Tip>
 
 ## Step 1. Register the interchain account
@@ -27,7 +27,7 @@ The ICA address pays the fee escrow for every action it registers. Send `ulume` 
 You can top the address up from any Lumera account, or over IBC from a treasury on the controller chain. On testnet, the [faucet](/faucet) covers experimentation.
 
 <Warning>
-An underfunded ICA address makes registrations fail on the host side. Monitor its balance and alert before it runs out.
+  An underfunded ICA address makes registrations fail on the host side. Monitor its balance and alert before it runs out.
 </Warning>
 
 ## Step 3. Build and pack the MsgRequestAction
@@ -123,7 +123,7 @@ packedApprove := ica.PackApproveForICA(approveMsg)
 Wait for the acknowledgement, then query the action until its state reads `APPROVED`.
 
 <Note>
-The [sdk-go examples directory](https://github.com/LumeraProtocol/sdk-go/tree/master/examples) contains runnable samples for the ICA request and approve flows.
+  The [sdk-go examples directory](https://github.com/LumeraProtocol/sdk-go/tree/master/examples) contains runnable samples for the ICA request and approve flows.
 </Note>
 
 ## Operational notes
@@ -138,9 +138,11 @@ The [sdk-go examples directory](https://github.com/LumeraProtocol/sdk-go/tree/ma
   <Card title="Relayer setup" icon="arrows-left-right" href="/cross-chain/relayer-setup">
     Run the Hermes relayer this flow depends on.
   </Card>
+
   <Card title="Integration patterns" icon="sitemap" href="/cross-chain/patterns">
     When contract driven ICA is the right choice, and when it is not.
   </Card>
+
   <Card title="Go SDK reference" icon="gears" href="/sdk/go-reference">
     Every ICA helper and Cascade option in one place.
   </Card>

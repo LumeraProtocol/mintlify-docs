@@ -1,6 +1,6 @@
 ---
 title: "Cascade upload lifecycle"
-sidebarTitle: "Upload lifecycle"
+sidebarTitle: "Upload Lifecycle"
 description: "Phase by phase internals of a Cascade upload from file hash to permanent storage."
 ---
 
@@ -9,7 +9,7 @@ Knowing what happens inside a Cascade upload helps you debug failed uploads and 
 A Cascade upload has three phases. The `uploadFile` method in the JavaScript SDK (`@lumera-protocol/sdk-js`) runs all three for you. You can also run them individually for fine-grained control.
 
 | Phase | SDK method |
-|-------|------------|
+| --- | --- |
 | Prepare | `prepareFile` |
 | Register | `registerAction` |
 | Send | `sendFileToSupernodes` |
@@ -180,7 +180,7 @@ PENDING --> PROCESSING --> DONE
 ```
 
 | State | Meaning |
-|-------|---------|
+| --- | --- |
 | `PENDING` | Action registered and fee escrowed, waiting for the file |
 | `PROCESSING` | SuperNodes encode the file and distribute symbols |
 | `DONE` | Symbols stored, the file is permanently available |
@@ -193,7 +193,7 @@ The storage fee is escrowed at registration. If the action fails or expires, the
 The SDK reports progress through task statuses.
 
 | Status | Phase | Meaning |
-|--------|-------|---------|
+| --- | --- | --- |
 | `sdk:completed` | Upload | File successfully stored |
 | `sdk:upload_completed` | Upload | Upload confirmed |
 | `sdk:failed` | Upload | Generic failure |
@@ -213,9 +213,11 @@ The SDK retries the SN-API upload up to 5 times with a 3-second delay between at
   <Card title="Download lifecycle" icon="download" href="/cascade/concepts/download-lifecycle">
     How authenticated downloads stream files back from SuperNodes.
   </Card>
+
   <Card title="Erasure coding" icon="shield-halved" href="/cascade/concepts/erasure-coding">
     How RaptorQ encoding and LEP-1 layout IDs work.
   </Card>
+
   <Card title="Error handling" icon="triangle-exclamation" href="/cascade/error-handling">
     Handle failed task states and retries in production.
   </Card>

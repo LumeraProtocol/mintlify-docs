@@ -1,0 +1,54 @@
+---
+title: "Architectural Principles"
+description: "The design rules that govern how capabilities are added to the Protocol, and what each one means in practice."
+---
+
+The Intelligence Layer is governed by a small number of design rules. They are worth reading before the capability pages, because each capability is an application of them rather than an independent design.
+
+Each principle below states the rule and what follows from it for someone building on the Protocol.
+
+## The chain commits, SuperNodes execute
+
+The Control Plane owns what must be strongly consistent. That means identity, permissions, budgets, prices, escrows, commitments, receipts, and dispute outcomes. The Execution Plane performs work. The memory plane holds artifacts and state.
+
+Nothing in the Execution Plane or the memory plane ever becomes the source of truth for anything the Control Plane owns.
+
+**What this means for you.** Authorization and settlement answers come from the chain and are consistent. Data movement does not pass through consensus, so throughput is not bounded by block time. When those two facts appear to conflict, the chain is authoritative.
+
+## Reason off-chain, verify on-chain
+
+Computation that cannot be made deterministic happens off chain. What is committed on chain is the evidence that it happened.
+
+**What this means for you.** A receipt is a commitment to an event, not a copy of its content. You can prove work occurred without publishing what was in it, which is what keeps verification and confidentiality from being mutually exclusive.
+
+## Composition over reinvention
+
+New capabilities extend existing machinery. They are new Protocol Modules and new Action types, not new consensus, not a second settlement path, and not a parallel identity system.
+
+**What this means for you.** What you learn about the Action Lifecycle transfers. A new capability arrives as a new kind of Action moving through a lifecycle you already understand, priced and settled the way everything else is.
+
+## Authority is graded
+
+A fluent answer is not a proof, and confidence is not a permission. The Protocol grades what a result entitles a caller to do, from advisory output through independently verified results and reproducible computation, up to narrowly scoped protocol-native effects.
+
+**What this means for you.** Irreversible effects stay in your application. The Protocol returns signed results and structured plans. Your application revalidates and executes. That ordering is deliberate.
+
+## Objective faults are penalized, subjective quality is priced
+
+Faults that can be demonstrated carry consequences. Timeouts, missing or invalid receipts, wrong versions, unavailable artifacts, deterministic mismatches, and policy violations are all provable.
+
+Whether an answer was good is not provable, so it is not penalized. It accumulates in the trust record instead, where a history of outcomes prices it over time.
+
+**What this means for you.** Slashing is predictable and scoped to things an operator controls. Quality signals come from reputation, not from consensus.
+
+## Boundaries are part of the design
+
+Each capability has a defined scope and an explicit list of what it must never own. Identity does not hold application data. Metered settlement does not fund long-lived obligations. The composition layer does not take custody of irreversible effects.
+
+**What this means for you.** The dependency graph stays acyclic, so a failure in one capability does not propagate into the ones it depends on.
+
+## Dependency order is not adoption order
+
+The capabilities form a dependency graph with identity at the root. That is the order the architecture is built in. It is not the order a developer meets them in, which follows practical usefulness.
+
+**What this means for you.** Start with the capability that solves a problem you have now. The [capability page](/intelligence-layer/capabilities) sets out both orderings and what is available today.

@@ -1,12 +1,12 @@
 ---
 title: "Cross-chain integration patterns"
-sidebarTitle: "Patterns"
+sidebarTitle: "Integration Patterns"
 description: "Three proven ways to write to Cascade from an app on another chain."
 ---
 
 Every cross-chain Cascade integration answers one question. Who signs the Cascade write? This page generalizes the worked Injective and LUKSO integrations into three patterns, with the trade-offs that decide between them. Whatever you pick, the read side stays the same, because reading by `action_id` needs no signature at all.
 
-## The action_id pointer pattern
+## The action\_id pointer pattern
 
 Cascade's unit of storage is an action. Registering one returns a numeric `action_id`, and the bytes behind it stay retrievable permanently. Your app or contract stores that ID as an opaque string. Cascade holds the bytes.
 
@@ -24,8 +24,16 @@ The contract validates only that the field is non-empty. It cannot read across c
 
 The user holds their own Lumera account and signs the Cascade write directly, usually from the same wallet that signs on your chain.
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/pattern-user-signed-light.svg" alt="Pattern A user signed Cascade write" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/pattern-user-signed-dark.svg" alt="Pattern A user signed Cascade write" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="Pattern A user signed Cascade write"
+  src="/images/diagrams/pattern-user-signed-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Pattern A user signed Cascade write"
+  src="/images/diagrams/pattern-user-signed-dark.svg"
+/>
 
 **Flow.** The app signs two transactions per artifact. First a Lumera transaction uploads the file and returns an `action_id`. Then a transaction on your chain stores that `action_id` in contract or app state.
 
@@ -37,8 +45,16 @@ The user holds their own Lumera account and signs the Cascade write directly, us
 
 Your backend holds one funded Lumera key and uploads on behalf of users. Users interact only with your chain or app, and the Cascade write is a server side call.
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/pattern-server-signed-light.svg" alt="Pattern B server signed via a backend" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/pattern-server-signed-dark.svg" alt="Pattern B server signed via a backend" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="Pattern B server signed via a backend"
+  src="/images/diagrams/pattern-server-signed-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Pattern B server signed via a backend"
+  src="/images/diagrams/pattern-server-signed-dark.svg"
+/>
 
 **Flow.** The user submits content to your backend. The backend uploads it to Cascade with its own key, gets the `action_id`, and returns it. The user, or the backend, then records the `action_id` on your chain. You can hold the Lumera key yourself with an SDK, or forward uploads to a Cascade API gateway that holds the key and pays the fee for you.
 
@@ -78,8 +94,8 @@ A contract or module on the controller chain owns an interchain account on Lumer
 
 ## Choosing a pattern
 
-| | Pattern A user signed | Pattern B server signed | Pattern C contract driven |
-|---|---|---|---|
+|  | Pattern A user signed | Pattern B server signed | Pattern C contract driven |
+| --- | --- | --- | --- |
 | Best for | On-chain provenance to the user's key | Fast UX, most products | Canonical writes with no user in the loop |
 | Who pays `ulume` | The user | Your service key | The ICA address |
 | Signatures per artifact | Two, one per chain | One, on your chain | None from users |
@@ -95,9 +111,11 @@ Start with Pattern B. Move specific artifact types to A when user provenance is 
   <Card title="Interchain accounts in practice" icon="link" href="/cross-chain/interchain-accounts">
     The full Pattern C runbook with the Go SDK.
   </Card>
+
   <Card title="JavaScript SDK" icon="js" href="/sdk/javascript">
     The client used for Pattern A and B uploads.
   </Card>
+
   <Card title="Encrypted storage" icon="lock" href="/cascade/guides/encrypted-storage">
     Keep cross-chain artifacts private while storing them permanently.
   </Card>

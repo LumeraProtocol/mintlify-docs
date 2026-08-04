@@ -1,0 +1,70 @@
+---
+title: "The Five Foundational Capabilities"
+description: "The five capabilities the Intelligence Layer is built from, how they depend on each other, and which are available today."
+---
+
+The Intelligence Layer is built from five capabilities. They are not five products. Each is a property the Protocol needs in order to support Decentralized Intelligent Services, and each becomes more useful in the presence of the others.
+
+| Capability | What it provides | Available today |
+| --- | --- | --- |
+| [Identity](/intelligence-layer/identity) | Sovereign on-chain identity, delegated authority, capability grants, attestation | LumeraID and claims |
+| [Durable Memory](/intelligence-layer/durable-memory) | Persistent, integrity-checked state that outlives a session | Yes, through Cascade |
+| [Verifiable Execution](/intelligence-layer/verifiable-execution) | Work performed by SuperNodes with signed receipts, settled on confirmed completion | Storage and attestation Actions |
+| [Economic Coordination](/intelligence-layer/economic-coordination) | Funding, escrow, and settlement handled by the Protocol | Escrow and settlement for existing Actions |
+| [Trust](/intelligence-layer/trust) | A record compiled from what participants actually did | Seeded by retention and settlement history |
+
+## Identity
+
+Every participant is represented by a LumeraID, an on-chain identity controlled by its holder's keys. People, applications, autonomous processes, datasets, and service providers are participants in the same sense.
+
+Identity is the root of the dependency graph. Authorization needs a subject, escrow needs an account, a receipt needs a signer, and a reputation record needs something stable to attach to.
+
+## Durable Memory
+
+State that survives the end of a session, with integrity that can be demonstrated rather than assumed.
+
+[Cascade](/cascade/how-cascade-works) provides this today. Data is erasure-coded across SuperNodes, retained for a single upfront payment, and re-proved continuously, with long-term retention funded by [Everlight](/cascade/everlight/overview). The architecture treats memory as existing at more than one temperature, with permanent artifacts and mutable working state served by the same identity and settlement model.
+
+## Verifiable Execution
+
+Work requested as an Action, performed by SuperNodes, evidenced by signed receipts, and settled only when completion is confirmed against the on-chain record.
+
+This is the existing Action Lifecycle applied to a wider range of work. Storage was the first kind of work to move through it. It is not the only kind it can carry.
+
+## Economic Coordination
+
+Funding, escrow, and settlement treated as a coordination problem the Protocol owns rather than one participants negotiate.
+
+A participant funds once and consumes across the network. Fees are escrowed before work begins and released on confirmed completion. Metered work and long-lived obligations are funded through deliberately separate mechanisms, because per-use fees cannot fund permanence.
+
+## Trust
+
+A record compiled from identity claims, delegations, attestations, signed receipts, settlements, disputes, and retention proofs.
+
+Trust is derived rather than designed. It adds interpretation to evidence the other capabilities already produce, which is why it is the clearest example of composition in the section.
+
+## How the capabilities depend on each other
+
+The five form an acyclic graph. Identity is the root, and nothing it depends on sits above it. Execution needs to know who is asking. Memory needs to know who may read a private record. Settlement needs an account to draw against. Trust needs a stable subject and a stream of evidence.
+
+The ordering matters because it constrains what can be built when. A capability cannot be completed before the ones it consumes.
+
+## Why Durable Memory comes first in practice
+
+Dependency order is not adoption order.
+
+Adoption follows usefulness, and the capability with the most immediate practical value is Durable Memory. It is available on mainnet now. A developer can build against it today without waiting for anything else.
+
+The two orderings are compatible because memory usage produces exactly the evidence the later capabilities consume. Retention proofs, storage settlements, and retrieval patterns are behavioral records anchored to identity, and they are objectively checkable. They are the first edges of the trust record, which is why trust does not have to wait for an execution layer before it becomes meaningful.
+
+Start where the Protocol is strongest.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Store your first file from TypeScript.
+  </Card>
+
+  <Card title="Durable Memory" icon="database" href="/intelligence-layer/durable-memory">
+    The capability available today.
+  </Card>
+</CardGroup>

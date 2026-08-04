@@ -1,0 +1,80 @@
+---
+title: "Durable Memory"
+description: "Persistent, integrity-checked state that outlives a session, and how the Protocol provides it at more than one temperature."
+---
+
+Durable Memory is the capability that gives software state which outlives the process that created it.
+
+It is the capability available today. [Cascade](/cascade/how-cascade-works) has been live on mainnet since before the rest of the Intelligence Layer was defined, which means a developer can build against Durable Memory now without waiting for anything else.
+
+## Why it exists
+
+Most software keeps its state somewhere convenient. A session buffer, a hosted database, a vendor's object store. That works while a person is supervising the software and can restate context when it is lost.
+
+Autonomous processes do not have that fallback. A process that forgets between invocations cannot be held to a decision it made yesterday. A process whose state lives on a single provider inherits that provider's incentives, retention policy, and failure modes. And a process that needs to prove to a counterparty that a record has not changed cannot do so if the only assurance is a service agreement.
+
+Durable Memory addresses three distinct requirements at once. State must survive. Its integrity must be demonstrable rather than asserted. And it must not belong to a vendor.
+
+## Memory at more than one temperature
+
+Not all state has the same shape, and the Protocol does not store it all the same way. The split is deliberate.
+
+| Where state lives | What it holds | Characteristics |
+| --- | --- | --- |
+| Cascade | Artifacts. Datasets, model artifacts, transcripts, evidence, anything large and long-lived | Content-addressed, permanent, integrity-critical, written once |
+| Structured store | Working state. Application data, preferences, session metadata, indexes | Mutable, low latency, read and written continuously |
+| The chain | Identity, permissions, commitments, registries, escrows, settlement, dispute outcomes | Strongly consistent, and not memory |
+
+The third row matters as much as the first two. The Control Plane is not a place to keep application state. It holds what must be strongly consistent, and nothing else. Treating it as a database would put consensus in the path of every read.
+
+The first two rows share one identity system and one settlement model. That is the practical benefit of memory being a Protocol capability rather than a product. A developer building on Lumera does not run an auth server, and does not run a database server.
+
+## What Cascade provides
+
+Cascade is the artifact layer. Data is erasure-coded across economically bonded SuperNodes, retained for a single upfront payment, and re-proved continuously so that retention is demonstrated rather than promised.
+
+The mechanics are documented in full. Start with [How Cascade works](/cascade/how-cascade-works) for the lifecycle, fees, and guarantees, and the [Quickstart](/quickstart) to store something.
+
+## What makes permanence sustainable
+
+A one-time payment for indefinite storage only works if something keeps paying operators after that payment is exhausted.
+
+[Everlight](/cascade/everlight/overview) is that mechanism. It funds retention from protocol reward flows, fee shares, and endowment yield, and it pays operators for as long as they continue to hold data and prove they still have it.
+
+This is why permanence is an economic property of the network rather than a commitment by a company. Nothing needs to remain solvent for stored data to remain retained.
+
+## Access and privacy
+
+Stored data is private by default. Retrieving a private artifact requires a signature that resolves to an identity permitted to read it, which is [Identity](/intelligence-layer/identity) doing its job inside an existing flow rather than a separate access system.
+
+The network stores opaque bytes. It does not index filenames, schemas, or semantic content. For anything commercially sensitive, encrypt before upload, which lets the network prove it still holds a record it cannot read. See [Store encrypted files on Cascade](/cascade/guides/encrypted-storage).
+
+## What this does not provide
+
+Retrieval by meaning is not a Protocol capability. Cascade retrieves by content address, and structured state retrieves by key. Neither performs semantic search over accumulated memory.
+
+Applications that need it build it above the Protocol, using Lumera for durability and provenance and their own index for recall. This boundary is worth knowing before designing around it.
+
+## How it fits the architecture
+
+Durable Memory is the memory plane in the [plane model](/architecture). Data moves directly between clients and SuperNodes and never passes through consensus, which is why throughput is not bounded by block time.
+
+Memory is also where the rest of the Intelligence Layer starts. Every write produces evidence anchored to an identity, including retention proofs, settlements, and retrieval patterns. Those records are objectively checkable, and they are the first inputs to [Trust](/intelligence-layer/trust). Storing memory on the network generates trust data from the first write, which is why this capability is the one to build against first.
+
+<CardGroup cols={2}>
+  <Card title="Cascade" icon="database" href="/cascade/how-cascade-works">
+    The artifact layer, documented in full.
+  </Card>
+
+  <Card title="Everlight" icon="infinity" href="/cascade/everlight/overview">
+    How long-term retention is funded.
+  </Card>
+
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Store your first file from TypeScript.
+  </Card>
+
+  <Card title="Trust" icon="chart-network" href="/intelligence-layer/trust">
+    What memory usage accumulates into.
+  </Card>
+</CardGroup>

@@ -1,0 +1,48 @@
+---
+title: "What Is the Intelligence Layer?"
+description: "The part of the Protocol concerned with autonomous software, and the gap in existing infrastructure it addresses."
+---
+
+The Intelligence Layer is the part of the Protocol concerned with autonomous software. It defines how a participant is identified, how it remembers, how its work is executed and evidenced, how that work is paid for, and how its record accumulates into something others can rely on.
+
+It is not a separate network, a sidechain, or a parallel stack. Every capability in this section is expressed through the primitives documented in [Protocol Architecture](/architecture). The chain remains the Control Plane. SuperNodes remain the Execution Plane. Work is still requested as an Action and settles through the Action Lifecycle.
+
+## Why it exists
+
+Software that runs without a person watching it needs guarantees that human-facing software does not.
+
+A developer using an API holds context in their head, reads the output and judges it, and resolves a billing dispute by email. An autonomous process does none of that. It needs state that survives the end of a session, an identity that means something to a counterparty it has never met, evidence that the work it paid for actually happened, and a way to settle without a commercial relationship with every provider it touches.
+
+Most of that does not exist yet. Agents today call centralized endpoints, authenticate with API keys, and pay with a card attached to those keys. There is no record of which model ran or what data it consumed. If a provider changes behavior, raises prices, or withholds a response, the calling application has no recourse and no proof of what it was promised.
+
+Every one of those gaps is a coordination problem. Coordination problems are what protocols are for.
+
+## What it is not
+
+Being precise about the boundary prevents a common misreading.
+
+The Intelligence Layer is not a model host. Running inference is one kind of work among many, and it is the kind that commoditizes fastest. The Protocol coordinates, evidences, and settles work regardless of where the computation happens.
+
+It is not an agent framework. It does not compete with the libraries developers use to build agents. It is the layer underneath them, providing the identity, memory, evidence, and settlement those frameworks currently have to assume or fake.
+
+It is not a claim that the Protocol produces intelligence. Reasoning happens off chain. What lands on chain is the commitment, the receipt, and the outcome.
+
+## Relationship to Protocol Services
+
+Lumera already exposes work as Protocol Services. A service is priced by the resource it consumes, requested as an Action, escrowed on registration, and settled on confirmed completion.
+
+The Intelligence Layer does not replace that model. It extends the range of work the model can carry, and it adds the capabilities autonomous callers need in order to use it without supervision. Decentralized Intelligent Services are Protocol Services consumed by software rather than by people.
+
+This is the consistent pattern across the section. Each capability extends existing machinery rather than introducing a new subsystem beside it.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Architectural Principles" icon="compass" href="/intelligence-layer/principles">
+    The design rules every capability follows.
+  </Card>
+
+  <Card title="The Five Foundational Capabilities" icon="layer-group" href="/intelligence-layer/capabilities">
+    What the Protocol provides, and what is available today.
+  </Card>
+</CardGroup>

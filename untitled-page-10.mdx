@@ -1,0 +1,177 @@
+---
+title: "Cascade"
+sidebarTitle: "Overview"
+description: "The technical model behind Cascade: content addressing, RaptorQ fountain coding, availability commitments, storage challenges, and self-healing."
+---
+
+Cascade is the Protocol's permanent storage service. A file is hashed, erasure-coded into a redundant symbol set, and distributed across the SuperNode mesh. Reconstruction requires only a subset of those symbols, so availability does not depend on any particular operator staying online.
+
+This page covers the storage model and the mechanisms underneath it. The end-to-end request flow is in [How Cascade works](/cascade/how-cascade-works), and LEP-1 layout ID derivation is in [RaptorQ erasure coding](/cascade/concepts/erasure-coding).
+
+## The storage model
+
+Cascade is content-addressed and immutable. An object is identified by what it contains rather than where it sits, and it is never modified in place.
+
+| Identifier | Derived from | Purpose |
+| --- | --- | --- |
+| `data_hash` | BLAKE3 of the file bytes | Permanent content identifier, recorded on chain |
+| `action_id` | The registering transaction | On-chain handle for the stored object |
+| Layout IDs | Deterministic derivation over the compacted layout, signature, and counter | Globally unique symbol identifiers the chain can verify independently |
+| Merkle root | BLAKE3 tree over fixed-size file chunks | Binds the uploader to the file's exact contents |
+
+Integrity is intrinsic. A retrieved file either hashes to the recorded `data_hash` or it does not, and that check is a local computation over bytes you already hold.
+
+Immutability means there is no edit, rename, or delete. Storing a modified file produces a new object with a new hash. Applications that need mutable pointers hold those pointers themselves.
+
+## Two partitions, two purposes
+
+Cascade divides a file twice, for unrelated reasons. Conflating them is the most common source of confusion.
+
+| Partition | Unit | Size | Used for |
+| --- | --- | --- | --- |
+| RaptorQ encoding | Symbol | Uniform symbol size `T` | Redundancy and reconstruction |
+| Availability commitment | Chunk | Power of two, up to 256 KiB | Proving an operator holds the file |
+
+Symbols exist so the file survives node loss. Chunks exist so an operator can be challenged to prove possession. The commitment is built over chunks of the original file rather than over symbols, because chunk hashing needs only BLAKE3 over raw bytes and avoids depending on bit-identical RaptorQ library versions across client and SuperNode.
+
+## RaptorQ
+
+Cascade encodes with RaptorQ, the fountain code standardized in [RFC 6330](https://www.rfc-editor.org/rfc/rfc6330).
+
+| Term | Meaning |
+| --- | --- |
+| Source block | A unit the encoder operates over. The SDK's `createSingleBlockLayout` produces a single-block layout |
+| Source symbol | One of K fixed-size pieces of the source block |
+| Symbol size (`T`) | Byte length of every symbol, uniform across the block |
+| `K'` | K padded up to the nearest supported value from the RFC's table |
+| Repair symbol | Any encoding symbol beyond the source symbols. Supply is effectively unbounded |
+| ESI | Encoding Symbol Identifier, distinguishing symbols within a block |
+| SBN | Source Block Number, distinguishing blocks within a file |
+
+RaptorQ is **systematic**, so the first K encoding symbols are the source symbols themselves. A decoder that receives exactly those does no reconstruction work.
+
+## Why a fountain code
+
+Fountain codes are **rateless**. A Reed-Solomon style code fixes N and K at encode time. A fountain code fixes only K and then emits as many encoding symbols as asked, up to 2^24 - 1 per source block under RFC 6330.
+
+Ratelessness is what makes permanence tractable. Redundancy is not a decision frozen at upload. If symbols are lost as operators leave, more can be generated from any recovered source block, without the original uploader and without a pristine copy existing anywhere. That property is the foundation the repair machinery is built on.
+
+## LT codes, Raptor, RaptorQ
+
+RaptorQ is the third generation of one idea, and each generation fixed a defect in the last.
+
+**LT codes** were the first practical fountain codes. Each encoding symbol is the XOR of some number of randomly chosen source symbols, with that number drawn from a tuned degree distribution. Decoding peels the graph. Find a degree-one symbol, which reveals a source symbol directly, substitute it into every symbol referencing it, repeat. It works, but peeling stalls unless the distribution is tuned aggressively, recovering the last few symbols is expensive, and decoding cost grows as O(K log K).
+
+**Raptor codes** added a pre-code. The source block is first expanded into a larger set of intermediate symbols using an outer erasure code. The LT stage then only needs to recover _most_ intermediate symbols, because the pre-code reconstructs the rest. That relaxation buys linear-time decoding and low overhead.
+
+**RaptorQ** strengthens the pre-code and widens the arithmetic. Its constraints combine a low-density parity-check component over GF(2), which is plain XOR and fast, with a high-density component over GF(256). Working in a larger field for that portion sharply reduces the chance of rank deficiency during decoding, at an arithmetic cost paid on only a small part of the matrix. RaptorQ also supports much larger source blocks and defines sub-blocking so decoding memory can be bounded independently of block size.
+
+The result is the reception overhead.
+
+| Symbols received | Approximate decode probability |
+| --- | --- |
+| `K'` | 99% |
+| `K'` \+ 1 | 99.99% |
+| `K'` \+ 2 | 99.9999% |
+
+Two symbols of slack over the theoretical minimum puts failure near one in a million.
+
+## Distribution
+
+Encoding creates redundancy. Distribution converts it into fault tolerance.
+
+Symbols are spread across the SuperNode mesh and stored in a Kademlia DHT, with placement following the keyspace rather than the uploader's choice. No operator holds a complete copy.
+
+This is why the guarantee is a threshold rather than a replica count. Reconstruction needs any sufficiently large subset of symbols, not particular symbols from particular operators.
+
+## Durability versus replication
+
+Replication is intuitive and wasteful. Surviving the loss of half the network with whole copies costs roughly 2x the stored bytes. Erasure coding reaches comparable reliability at roughly 1.5x, because redundancy is spread across the symbol space instead of duplicated wholesale. The advantage grows with file size.
+
+## Reconstruction
+
+Retrieval inverts the process. Symbols are gathered from responsive SuperNodes, the decoder rebuilds the source block once it holds enough, and the result is hashed with BLAKE3 and compared against the on-chain `data_hash`.
+
+Verification is end-to-end and client-side. A corrupted or substituted symbol set cannot produce bytes matching the recorded hash. Access control for private objects is enforced separately by signature, covered in [Download lifecycle](/cascade/concepts/download-lifecycle).
+
+## Proving possession at finalization
+
+Erasure coding says nothing about whether an operator actually received the file. Because everything needed to compute valid layout IDs is derivable from on-chain data, an operator could once have finalized an action and collected fees without storing anything.
+
+**LEP-5, the Cascade Availability Commitment, closes that gap.** It is implemented.
+
+At registration the client splits the file into fixed-size chunks, hashes each with domain separation, builds a Merkle tree, and commits the root together with a set of challenge indices.
+
+```text
+leaf_i  = BLAKE3(0x00 || uint32be(i) || chunk_i)
+parent  = BLAKE3(0x01 || left || right)
+```
+
+Domain separation prevents a leaf from being confused with an internal node. Odd levels duplicate the final node.
+
+Chunking is constrained by the chain. Chunk size is a power of two up to 256 KiB, defaulting to 256 KiB for files of 1 MiB or more, reduced for smaller files so that every commitment yields at least four chunks. Minimum file size is 4 bytes. The number of challenged chunks is `min(svc_challenge_count, num_chunks)`, which lands between four and eight.
+
+At finalization the SuperNode rebuilds the tree from the file it received, confirms the root matches the on-chain commitment, and submits Merkle proofs for exactly the challenged indices. The chain verifies each proof against the stored root before moving the action to `DONE` and releasing fees. Proof size is O(log N) per chunk.
+
+Partial storage is caught probabilistically. An operator holding fraction `p` of chunks evades `m` challenges with probability `p^m`.
+
+| Chunks held | `m` = 5 | `m` = 8 |
+| --- | --- | --- |
+| 90% | 59% | 43% |
+| 80% | 33% | 17% |
+| 50% | 3.1% | 0.39% |
+
+At the mainnet default of eight challenges, holding less than half the file has under a 0.4% chance of passing a single round.
+
+## Ongoing challenges and self-healing
+
+LEP-5 proves possession once, at finalization. Retention over time is enforced separately, by periodic storage challenges.
+
+The current mechanism is epoch-based. Challengers, recipients, and observers are selected deterministically, a challenged operator returns a hash over a byte range of a stored artifact, and observers reach quorum on the result. Evidence is batched into epoch health reports rather than submitted as individual transactions. Repair already exists as well, gated by request, verify, and commit, with reconstructed content validated against the expected hash before it is persisted.
+
+**LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved** and upgrades both halves. Its substantive changes are worth knowing because they define the direction of the integrity model.
+
+- One third of active SuperNodes are challenged per epoch, deterministically selected, keeping traffic bounded.
+- Each challenged operator receives one compound challenge containing a **recent-ticket** and an **old-ticket** subchallenge, so ingestion and long-term retention are tested separately.
+- Byte sampling moves from a fixed 1 KiB prefix to four deterministic 256-byte ranges, which removes the value of optimizing for the start of a file.
+- Outcomes update three distinct on-chain scores. **Node suspicion** drives audit enforcement. **Ticket deterioration** drives repair scheduling. **Reporter reliability** penalizes operators whose reports diverge from the network consensus.
+- Repair is scheduled from ticket deterioration rather than an indirect watchlist, assigned to a single deterministic healer, and accepted only after independent verifiers confirm the healer actually restored the data, followed by a probation window.
+
+Separating node suspicion from ticket deterioration is the key design point. One question is whether an operator should be penalized. The other is whether a piece of data needs repair. They are not the same question and they no longer share a signal.
+
+Track status in the [LEP repository](https://github.com/LumeraProtocol/lumera/tree/master/docs/leps).
+
+## Retention economics
+
+Challenges establish whether data is held. They do not explain why an operator keeps holding it after the upload fee is consumed.
+
+That is [Everlight](/cascade/everlight/overview). Payouts are proportional to retained Cascade bytes, reported through LEP-4 node metrics as `cascade_kademlia_db_bytes`. Because that metric is self-reported, it passes through guardrails before becoming payout weight, including a smoothing window across periods, a growth cap, and a ramp-up for new operators.
+
+The two mechanisms are complementary and worth keeping distinct. Everlight decides compensation from reported volume. Storage challenges establish truth and carry consequences. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
+
+## Properties and limits
+
+- **Immutable and content-addressed.** No in-place edit, delete, or rename.
+- **Opaque bytes.** The network does not parse, index, or interpret content. Filenames and schemas are not searchable.
+- **No retrieval by meaning.** Objects are fetched by address. Semantic recall belongs above the Protocol.
+- **Private by default.** Private objects require a signature resolving to a permitted identity. For sensitive data, encrypt before upload so the network provably retains a record it cannot read. See [Store encrypted files on Cascade](/cascade/guides/encrypted-storage).
+- **Asynchronous write path.** Registration is a transaction, but encoding, distribution, and proof submission complete afterward, moving the action through `PENDING` and `PROCESSING` before `DONE`.
+- **Minimum file size is 4 bytes**, a consequence of the four-chunk floor on availability commitments.
+
+<CardGroup cols={2}>
+  <Card title="How Cascade works" icon="diagram-project" href="/cascade/how-cascade-works">
+    The end-to-end upload and registration flow.
+  </Card>
+
+  <Card title="RaptorQ erasure coding" icon="grid-2" href="/cascade/concepts/erasure-coding">
+    LEP-1 layouts and deterministic ID derivation.
+  </Card>
+
+  <Card title="Everlight" icon="infinity" href="/cascade/everlight/overview">
+    How long-term retention is funded.
+  </Card>
+
+  <Card title="rq-go" icon="code" href="/sdk/raptorq">
+    The RaptorQ library SuperNodes encode with.
+  </Card>
+</CardGroup>

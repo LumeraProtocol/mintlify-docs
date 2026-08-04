@@ -1,6 +1,6 @@
 ---
 title: "RaptorQ erasure coding in Cascade"
-sidebarTitle: "Erasure coding"
+sidebarTitle: "Erasure Coding"
 description: "Why Cascade uses RaptorQ fountain codes and how LEP-1 derives layout IDs."
 ---
 
@@ -18,8 +18,16 @@ Cascade uses RaptorQ, a fountain code standardized in [RFC 6330](https://www.rfc
 
 ## Encoding during upload
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/erasure-coding-light.svg" alt="RaptorQ Encoding Flow" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/erasure-coding-dark.svg" alt="RaptorQ Encoding Flow" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="RaptorQ Encoding Flow"
+  src="/images/diagrams/erasure-coding-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="RaptorQ Encoding Flow"
+  src="/images/diagrams/erasure-coding-dark.svg"
+/>
 
 1. The SDK loads the file into the RaptorQ WASM module (`rq-library-wasm`).
 2. The encoder produces a layout that describes source blocks and encoding parameters.
@@ -88,9 +96,11 @@ The index file is itself signed with ADR-036, the Cosmos standard for signing ar
   <Card title="Upload lifecycle" icon="upload" href="/cascade/concepts/upload-lifecycle">
     Where layout generation and ID derivation fit in an upload.
   </Card>
+
   <Card title="Interchain accounts" icon="globe" href="/cascade/concepts/interchain-accounts">
     Store to Cascade from any IBC-connected Cosmos chain.
   </Card>
+
   <Card title="JavaScript SDK reference" icon="code" href="/sdk/javascript-reference">
     Full method reference for uploads, downloads, and task options.
   </Card>

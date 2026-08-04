@@ -1,6 +1,6 @@
 ---
 title: "Explore the JSON-RPC catalog"
-sidebarTitle: "OpenRPC playground"
+sidebarTitle: "OpenRPC Playground"
 description: "Discover every JSON-RPC method a Lumera node supports through the OpenRPC spec."
 ---
 
@@ -11,7 +11,7 @@ The EVM and its JSON-RPC surface are live on testnet (`lumera-testnet-2`) only. 
 ## Two ways to fetch the spec
 
 | Method | Endpoint | Default port | Protocol | Use case |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | JSON-RPC | `rpc_discover` or `rpc.discover` | 8545 (EVM JSON-RPC) | POST | Programmatic discovery from apps, scripts, or the playground |
 | HTTP | `/openrpc.json` | 1317 (Cosmos REST) | GET or POST | Browser access, curl, CI pipelines, static documentation |
 
@@ -44,7 +44,7 @@ curl -s http://localhost:1317/openrpc.json | jq '.info'
 ```
 
 <Note>
-The HTTP endpoint is served by the Cosmos REST API server on port 1317, not the EVM JSON-RPC server on port 8545. The REST server needs `api.enable = true` and the JSON-RPC server needs `json-rpc.enable = true` in `app.toml`.
+  The HTTP endpoint is served by the Cosmos REST API server on port 1317, not the EVM JSON-RPC server on port 8545. The REST server needs `api.enable = true` and the JSON-RPC server needs `json-rpc.enable = true` in `app.toml`.
 </Note>
 
 ## Use the OpenRPC playground
@@ -73,7 +73,7 @@ Inside the playground you can do the following.
 The playground loads the spec with a GET to `/openrpc.json`, then sends "Try It" requests as POSTs back to the same URL. Lumera proxies `POST /openrpc.json` to the internal JSON-RPC server and rewrites the OpenRPC style `rpc.discover` name to the native `rpc_discover` for compatibility. Direct requests to the JSON-RPC port accept both names.
 
 <Note>
-Mainnet builds refuse to start with the `debug`, `personal`, or `admin` namespaces enabled. Testnet allows them, so plan tracing dependent workflows accordingly.
+  Mainnet builds refuse to start with the `debug`, `personal`, or `admin` namespaces enabled. Testnet allows them, so plan tracing dependent workflows accordingly.
 </Note>
 
 ## CORS for browser access
@@ -86,7 +86,7 @@ ws-origins = ["127.0.0.1", "localhost"]
 ```
 
 | Setting | Effect |
-|---|---|
+| --- | --- |
 | `["127.0.0.1", "localhost"]` (default) | Works from a local browser only |
 | `["*"]` | Allows any origin, acceptable for local development or testnet |
 | `["https://playground.open-rpc.org"]` | Allows the hosted playground specifically |
@@ -143,6 +143,7 @@ This part only matters if you work on the `lumerad` codebase itself. The spec is
   <Card title="Deploy with Remix" icon="rocket" href="/smart-contracts/deploy-with-remix">
     Use the RPC surface interactively by deploying a Solidity contract.
   </Card>
+
   <Card title="EVM JSON-RPC reference" icon="code" href="/api/evm-jsonrpc">
     Endpoints and methods for scripting against the EVM.
   </Card>

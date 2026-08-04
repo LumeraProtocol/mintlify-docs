@@ -1,6 +1,6 @@
 ---
 title: "How Cascade works"
-sidebarTitle: "How it works"
+sidebarTitle: "How Cascade Works"
 description: "Follow an upload from on-chain registration to permanent storage across the SuperNode network."
 ---
 
@@ -10,8 +10,16 @@ Cascade is the permanent storage service of Lumera Protocol. You pay one fee at 
 
 Cascade splits the work between two planes. The control plane is the Lumera blockchain. It records every stored file as an action and holds the storage fee. The data plane is the SuperNode network. It encodes, stores, and serves the actual bytes. The SDK drives both, so your app makes a single function call.
 
-<img className="block dark:hidden mx-auto" src="/images/diagrams/cascade-architecture-light.svg" alt="Cascade Architecture" />
-<img className="hidden dark:block mx-auto" src="/images/diagrams/cascade-architecture-dark.svg" alt="Cascade Architecture" />
+<img
+  className="block mx-auto dark:hidden"
+  alt="Cascade Architecture"
+  src="/images/diagrams/cascade-architecture-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Cascade Architecture"
+  src="/images/diagrams/cascade-architecture-dark.svg"
+/>
 
 ## The upload flow
 
@@ -65,9 +73,11 @@ Once the action reaches `DONE`, the file is permanently stored. To retrieve it, 
   <Card title="Quickstart" icon="bolt" href="/quickstart">
     Upload your first file in under five minutes.
   </Card>
+
   <Card title="Installation" icon="download" href="/cascade/installation">
     Install the JavaScript and Go SDKs.
   </Card>
+
   <Card title="Upload lifecycle" icon="cloud-arrow-up" href="/cascade/concepts/upload-lifecycle">
     See every phase of an upload in detail.
   </Card>

@@ -1,6 +1,6 @@
 ---
 title: "Hermes relayer setup for Lumera"
-sidebarTitle: "Relayer setup"
+sidebarTitle: "Relayer Setup"
 description: "The Lumera values to plug into a standard Hermes chain configuration."
 ---
 
@@ -12,28 +12,24 @@ Add a chain entry for Lumera to your Hermes config with these values. The counte
 
 <Tabs>
   <Tab title="Mainnet">
+    | Setting | Value |
+    | --- | --- |
+    | Chain ID | `lumera-mainnet-1` |
+    | RPC | `https://rpc.lumera.io` |
+    | gRPC | `https://grpc.lumera.io` |
+    | Account prefix | `lumera` |
+    | Gas price | `0.025ulume` |
 
-| Setting | Value |
-|---|---|
-| Chain ID | `lumera-mainnet-1` |
-| RPC | `https://rpc.lumera.io` |
-| gRPC | `https://grpc.lumera.io` |
-| Account prefix | `lumera` |
-| Gas price | `0.025ulume` |
-
-The official mainnet RPC can be intermittent. A community alternative is `https://lumera-rpc.polkachu.com`.
-
+    The official mainnet RPC can be intermittent. A community alternative is `https://lumera-rpc.polkachu.com`.
   </Tab>
   <Tab title="Testnet">
-
-| Setting | Value |
-|---|---|
-| Chain ID | `lumera-testnet-2` |
-| RPC | `https://lumera-testnet-rpc.polkachu.com` |
-| gRPC | `grpc.testnet.lumera.io:443` |
-| Account prefix | `lumera` |
-| Gas price | `0.025ulume` |
-
+    | Setting | Value |
+    | --- | --- |
+    | Chain ID | `lumera-testnet-2` |
+    | RPC | `https://lumera-testnet-rpc.polkachu.com` |
+    | gRPC | `grpc.testnet.lumera.io:443` |
+    | Account prefix | `lumera` |
+    | Gas price | `0.025ulume` |
   </Tab>
 </Tabs>
 
@@ -54,7 +50,7 @@ Add the relayer's Lumera key with the Ethereum HD path `m/44'/60'/0'/0/0`. A key
 **Mainnet today.** Mainnet runs `v1.12.0` and has not had the EVM upgrade yet. Use standard Cosmos key derivation with no `address_type` override.
 
 <Warning>
-When mainnet gains the EVM with its upgrade, existing mainnet relayers must re-key to the ethermint derivation. Follow the official [relayer migration guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/relayer-migration.md) and see the [EVM upgrade page](/upgrades/evm-upgrade) for operator checklists.
+  When mainnet gains the EVM with its upgrade, existing mainnet relayers must re-key to the ethermint derivation. Follow the official [relayer migration guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/relayer-migration.md) and see the [EVM upgrade page](/upgrades/evm-upgrade) for operator checklists.
 </Warning>
 
 ## Verify the setup
@@ -67,9 +63,11 @@ Once the chain entries are in place, use standard Hermes commands to health chec
   <Card title="Interchain accounts in practice" icon="link" href="/cross-chain/interchain-accounts">
     The ICS-27 flow your relayer now carries.
   </Card>
+
   <Card title="EVM upgrade" icon="rocket" href="/upgrades/evm-upgrade">
     What changes for relayers when a network gains the EVM.
   </Card>
+
   <Card title="Networks" icon="globe" href="/networks">
     All Lumera endpoints and chain parameters.
   </Card>
