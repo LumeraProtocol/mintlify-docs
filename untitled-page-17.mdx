@@ -1,0 +1,118 @@
+---
+title: "Trust Graph"
+description: "The reputation mechanics running on Lumera today, the evidence they are compiled from, and how scores decay and drive enforcement."
+---
+
+The trust graph is often described as something a protocol builds later, once it has history to draw on. On Lumera the first subgraph already operates, and it decides which operators receive work and get paid.
+
+This page covers those mechanics. For why trust belongs to the Protocol and how it relates to identity, see [Trust](/intelligence-layer/trust).
+
+## Reputation already governs who gets work
+
+`x/supernode` maintains a ranked list of SuperNodes, and `x/action` routes work to the top of it. Rank is a function of stake and performance, and performance comes from the epoch reports collected by `x/audit`.
+
+That loop is a complete reputation system. Behavior is observed, compiled into a position, and the position determines income. An operator does not choose its rank and cannot assert it.
+
+What makes it credible is the cost of manipulation. Rank cannot be bought without bonding real stake under LEP-3, and it cannot be earned without performing work that other nodes verify.
+
+## Evidence the graph is compiled from today
+
+Every input below is produced by a capability that already runs.
+
+| Evidence | Source | What it demonstrates |
+| --- | --- | --- |
+| Storage challenge outcomes | Deterministic challenger and observer quorum over the SuperNode mesh | Whether a node holds what it claims |
+| Retained volume | LEP-4 epoch metrics, `cascade_kademlia_db_bytes` | Scale of obligation carried |
+| Report freshness | Epoch report submission | Liveness as a service participant |
+| Action finalization history | `x/action` state transitions | Work completed against work abandoned |
+| Bond status | Validator delegation under LEP-3 | Capital committed and currently at risk |
+
+None of it is self-attested in the way a review or an endorsement is. Retained volume is self-reported, which is why it passes through smoothing, a growth cap, and a ramp-up before it becomes payout weight, and why challenges exist to test the claim independently.
+
+## Three scores, deliberately separate
+
+LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved and specifies the scoring model explicitly. The design decision worth understanding is the separation.
+
+| Score | Question it answers | Used for |
+| --- | --- | --- |
+| **Node suspicion** | Is this operator failing its obligations? | Audit enforcement against the node |
+| **Ticket deterioration** | Does this piece of data need repair? | Scheduling self-healing |
+| **Reporter reliability** | Can I trust what this node says about others? | Weighting a node's reports and its eligibility to challenge |
+
+Collapsing these into one number would break all three. Data can deteriorate because several holders churned, with no single operator at fault. An operator can fail while the data survives elsewhere. And a node can be a reliable storer while being an unreliable witness.
+
+Keeping them apart means an enforcement decision and a repair decision never contaminate each other.
+
+## Reputation decays by construction
+
+Each score decays as epochs pass without new evidence, applied lazily on update.
+
+```text
+score_new = floor(score_old × decay^epochs_since_last_update) + delta
+```
+
+Node suspicion decays at 0.92 per epoch. Reporter reliability and ticket deterioration decay at 0.90.
+
+This is not leniency. It is what makes the score a **current assessment** rather than a permanent record. An operator that failed twenty epochs ago and has performed cleanly since is a different counterparty than one failing now, and a system that could not express that difference would be useless for routing decisions.
+
+Recovery from an enforcement band requires both decay below the threshold and a run of clean passes. Time alone does not clear a fault.
+
+## Scores map to graduated consequence
+
+Node suspicion drives action in bands rather than at a single cliff.
+
+| Band | Consequence |
+| --- | --- |
+| Low | Baseline challenge rate, no action |
+| Elevated | Storage watch, increased challenge frequency |
+| High | Probation |
+| Severe | Postpone candidate, then strong postpone |
+
+Escalation also considers pattern rather than magnitude alone. Repeated failures on distinct data, or failures across both recently assigned and long-held data, escalate faster than the same score reached by isolated events. Failing at both ends is a different signal than failing once.
+
+## Scoring the witness, not just the subject
+
+Reporter reliability is the least obvious of the three and the most interesting.
+
+A node that reports failures which independent rechecks overturn accumulates a penalty. So does a node whose negative reports run persistently above the network median without being confirmed. The consequence is that its future reports carry less weight, and at the extreme it becomes temporarily ineligible to act as a challenger.
+
+This closes an attack that most reputation systems leave open. If reporting badly about a competitor were free, it would be rational. Here the report is itself evidence, and being wrong about others is a fault attributable to you.
+
+Provisional suspicion contributed by a low-reliability reporter is scaled down until an independent recheck confirms it. Accusation and finding are separate states.
+
+## What the graph does not yet cover
+
+Stated plainly, because the boundary matters when evaluating the architecture.
+
+- **Operators only.** Today's reputation is about SuperNodes serving work. Requesters and agents accumulate history in the on-chain record, but no score is compiled from it.
+- **Storage-weighted.** The strongest signals concern retention, because storage is the mature service. Reputation for other work types arrives with those work types.
+- **Not yet delegation-aware.** Trust composing along delegation chains is described in [Trust](/intelligence-layer/trust) as architecture and depends on the claim model.
+- **Not a public score API.** Rank is observable. A general-purpose reputation query surface is not part of the current interface.
+
+## Inspecting it
+
+Rank and node state are readable on chain and through the explorer, so you can see which operators are serving your actions and what state they are in.
+
+```bash
+lumerad query supernode list-super-nodes
+```
+
+Track the specification in the [LEP repository](https://github.com/LumeraProtocol/lumera/tree/master/docs/leps).
+
+<CardGroup cols={2}>
+  <Card title="Trust" icon="chart-network" href="/intelligence-layer/trust">
+    Why reputation is a Protocol capability.
+  </Card>
+
+  <Card title="Compliance and enforcement" icon="shield" href="/supernodes/enforcement">
+    What happens to an operator when scores rise.
+  </Card>
+
+  <Card title="Everlight for operators" icon="coins" href="/cascade/everlight/supernode-operators">
+    How retention converts into payouts.
+  </Card>
+
+  <Card title="Cascade" icon="database" href="/cascade/how-cascade-works">
+    The service most evidence is produced by.
+  </Card>
+</CardGroup>
