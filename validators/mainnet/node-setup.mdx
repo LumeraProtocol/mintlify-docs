@@ -4,7 +4,7 @@ sidebarTitle: "Node setup"
 description: "Install dependencies and lumerad, then sync your Lumera mainnet node from a snapshot."
 ---
 
-This guide takes a fresh Ubuntu server to a fully synced mainnet node running under systemd. Follow the steps in order. When the node reports `catching_up: false`, continue to [create validator](/validators-mainnet/create-validator).
+This guide takes a fresh Ubuntu server to a fully synced mainnet node running under systemd. Follow the steps in order. When the node reports `catching_up: false`, continue to [create validator](/validators/mainnet/create-validator).
 
 ## Step 1. Install dependencies
 
@@ -240,7 +240,7 @@ sudo diff ~/.lumera/config/priv_validator_key.json \
   && sudo rm -rf ~/.lumera ~/lumera-key-backup
 ```
 
-Switch users. Steps 8 to 10 and the whole of [create validator](/validators-mainnet/create-validator) run as `validator`, and `$HOME` must already be `/home/validator` when you write the systemd unit in Step 9.
+Switch users. Steps 8 to 10 and the whole of [create validator](/validators/mainnet/create-validator) run as `validator`, and `$HOME` must already be `/home/validator` when you write the systemd unit in Step 9.
 
 ```bash
 su - validator
@@ -368,7 +368,7 @@ sudo systemctl enable lumera
 ```
 
 <Note>
-Before your first upgrade, switch this unit to run under Cosmovisor so binary swaps happen automatically at the upgrade height. See the chain upgrades section of [operations](/validators-mainnet/operations).
+Before your first upgrade, switch this unit to run under Cosmovisor so binary swaps happen automatically at the upgrade height. See the chain upgrades section of [operations](/validators/mainnet/operations).
 </Note>
 
 ## Step 10. Start and verify
@@ -421,10 +421,10 @@ sudo ufw status | grep 26656                                     # ALLOW
 Once `catching_up` is `false`, register your validator.
 
 <CardGroup cols={2}>
-  <Card title="Create validator" icon="key" href="/validators-mainnet/create-validator">
+  <Card title="Create validator" icon="key" href="/validators/mainnet/create-validator">
     Create a secured wallet, fund it, and submit the validator transaction.
   </Card>
-  <Card title="Operations" icon="wrench" href="/validators-mainnet/operations">
+  <Card title="Operations" icon="wrench" href="/validators/mainnet/operations">
     Day-to-day commands, upgrades, monitoring, and troubleshooting.
   </Card>
 </CardGroup>

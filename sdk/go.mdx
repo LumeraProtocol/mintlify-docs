@@ -1,6 +1,6 @@
 ---
 title: "Go SDK"
-sidebarTitle: "Go"
+sidebarTitle: "Overview"
 description: "Build server-side applications and CLI tools that upload to Cascade and query the Lumera chain."
 ---
 
@@ -14,7 +14,7 @@ The SDK unifies three interfaces.
 | SuperNode SDK | `client.Cascade` | File upload, download, and event subscriptions |
 | SnApi (gRPC) | Wrapped by `client.Cascade` | Direct SuperNode communication |
 
-Unlike the [JavaScript SDK](/sdk/javascript), which routes file transfers through a REST gateway, the Go SDK talks to SuperNodes directly over gRPC on port 4444. Your machine needs network access to that port. If a firewall or NAT blocks it, run your code somewhere with direct reachability.
+Unlike the [JavaScript SDK](/sdk/javascript), which routes file transfers through a REST gateway, the Go SDK talks to SuperNodes directly over gRPC on port 4444. Your machine needs network access to that port. 
 
 ## Install
 

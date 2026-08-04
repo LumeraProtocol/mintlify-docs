@@ -1,0 +1,272 @@
+---
+title: "Rust SDK reference"
+sidebarTitle: "API Reference"
+description: "Modules, settings, client surfaces, and helpers in the Lumera Rust SDK."
+---
+
+This page lists the public surface of [`github.com/LumeraProtocol/sdk-rs`](https://github.com/LumeraProtocol/sdk-rs) as it appears in the repository. For a guided start see the [Rust SDK page](/sdk/rust).
+
+The crate is `lumera-sdk-rs` and the library name is `lumera_sdk_rs`. It is at version `0.1.0` with no published releases, so add it from git rather than from crates.io.
+
+<Note>
+The crate is pre-1.0 and has no tagged releases. Pin a specific commit if you need a stable surface.
+</Note>
+
+## Crate layout
+
+The crate exposes seven modules. Three of them carry the client surfaces you will use most.
+
+| Module | Purpose |
+|---|---|
+| `chain` | Action parameters, fee lookups, transaction build, sign, broadcast, and gas simulation |
+| `snapi` | SN-API calls for upload, download, status polling, and file retrieval |
+| `cascade` | High-level orchestration over `chain` and `snapi` |
+| `config` | Settings loading from environment, `.env`, TOML, and JSON |
+| `keys` | Mnemonic derivation and address validation |
+| `crypto` | Raw message signing and ADR-036 sign bytes |
+| `error` | The single `SdkError` type |
+
+These items are re-exported at the crate root.
+
+```rust
+pub use cascade::{CascadeConfig, CascadeSdk, RegisterTicketRequest};
+pub use config::SdkSettings;
+pub use keys::SigningIdentity;
+```
+
+## Settings
+
+`SdkSettings` holds the six values every client needs.
+
+| Field | Type | Default |
+|---|---|---|
+| `chain_id` | `String` | `lumera-devnet` |
+| `grpc_endpoint` | `String` | `http://127.0.0.1:9090` |
+| `rpc_endpoint` | `String` | `http://127.0.0.1:26657` |
+| `rest_endpoint` | `String` | `http://127.0.0.1:1317` |
+| `gas_price` | `String` | `0.025ulume` |
+| `snapi_base` | `String` | `http://127.0.0.1:8080` |
+
+The defaults point at a local devnet. Override them for testnet or mainnet.
+
+### Loading settings
+
+| Method | Behavior |
+|---|---|
+| `SdkSettings::default()` | Local devnet values |
+| `SdkSettings::from_env()` | Defaults with environment overrides applied |
+| `SdkSettings::from_env_file(path)` | Loads a `.env` file, then applies environment overrides |
+| `SdkSettings::from_file(path)` | Reads `.toml` or `.json`, then applies environment overrides |
+| `settings.to_cascade_config()` | Converts settings into a `CascadeConfig` |
+
+Environment variables win over file values, which makes deployment-time overrides straightforward. Any other file extension returns `SdkError::InvalidInput`.
+
+### Environment variables
+
+| Variable | Field |
+|---|---|
+| `LUMERA_CHAIN_ID` | `chain_id` |
+| `LUMERA_GRPC` | `grpc_endpoint` |
+| `LUMERA_RPC` | `rpc_endpoint` |
+| `LUMERA_REST` | `rest_endpoint` |
+| `LUMERA_GAS_PRICE` | `gas_price` |
+| `SNAPI_BASE` | `snapi_base` |
+
+## Cascade surface
+
+`CascadeSdk` owns a `ChainClient` and an `SnApiClient` as public fields, so you can drop to either layer directly.
+
+```rust
+use lumera_sdk_rs::{CascadeConfig, CascadeSdk};
+
+let sdk = CascadeSdk::new(CascadeConfig::new(chain_cfg, "https://snapi.testnet.lumera.io"));
+```
+
+### Configuration
+
+`CascadeConfig` carries a `ChainConfig` plus the SN-API base URL.
+
+| Item | Signature |
+|---|---|
+| `CascadeConfig::new` | `(chain: ChainConfig, snapi_base: impl Into<String>) -> Self` |
+| `CascadeConfig::with_snapi_base` | `(self, snapi_base: impl Into<String>) -> Self` |
+
+### Workflow methods
+
+| Method | Signature |
+|---|---|
+| `register_ticket` | `(&self, chain_signing_key, arbitrary_signing_key, creator_addr: &str, file_path: &Path, req: RegisterTicketRequest) -> Result<RegisteredTicket, SdkError>` |
+| `upload_via_snapi` | `(&self, action_id: &str, signature: &str, file_path: &Path) -> Result<String, SdkError>` |
+| `request_download` | `(&self, action_id: &str, signing_key: &k256::ecdsa::SigningKey) -> Result<String, SdkError>` |
+
+`register_ticket` does the full registration in one call. It reads the file, hashes it, builds the RaptorQ layout, signs it, computes layout IDs, looks up the fee, and submits the action. Both upload and download return a task ID you poll through `snapi`.
+
+### Deterministic helpers
+
+These are associated functions, so call them on the type rather than an instance.
+
+| Function | Signature |
+|---|---|
+| `compute_data_hash_b64` | `(file_bytes: &[u8]) -> String` |
+| `create_layout_b64` | `(file_path: &Path) -> Result<String, SdkError>` |
+| `generate_ids` | `(base: &str, ic: u32, max: u32) -> Result<Vec<String>, SdkError>` |
+| `build_index_file` | `(layout_ids: Vec<String>, layout_signature: String) -> IndexFile` |
+| `canonical_json_bytes` | `<T: Serialize>(v: &T) -> Result<Vec<u8>, SdkError>` |
+| `random_ic` | `(max: u32) -> u32` |
+
+`compute_data_hash_b64` is BLAKE3 over the file bytes, base64 encoded. `generate_ids` compresses with zstd level 3, hashes with BLAKE3, and encodes with base58, which is what keeps IDs byte-compatible with the SuperNode implementation.
+
+### Cascade types
+
+| Type | Fields |
+|---|---|
+| `RegisterTicketRequest` | `file_name: String`, `is_public: bool`, `expiration_time: String` |
+| `RegisteredTicket` | `action_id: String`, `auth_signature: String`, `data_hash_b64: String`, `metadata_json: String` |
+| `IndexFile` | `layout_ids: Vec<String>`, `layout_signature: String`, `version: i32` |
+
+## Chain surface
+
+`ChainClient::new(cfg: ChainConfig)` builds the client. `ChainConfig` has the same five chain fields as `SdkSettings` minus `snapi_base`, plus a builder for each one (`with_chain_id`, `with_grpc_endpoint`, `with_rpc_endpoint`, `with_rest_endpoint`, `with_gas_price`).
+
+### Queries
+
+| Method | Signature |
+|---|---|
+| `get_action_params` | `(&self) -> Result<ActionParams, SdkError>` |
+| `get_action_fee_amount` | `(&self, file_size_kbs: u64) -> Result<String, SdkError>` |
+| `get_account_info` | `(&self, address: &str) -> Result<AccountInfo, SdkError>` |
+| `get_tx` | `(&self, tx_hash: &str) -> Result<Option<TxConfirmationStatus>, SdkError>` |
+| `get_tx_event_attributes` | `(&self, tx_hash: &str) -> Result<Option<Vec<EventAttribute>>, SdkError>` |
+| `calculate_fee_amount` | `(&self, gas_limit: u64) -> Result<Coin, SdkError>` |
+
+### Transactions
+
+| Method | Signature |
+|---|---|
+| `register_action` | `(&self, signing_key, tx: RequestActionTxInput) -> Result<TxResult, SdkError>` |
+| `request_action_tx` | `(&self, signing_key, tx: RequestActionTxInput, memo: impl Into<String>) -> Result<RequestActionSubmitResult, SdkError>` |
+| `build_signed_tx` | `(&self, signing_key, creator: &str, msgs: Vec<Any>, memo: impl Into<String>, gas_limit: u64) -> Result<cosmrs::tx::Raw, SdkError>` |
+| `build_signed_tx_with_simulation` | `(&self, signing_key, creator: &str, msgs: Vec<Any>, memo: impl Into<String>, fallback_gas_limit: u64, gas_adjustment: f64) -> Result<(cosmrs::tx::Raw, u64), SdkError>` |
+| `broadcast_signed_tx` | `(&self, tx_raw: &cosmrs::tx::Raw, mode: BroadcastMode) -> Result<BroadcastTxResult, SdkError>` |
+| `send_any_msgs` | `(&self, signing_key, creator: &str, msgs: Vec<Any>, memo: impl Into<String>, gas_limit: u64, mode: BroadcastMode) -> Result<BroadcastTxResult, SdkError>` |
+| `simulate_gas_for_tx` | `(&self, tx_raw: &cosmrs::tx::Raw) -> Result<u64, SdkError>` |
+
+Every `signing_key` above is a `&cosmrs::crypto::secp256k1::SigningKey`. `send_any_msgs` lets you submit arbitrary Cosmos messages, so the SDK is not limited to Cascade actions.
+
+`BroadcastMode` is `Async`, `Sync`, or `Commit`.
+
+### Waiting
+
+| Method | Signature |
+|---|---|
+| `wait_for_tx_confirmation` | `(&self, tx_hash: &str, timeout_secs: u64) -> Result<TxConfirmationStatus, SdkError>` |
+| `wait_for_event_attribute` | `(&self, tx_hash: &str, event_type: &str, attr_key: &str, timeout_secs: u64) -> Result<String, SdkError>` |
+
+### Chain types
+
+| Type | Fields |
+|---|---|
+| `ChainConfig` | `chain_id`, `grpc_endpoint`, `rpc_endpoint`, `rest_endpoint`, `gas_price`, all `String` |
+| `ActionParams` | `max_raptor_q_symbols: u32`, `svc_challenge_count: u32`, `svc_min_chunks_for_challenge: u32`, `base_action_fee_denom: String` |
+| `TxResult` | `tx_hash: String`, `action_id: String` |
+| `RequestActionSubmitResult` | `tx_hash: String`, `action_id: String` |
+| `AccountInfo` | `address: String`, `account_number: u64`, `sequence: u64` |
+| `TxConfirmationStatus` | `tx_hash: String`, `height: i64`, `code: u32`, `raw_log: String` |
+| `BroadcastTxResult` | `tx_hash: String`, `check_tx_code: Option<u32>`, `deliver_tx_code: Option<u32>`, `log: String` |
+| `EventAttribute` | `event_type: String`, `key: String`, `value: String` |
+| `RequestActionTxInput` | `creator`, `action_type`, `metadata`, `price`, `expiration_time`, `file_size_kbs`, all `String`, plus `app_pubkey: Vec<u8>` |
+
+### Log helpers
+
+| Function | Signature |
+|---|---|
+| `extract_action_id_from_log` | `(log: &str) -> Option<String>` |
+| `extract_event_attribute_from_log` | `(log: &str, event_type: &str, attr_key: &str) -> Option<String>` |
+
+`extract_action_id_from_log` is a shorthand that looks for the `action_id` attribute on the `action_registered` event.
+
+## SN-API surface
+
+`SnApiClient::new(base: String)` builds the client, and `base` is public.
+
+| Method | Signature | Endpoint |
+|---|---|---|
+| `start_cascade` | `(&self, action_id: &str, signature: &str, file_path: &Path) -> Result<String, SdkError>` | `POST /api/v1/actions/cascade` |
+| `start_cascade_bytes` | `(&self, action_id: &str, signature: &str, file_name: &str, file_bytes: Vec<u8>) -> Result<String, SdkError>` | `POST /api/v1/actions/cascade` |
+| `upload_status` | `(&self, task_id: &str) -> Result<serde_json::Value, SdkError>` | `GET /api/v1/actions/cascade/tasks/{task_id}/status` |
+| `request_download` | `(&self, action_id: &str, signature: &str) -> Result<String, SdkError>` | `POST /api/v1/actions/cascade/{action_id}/downloads` |
+| `download_status` | `(&self, task_id: &str) -> Result<serde_json::Value, SdkError>` | `GET /api/v1/downloads/cascade/{task_id}/status` |
+| `download_file` | `(&self, task_id: &str) -> Result<Vec<u8>, SdkError>` | `GET /api/v1/downloads/cascade/{task_id}/file` |
+
+`start_cascade` reads the file and delegates to `start_cascade_bytes`, so use the bytes form when the data is already in memory. `request_download` retries transient server errors, because a download can race with finalization right after an upload completes. Status methods return raw `serde_json::Value` rather than typed structs.
+
+See the [SN-API reference](/api/sn-api) for the endpoint payloads.
+
+## Signing identity
+
+`SigningIdentity` derives both signing keys the SDK needs from one mnemonic.
+
+| Field | Type |
+|---|---|
+| `chain_signing_key` | `cosmrs::crypto::secp256k1::SigningKey` |
+| `arbitrary_signing_key` | `k256::ecdsa::SigningKey` |
+| `address` | `String` |
+| `hrp` | `String` |
+
+Two keys exist because chain transactions and arbitrary payload signatures use different libraries.
+
+| Method | Signature |
+|---|---|
+| `SigningIdentity::from_mnemonic` | `(mnemonic: &str, hrp: &str, derivation_path: &str) -> Result<Self, SdkError>` |
+| `validate_address` | `(&self, expected_address: &str) -> Result<(), SdkError>` |
+| `SigningIdentity::validate_chain_prefix` | `(expected_address: &str, expected_hrp: &str) -> Result<(), SdkError>` |
+| `derive_signing_keys_from_mnemonic` | `(mnemonic: &str) -> Result<(secp256k1::SigningKey, k256::ecdsa::SigningKey), SdkError>` |
+
+`derive_signing_keys_from_mnemonic` is a module-level convenience that assumes the `lumera` prefix and the `m/44'/118'/0'/0/0` path.
+
+## Crypto helpers
+
+| Function | Signature |
+|---|---|
+| `sign_raw_message_b64` | `(sk: &k256::ecdsa::SigningKey, message: &str) -> String` |
+| `make_adr36_sign_bytes` | `(signer: &str, message: &str) -> Result<Vec<u8>, SdkError>` |
+
+`sign_raw_message_b64` signs the raw bytes and base64 encodes the signature. `make_adr36_sign_bytes` builds the ADR-036 `MsgSignData` document used for offline signature verification. See [LumeraID](/intelligence-layer/identity/lumeraid) for how ADR-036 signatures gate access to private objects.
+
+## Errors
+
+Every fallible call returns `Result<T, SdkError>`.
+
+| Variant | Meaning |
+|---|---|
+| `SdkError::Http` | Transport or SN-API failure |
+| `SdkError::Serialization` | Encode or decode failure |
+| `SdkError::Crypto` | Key derivation or signing failure |
+| `SdkError::Chain` | Chain query or broadcast failure |
+| `SdkError::InvalidInput` | Bad argument, unreadable file, or unsupported config extension |
+
+## Examples in the repo
+
+| Example | Shows |
+|---|---|
+| `examples/golden_devnet.rs` | Register a ticket, upload, request a download, and verify the hash |
+| `examples/custom_config.rs` | Explicit `ChainConfig` and `CascadeConfig` construction |
+| `examples/from_env_settings.rs` | Loading `SdkSettings` from the environment |
+| `examples/ui_server.rs` | An Axum server exposing the workflow over REST |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Rust SDK" icon="rust" href="/sdk/rust">
+    The guided walkthrough for installing and using the SDK.
+  </Card>
+  <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
+    The storage flow behind register, upload, and download.
+  </Card>
+  <Card title="SN-API reference" icon="server" href="/api/sn-api">
+    The REST endpoints the `snapi` module calls.
+  </Card>
+  <Card title="Go SDK reference" icon="golang" href="/sdk/go-reference">
+    The equivalent surface in Go.
+  </Card>
+</CardGroup>

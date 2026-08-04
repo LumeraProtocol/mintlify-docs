@@ -294,11 +294,11 @@ Routine maintenance.
 | `upgrade plan "vX.Y.Z" is scheduled at height N but not registered in this binary` | Your binary is older than the chain. Install the latest release. This panic happens before the SDK reads `--unsafe-skip-upgrades`, so that flag will not get you past it. |
 | Keyring command hangs on a headless server | The `os` backend has no daemon. Use `lumerad config set client keyring-backend test --skip-validate`. |
 | `insufficient fees; got 5000ulume` | Raise the fee to `--fees=10000ulume`, or use `--gas-prices=0.025ulume`. |
-| `create-validator` rejects `--amount` or `--pubkey` | Cosmos SDK v0.50 requires a JSON file. See [create validator](/validators-testnet/create-validator). |
+| `create-validator` rejects `--amount` or `--pubkey` | Cosmos SDK v0.50 requires a JSON file. See [create validator](/validators/testnet/create-validator). |
 | Zero peers right after start | Normal for 2 to 3 minutes. If it persists, read the logs before changing your firewall. |
 | `Couldn't connect to any seeds` or `Error dialing seed ... connection refused` | The seed node is down. `connection refused` is the remote host rejecting you, so this is not your firewall. Stop the node, run `curl -fsSL -o ~/.lumera/config/addrbook.json https://snapshots.polkachu.com/testnet-addrbook/lumera/addrbook.json`, then start it. A running node rewrites `addrbook.json` from memory, so it has to be stopped first. |
 | Node stuck at `catching_up: true` | Usually disk I/O or too few peers. Check `df -h`, peer count, and consider re-syncing from a fresh snapshot. |
-| State sync stuck on "discovering snapshots" | No peer is serving snapshots. Fall back to the snapshot method in [node setup](/validators-testnet/node-setup). |
+| State sync stuck on "discovering snapshots" | No peer is serving snapshots. Fall back to the snapshot method in [node setup](/validators/testnet/node-setup). |
 | Validator shows `BOND_STATUS_UNBONDED` | Expected until your stake is large enough to enter the capped active set. It is not an error. |
 | Jailed after a restart | Confirm the node resumed signing, then submit `tx slashing unjail`. Check `tombstoned` first. |
 
@@ -351,7 +351,7 @@ Never shortcut step 3. Missing a few blocks during a clean cutover costs almost 
   <Card title="Run a SuperNode" icon="server" href="/supernodes/overview">
     Provide Cascade and Sense services alongside your validator.
   </Card>
-  <Card title="Mainnet guide" icon="shield" href="/validators-mainnet/overview">
+  <Card title="Mainnet guide" icon="shield" href="/validators/overview">
     Take everything you practiced here to production.
   </Card>
 </CardGroup>

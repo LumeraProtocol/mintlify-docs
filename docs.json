@@ -70,7 +70,7 @@
             ]
           },
           {
-            "group": "Quick start",
+            "group": "Get started",
             "icon": "rocket",
             "pages": [
               "quickstart",
@@ -120,6 +120,14 @@
                           "cascade/guides/research-archive",
                           "cascade/guides/encrypted-storage"
                         ]
+                      },
+                      {
+                        "group": "Everlight",
+                        "pages": [
+                          "cascade/everlight/overview",
+                          "cascade/everlight/payments",
+                          "cascade/everlight/supernode-operators"
+                        ]
                       }
                     ]
                   },
@@ -127,14 +135,6 @@
                     "group": "Agent Memory",
                     "pages": [
                       "intelligence-layer/durable-memory/agent-memory"
-                    ]
-                  },
-                  {
-                    "group": "Everlight",
-                    "pages": [
-                      "cascade/everlight/overview",
-                      "cascade/everlight/payments",
-                      "cascade/everlight/supernode-operators"
                     ]
                   }
                 ]
@@ -174,11 +174,27 @@
             "group": "SDKs",
             "icon": "code",
             "pages": [
-              "sdk/javascript",
-              "sdk/javascript-reference",
-              "sdk/go",
-              "sdk/go-reference",
-              "sdk/rust"
+              {
+                "group": "JavaScript",
+                "pages": [
+                  "sdk/javascript",
+                  "sdk/javascript-reference"
+                ]
+              },
+              {
+                "group": "Go",
+                "pages": [
+                  "sdk/go",
+                  "sdk/go-reference"
+                ]
+              },
+              {
+                "group": "Rust",
+                "pages": [
+                  "sdk/rust",
+                  "sdk/rust-reference"
+                ]
+              }
             ]
           },
           {
@@ -205,23 +221,26 @@
             "group": "Operate the Network",
             "pages": [
               {
-                "group": "Validators (Mainnet)",
+                "group": "Validators",
                 "icon": "shield",
                 "pages": [
-                  "validators-mainnet/overview",
-                  "validators-mainnet/node-setup",
-                  "validators-mainnet/create-validator",
-                  "validators-mainnet/operations"
-                ]
-              },
-              {
-                "group": "Validators (Testnet)",
-                "icon": "shield-halved",
-                "pages": [
-                  "validators-testnet/overview",
-                  "validators-testnet/node-setup",
-                  "validators-testnet/create-validator",
-                  "validators-testnet/operations"
+                  "validators/overview",
+                  {
+                    "group": "Mainnet",
+                    "pages": [
+                      "validators/mainnet/node-setup",
+                      "validators/mainnet/create-validator",
+                      "validators/mainnet/operations"
+                    ]
+                  },
+                  {
+                    "group": "Testnet",
+                    "pages": [
+                      "validators/testnet/node-setup",
+                      "validators/testnet/create-validator",
+                      "validators/testnet/operations"
+                    ]
+                  }
                 ]
               },
               {
@@ -340,26 +359,6 @@
     {
       "source": "/modules/claims",
       "destination": "/architecture"
-    },
-    {
-      "source": "/validators/configuration",
-      "destination": "/validators-mainnet/operations"
-    },
-    {
-      "source": "/validators/overview",
-      "destination": "/validators-mainnet/overview"
-    },
-    {
-      "source": "/validators/setup",
-      "destination": "/validators-mainnet/node-setup"
-    },
-    {
-      "source": "/validators/create-validator",
-      "destination": "/validators-mainnet/create-validator"
-    },
-    {
-      "source": "/validators/operations",
-      "destination": "/validators-mainnet/operations"
     },
     {
       "source": "/supernodes/cli-reference",

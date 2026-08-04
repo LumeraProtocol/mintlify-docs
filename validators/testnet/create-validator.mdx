@@ -11,7 +11,7 @@ lumerad status 2>&1 | jq '.sync_info | {latest_block_height, catching_up}'
 # catching_up must be false
 ```
 
-If you have not completed [node setup](/validators-testnet/node-setup), do that first.
+If you have not completed [node setup](/validators/testnet/node-setup), do that first.
 
 ## Step 1. Set the keyring backend
 
@@ -23,7 +23,7 @@ lumerad config set client chain-id lumera-testnet-2 --skip-validate
 ```
 
 <Warning>
-The `test` backend stores keys unencrypted on disk. That is an acceptable trade-off for testnet. On mainnet, use `file`, which is passphrase protected, or a hardware signer. See the [mainnet guide](/validators-mainnet/create-validator).
+The `test` backend stores keys unencrypted on disk. That is an acceptable trade-off for testnet. On mainnet, use `file`, which is passphrase protected, or a hardware signer. See the [mainnet guide](/validators/mainnet/create-validator).
 </Warning>
 
 ## Step 2. Create a wallet
@@ -206,13 +206,13 @@ Never restore `priv_validator_key.json` onto a second running machine. Two nodes
 ## Next steps
 
 <CardGroup cols={3}>
-  <Card title="Operations" icon="wrench" href="/validators-testnet/operations">
+  <Card title="Operations" icon="wrench" href="/validators/testnet/operations">
     Day-to-day commands, upgrades, monitoring, and troubleshooting.
   </Card>
   <Card title="Run a SuperNode" icon="server" href="/supernodes/overview">
     Provide Cascade and Sense services for extra rewards.
   </Card>
-  <Card title="Mainnet guide" icon="shield" href="/validators-mainnet/overview">
+  <Card title="Mainnet guide" icon="shield" href="/validators/overview">
     Take your validator to production.
   </Card>
 </CardGroup>
