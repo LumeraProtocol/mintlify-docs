@@ -1,22 +1,31 @@
 ---
-title: "Governance"
-description: "How staked LUME governs protocol parameters, the proposal and voting process, and what governance can change."
+title: "Protocol Governance"
+description: "How the Lumera Protocol evolves through on-chain governance."
+sidebarTitle: "Governance"
 ---
 
-Lumera's protocol parameters are not fixed at launch. Issuance, fee structures, service pricing, and ecosystem funding are all adjustable by on-chain proposal, which means the network can respond to real conditions without a hard fork or a central decision-maker.
+Protocol Governance allows the Lumera Protocol to evolve without relying on centralized decision-making or disruptive hard forks. Economic parameters, protocol services, software upgrades, and ecosystem funding are all governed on-chain through proposals approved by holders of staked LUME.
 
-Voting power comes from staked LUME. One LUME staked equals one vote. Tokens sitting unstaked do not vote, so governance weight follows capital that is committed to securing the network.
+Governance is therefore part of the protocol itself. Rather than treating the network as static after launch, Lumera allows the community to adapt protocol parameters as technology, network usage, and economic conditions evolve.
 
-## What governance controls
+Voting power is determined by **staked LUME**. One staked LUME represents one unit of voting power, aligning governance with the economic participants responsible for securing the network. Unstaked tokens do not participate in governance.
+
+## What Governance Controls
 
 - **Issuance** - the target bonded ratio, issuance bounds, and rate of change
 - **Fees** - transaction fee parameters, the burn share, and distribution splits
-- **Service pricing** - Action fee parameters and adjustment factors
+- **Protocol Service** - service pricing, Action parameters, execution costs, and protocol-service economics
 - **Ecosystem funding** - spending from the community pool
 - **Protocol upgrades** - coordinated chain upgrades and module changes
 - **Governance itself** - deposits, periods, and thresholds
 
-## The proposal process
+## Governance as Protocol Evolution
+
+Governance is the mechanism through which Lumera evolves over time. Rather than introducing separate versions of the protocol for every economic adjustment or service enhancement, protocol parameters can be modified through transparent, on-chain governance.
+
+As new decentralized intelligent services are introduced, they inherit the same governance framework as the rest of the protocol. Economic parameters, service pricing, protocol modules, and ecosystem funding all evolve through one consistent governance process.
+
+## Proposal Process
 
 <Steps>
   <Step title="Submit">
@@ -29,15 +38,15 @@ Voting power comes from staked LUME. One LUME staked equals one vote. Tokens sit
     Staked LUME votes. Options are Yes, No, Abstain, and No With Veto.
   </Step>
   <Step title="Outcome">
-    An approved proposal executes automatically according to its contents. A rejected or vetoed proposal burns the deposit.
+    Approved proposals are executed according to their proposal type. Parameter changes take effect automatically, while software upgrades and governance-approved actions follow their defined execution path.
   </Step>
 </Steps>
 
 Burning the deposit on failure is deliberate. It puts a real cost on frivolous or malicious proposals while leaving legitimate ones cheap for anyone with community backing.
 
-## Parameters
+## Governance Parameters
 
-Genesis governance parameters:
+The following values are the protocol's initial governance parameters. Like most protocol settings, they are themselves governable and may change over time.
 
 | Parameter | Value |
 | --- | --- |
@@ -52,17 +61,19 @@ Genesis governance parameters:
 
 Expedited proposals exist for changes that cannot wait a full voting period. They require a higher deposit and pass through a shorter vote. These parameters are themselves governable, and current values are queryable on chain.
 
-## Validators and delegators
+## Validators and Delegators
 
-Governance follows a delegation model, which keeps participation high without requiring every holder to track every proposal.
+Governance follows Lumera's delegated staking model.
 
-A validator votes on behalf of the stake delegated to it. A delegator who disagrees can cast their own vote, which overrides their validator's vote for that proposal only. A delegator who does not vote inherits their validator's position by default.
+Validators cast votes on behalf of delegated stake by default. Delegators remain fully sovereign and may override their validator's vote on any proposal without affecting their broader staking relationship.
 
 The practical effect is that passive holders stay represented while active holders retain full control. It also makes governance behavior part of how delegators evaluate validators, since a validator's voting record is public and applies to delegated stake.
 
 ## Veto
 
-A proposal that attracts No With Veto votes above the veto threshold is discarded outright and its deposit burned, regardless of how many Yes votes it received. The veto is a protection against proposals that are technically popular but harmful to the network: a majority alone is not sufficient to pass something a substantial minority considers damaging.
+A proposal receiving **No With Veto** votes above the veto threshold is rejected regardless of the simple majority outcome, and its deposit is burned.
+
+The veto mechanism protects the protocol from proposals considered harmful by a substantial minority, ensuring that governance reflects more than simple majority rule.
 
 <CardGroup cols={3}>
   <Card title="Submit a proposal" icon="file-signature" href="/protocol/governance">

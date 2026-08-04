@@ -1,72 +1,91 @@
 ---
-title: "Lumera networks and endpoints"
-sidebarTitle: "Networks"
-description: "Find chain IDs, genesis files, seeds, and endpoints for Lumera mainnet and testnet."
+title: "Networks and Endpoints"
+sidebarTitle: "Networks & Endpoints"
+description: "Network configuration, public endpoints, genesis files, and connection information for Lumera Mainnet and Testnet."
 ---
 
-Lumera Protocol runs two public networks, a production mainnet and a testnet for development and operator onboarding. Both use the same `lumerad` binary. Only the chain ID, genesis file, and seeds differ. Pick your network in the tabs below.
+Lumera operates two public networks: **Mainnet**, the production network for applications and protocol services, and **Testnet**, a development environment for testing integrations, deploying smart contracts, and onboarding validators and SuperNode operators.
+
+Both networks use the same `lumerad` binary and protocol architecture. Network-specific configuration—including chain IDs, genesis files, seed nodes, and public endpoints—is provided below.
+
+## Public Endpoints
+
+Public endpoints allow applications and developers to query network state without running a node. These endpoints may be rate-limited and should not be treated as guaranteed production infrastructure. For high-volume or production workloads, run your own node or use a dedicated provider.
+
+| Service | Mainnet | Testnet |
+| --- | --- | --- |
+| **gRPC** | `grpc.lumera.io:443` | `grpc.testnet.lumera.io:443` |
+| **RPC** | `https://rpc.lumera.io` | `https://lumera-testnet-rpc.polkachu.com` |
+| **LCD (REST)** | `https://lcd.lumera.io` | `https://lumera-testnet-api.polkachu.com` |
+| **SN-API** | `https://snapi.lumera.io` | `https://snapi.testnet.lumera.io` |
+
+Community infrastructure providers such as [Polkachu](https://www.polkachu.com/networks/lumera) also operate public Lumera endpoints. Validator snapshots and additional connection resources are available in the [validator setup guides](/validators-mainnet/node-setup).
+
+## Network Configuration
+
+Select a network below to view its chain parameters, genesis file, seed nodes, and node configuration.
 
 <Tabs>
   <Tab title="Mainnet">
-    Mainnet is the production network. Real LUME is staked and Cascade files are stored for good. Protect mainnet keys with production-grade security practices.
+    Mainnet is Lumera's production network. LUME carries economic value, validators and SuperNodes earn protocol rewards, and data stored through Cascade is retained under the network's permanent-storage model. Protect all Mainnet keys using production-grade security practices.
 
-    ### Network parameters
+    ### Network Parameters
 
     | Parameter | Value |
-    |---|---|
+    | --- | --- |
     | **Chain ID** | `lumera-mainnet-1` |
     | **Native denom** | `ulume` |
     | **Minimum gas price** | `0.025ulume` |
     | **Explorer** | [Lumera Portal](https://portal.lumera.io/lumera-mainnet-1) |
 
-    ### Genesis file
+    ### Genesis File
 
-    Download the mainnet genesis file from the lumera-networks repository.
+    Download the network genesis file from the official `lumera-networks` repository:
 
     ```bash
     curl -o genesis.json https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/mainnet/genesis.json
     ```
 
-    Place it in your node's config directory.
+    Move the file into the node configuration directory:
 
     ```bash
     cp genesis.json ~/.lumera/config/genesis.json
     ```
 
-    ### Seed nodes
+    ### Seed Nodes
 
-    Add the seed to `~/.lumera/config/config.toml` under `[p2p]`.
+    Add the network seed node to the `[p2p]` section of `~/.lumera/config/config.toml`:
 
     ```toml
     seeds = "f64b9efc5747cc3556bdc281dab930a716dd63af@seeds.lumera.io:26656"
     ```
 
-    ### Minimum gas price
+    ### Minimum Gas Price
 
-    Set the minimum gas price in `~/.lumera/config/app.toml`.
+    Set the minimum accepted gas price in `~/.lumera/config/app.toml`:
 
     ```toml
     minimum-gas-prices = "0.025ulume"
     ```
 
-    ### Quick config summary
+    ### Quick Configuration
 
     ```bash
     # Initialize node (replace <moniker> with your node name)
     lumerad init <moniker> --chain-id lumera-mainnet-1
-
+    
     # Download genesis
     curl -o ~/.lumera/config/genesis.json \
       https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/mainnet/genesis.json
-
+    
     # Set seeds in config.toml
     sed -i 's/seeds = ""/seeds = "f64b9efc5747cc3556bdc281dab930a716dd63af@seeds.lumera.io:26656"/' \
       ~/.lumera/config/config.toml
-
+    
     # Set gas price in app.toml
     sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025ulume"/' \
       ~/.lumera/config/app.toml
-
+    
     # Start the node
     lumerad start
     ```
@@ -78,64 +97,64 @@ Lumera Protocol runs two public networks, a production mainnet and a testnet for
   <Tab title="Testnet">
     Testnet is where new validators onboard, developers test integrations, and SuperNode operators rehearse before staking on mainnet. Testnet LUME has no value. Request some from the [faucet](/faucet).
 
-    ### Network parameters
+    ### Network Parameters
 
     | Parameter | Value |
-    |---|---|
+    | --- | --- |
     | **Chain ID** | `lumera-testnet-2` |
     | **Native denom** | `ulume` |
     | **Minimum gas price** | `0.025ulume` |
     | **Explorer** | [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2) |
     | **Faucet** | [Portal faucet](https://portal.testnet.lumera.io/lumera-testnet-2/faucet) |
 
-    ### Genesis file
+    ### Genesis File
 
-    Download the testnet genesis file from the lumera-networks repository.
+    Download the network genesis file from the official `lumera-networks` repository:
 
     ```bash
     curl -o genesis.json https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/testnet-2/genesis.json
     ```
 
-    Place it in your node's config directory.
+    Move the file into the node configuration directory:
 
     ```bash
     cp genesis.json ~/.lumera/config/genesis.json
     ```
 
-    ### Seed nodes
+    ### Seed Nodes
 
-    Add the seed to `~/.lumera/config/config.toml` under `[p2p]`.
+    Add the network seed node to the `[p2p]` section of `~/.lumera/config/config.toml`:
 
     ```toml
     seeds = "faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"
     ```
 
-    ### Minimum gas price
+    ### Minimum Gas Price
 
-    Set the minimum gas price in `~/.lumera/config/app.toml`.
+    Set the minimum accepted gas price in `~/.lumera/config/app.toml`:
 
     ```toml
     minimum-gas-prices = "0.025ulume"
     ```
 
-    ### Quick config summary
+    ### Quick Configuration
 
     ```bash
     # Initialize node (replace <moniker> with your node name)
     lumerad init <moniker> --chain-id lumera-testnet-2
-
+    
     # Download genesis
     curl -o ~/.lumera/config/genesis.json \
       https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/testnet-2/genesis.json
-
+    
     # Set seeds in config.toml
     sed -i 's/seeds = ""/seeds = "faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"/' \
       ~/.lumera/config/config.toml
-
+    
     # Set gas price in app.toml
     sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025ulume"/' \
       ~/.lumera/config/app.toml
-
+    
     # Start the node
     lumerad start
     ```
@@ -144,66 +163,59 @@ Lumera Protocol runs two public networks, a production mainnet and a testnet for
   </Tab>
 </Tabs>
 
-## Hardware requirements
+## Node Requirements
 
-The table shows the minimum recommended hardware for a production validator. SuperNode operators should provision the same or better to handle Cascade and Sense workloads.
+The following specifications are the minimum recommended baseline for a production validator. SuperNode operators should provision additional CPU, memory, storage, and network capacity based on the protocol services they intend to support.
 
 | Component | Minimum |
-|---|---|
-| **CPU** | 8+ cores |
+| --- | --- |
+| **CPU** | 8\+ cores |
 | **Memory** | 64 GB RAM |
-| **Storage** | 2 TB+ SSD |
+| **Storage** | 2 TB\+ SSD |
 | **Network** | High bandwidth with low latency |
 
 <Warning>
-  Underpowered validators miss blocks, get jailed, and lose staked LUME to slashing. Underpowered SuperNodes fall out of the active top list and miss rewards.
+  Underpowered validators may miss blocks, become jailed, or incur slashing penalties. SuperNodes that fail performance or availability requirements may fall out of the active service set and lose protocol-service rewards.
 </Warning>
 
-Chain state and the Cascade store grow over time. Plan capacity headroom and monitor disk usage.
+Note: Chain state and protocol-service storage requirements grow over time. Maintain sufficient capacity headroom and continuously monitor disk usage, memory utilization, network performance, and service availability.
 
-## Public endpoints
+## EVM Access
 
-Public endpoints let you query chain state without running a node. They are rate limited, so run your own node for production workloads.
+Beginning with `v1.20.0`, Lumera nodes enable the EVM JSON-RPC server and OpenRPC discovery by default, allowing a node to support Ethereum-compatible tooling such as Hardhat, Foundry, and standard wallet integrations.
 
-| Service | Mainnet | Testnet |
-|---|---|---|
-| **gRPC** | `grpc.lumera.io:443` | `grpc.testnet.lumera.io:443` |
-| **RPC** | `https://rpc.lumera.io` | `https://lumera-testnet-rpc.polkachu.com` |
-| **LCD (REST)** | `https://lcd.lumera.io` | `https://lumera-testnet-api.polkachu.com` |
-| **SN-API** | `https://snapi.lumera.io` | `https://snapi.testnet.lumera.io` |
+Mainnet and Testnet may upgrade on different schedules. Confirm the software version currently deployed on a network before relying on EVM functionality. See the [Smart Contracts overview](/smart-contracts/overview) for configuration and development details.
 
-The official mainnet RPC and LCD hosts can be intermittent. Community providers such as [Polkachu](https://www.polkachu.com/networks/lumera) also serve public Lumera endpoints, and validator snapshots are linked from the [validator setup guides](/validators-mainnet/node-setup).
+## Resources and Support
 
-## EVM access
-
-From `v1.20.0`, nodes enable the EVM JSON-RPC server and OpenRPC discovery by default, so a node you run also serves Ethereum tooling such as Hardhat and Foundry. Testnet runs the v1.20 line today. Mainnet is still on `v1.12.0` and gains EVM support with its upgrade. See [Smart contracts](/smart-contracts/overview) for details.
-
-## Community and support
-
-Join the community for operator support and announcements.
+Join our growing community and use the following resources for technical support, source code, protocol announcements, and network upgrade information.
 
 <CardGroup cols={3}>
   <Card title="Discord" icon="discord" href="https://discord.com/invite/lumeraprotocol">
-    Get help with validator, SuperNode, and developer questions.
+    Get help with Validator, SuperNode, and developer questions.
   </Card>
+
   <Card title="GitHub" icon="github" href="https://github.com/LumeraProtocol">
     Read the source for `lumerad`, the `supernode` daemon, and the SDKs.
   </Card>
+
   <Card title="X" icon="x-twitter" href="https://x.com/lumera">
     Follow protocol announcements and upgrade notices.
   </Card>
 </CardGroup>
 
-## Next steps
+## Next Steps
 
 <CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Upload your first file to Cascade from TypeScript.
+    Connect to Lumera and store your first file through Cascade.
   </Card>
+
   <Card title="Faucet" icon="faucet" href="/faucet">
-    Request free testnet LUME from the Lumera Portal.
+    Request Testnet LUME for development and testing.
   </Card>
-  <Card title="Validator setup" icon="shield-check" href="/validators-mainnet/node-setup">
-    Prepare a node and join the validator set.
+
+  <Card title="Validator Setup" icon="shield-check" href="/validators-mainnet/node-setup">
+    Configure a node and prepare to join the validator set.
   </Card>
 </CardGroup>

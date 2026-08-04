@@ -1,0 +1,162 @@
+Lumera separates consensus from decentralized services through a layered protocol architecture. Rather than requiring every validator to perform storage, verification, or computation, Lumera delegates protocol services to economically bonded SuperNodes while the blockchain coordinates requests, settlement, governance, and cryptographic proofs.
+
+Every interaction with the network follows the same lifecycle: a client requests a protocol service, the blockchain records and coordinates the request, SuperNodes perform the work, and the protocol returns verifiable evidence of the result. This separation allows decentralized intelligent services to scale independently of consensus while remaining transparent, auditable, and trust-minimized.
+
+<img
+  className="block mx-auto dark:hidden"
+  alt="How Lumera works"
+  src="/images/diagrams/how-lumera-works-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="How Lumera works"
+  src="/images/diagrams/how-lumera-works-dark.svg"
+/>
+
+---
+
+## Architectural Principles
+
+Every component of the protocol follows four core architectural principles.
+
+<CardGroup cols={2}>
+  <Card title="Consensus establishes truth" icon="shield-halved">
+    The blockchain records requests, commitments, governance, settlement, and cryptographic proofs. Consensus establishes shared truth—it does not perform every service.
+  </Card>
+
+  <Card title="SuperNodes perform work" icon="server">
+    Storage, verification, retrieval, and decentralized execution are performed by economically bonded SuperNodes operating alongside validators.
+  </Card>
+
+  <Card title="Everything is verifiable" icon="badge-check">
+    Every protocol service produces cryptographic evidence of completion, allowing applications to verify outcomes rather than trust operators.
+  </Card>
+
+  <Card title="One execution framework" icon="diagram-project">
+    Every protocol service follows the same registration, execution, settlement, and verification lifecycle, allowing the protocol to evolve through composition rather than reinvention.
+  </Card>
+</CardGroup>
+
+---
+
+## Protocol Foundation
+
+Lumera is built on the Cosmos SDK and extends it with multiple execution environments, interoperability, and custom protocol modules.
+
+| Component | Purpose |
+| --- | --- |
+| **Cosmos SDK** | Core blockchain framework providing accounts, staking, governance, transactions, gRPC, and REST APIs. |
+| **CometBFT** | Byzantine Fault Tolerant consensus engine providing fast deterministic finality. |
+| **CosmWasm** | Deterministic Rust smart contracts executed within a WebAssembly sandbox. |
+| **Cosmos EVM** | Native Solidity execution with Ethereum-compatible tooling and accounts. |
+| **IBC** | Native interoperability with other Cosmos chains through token transfers, messaging, and Interchain Accounts. |
+
+These components provide the protocol foundation upon which Lumera's custom services are built.
+
+---
+
+## Validator–SuperNode Architecture
+
+Lumera separates consensus from decentralized service execution through two complementary node types.
+
+### Validators
+
+Validators secure the blockchain through Delegated Proof of Stake. They propose and validate blocks, participate in governance, maintain network state, and provide the security guarantees that underpin every protocol service.
+
+### SuperNodes
+
+SuperNodes extend validator infrastructure with decentralized protocol services. Operating alongside validators, they perform storage, verification, retrieval, and decentralized execution while remaining economically bonded to the validator they serve.
+
+This separation allows protocol services to scale independently of consensus while inheriting the economic security of the underlying blockchain.
+
+> **Design Principle**
+>
+> The blockchain is the protocol's control plane.
+>
+> SuperNodes are the execution and memory plane.
+
+---
+
+## Protocol Modules
+
+Lumera's protocol logic is implemented through custom Cosmos SDK modules.
+
+| Module | Responsibility |
+| --- | --- |
+| **x/action** | Registers, coordinates, and settles protocol Actions. |
+| **x/supernode** | Manages SuperNode registration, ranking, health monitoring, and Proof-of-Service rewards. |
+| **x/lumeraid** | Anchors decentralized identities to Lumera addresses. |
+| **x/claim** | Handles legacy token migration and claims. |
+
+Additional support modules provide CosmWasm, Cosmos EVM, fee markets, ERC-20 compatibility, and cross-chain interoperability.
+
+---
+
+## The Action Lifecycle
+
+Every decentralized intelligent service ultimately executes as an **Action**.
+
+Regardless of the service being performed, every Action follows the same protocol lifecycle.
+
+<Steps>
+  <Step title="Register">
+    A client submits a transaction requesting a protocol service. The request is registered on-chain, assigned a unique identifier, and any required service fees are escrowed.
+  </Step>
+  <Step title="Execute">
+    Eligible SuperNodes retrieve the request, perform the required work, and generate cryptographic evidence of completion.
+  </Step>
+  <Step title="Finalize">
+    The protocol validates the result, records the completed Action, and updates its lifecycle state. Failed or expired Actions are handled according to protocol rules.
+  </Step>
+  <Step title="Settle">
+    Once completion requirements are satisfied, escrowed fees are released and the Action reaches its final protocol state.
+  </Step>
+</Steps>
+
+Because every protocol service shares this lifecycle, new capabilities naturally integrate into the protocol without introducing new execution or settlement models.
+
+---
+
+## Protocol Services
+
+Protocol services are the decentralized capabilities applications consume through Lumera. Every service is implemented as an Action, coordinated by the blockchain, executed by economically bonded SuperNodes, and settled through a common protocol lifecycle.
+
+Rather than building isolated products, Lumera extends a unified protocol for decentralized intelligent services. Permanent storage, decentralized identity, durable memory, content verification, verifiable execution, settlement, and future protocol capabilities are all expressed through the same architectural framework. Each new service strengthens the protocol without introducing a new execution model, security architecture, or economic system.
+
+### Current Example: Cascade
+
+Cascade is Lumera's permanent, provable storage service. Files are erasure coded, distributed across SuperNodes, and continuously verified through cryptographic retention proofs, providing durable storage backed by protocol-level verification and economically enforced permanence.
+
+---
+
+## Developer Interfaces
+
+Applications interact with Lumera through multiple developer interfaces depending on their requirements.
+
+<CardGroup cols={2}>
+  <Card title="SDKs" icon="code" href="/sdk/javascript">
+    Build applications using JavaScript, Go, or Rust.
+  </Card>
+
+  <Card title="Smart Contracts" icon="file-code" href="/smart-contracts/overview">
+    Deploy Solidity contracts through the Cosmos EVM or Rust contracts through CosmWasm.
+  </Card>
+
+  <Card title="Lumera Hub" icon="desktop" href="/hub/overview">
+    Manage storage, staking, identity, and protocol interactions.
+  </Card>
+
+  <Card title="CLI & APIs" icon="terminal" href="/sdk/lumerad-cli">
+    Interact directly with the protocol through lumerad, gRPC, REST, and LumeScope.
+  </Card>
+</CardGroup>
+
+---
+
+## Extending the Protocol
+
+Lumera is designed to evolve through composition rather than reinvention.
+
+Every new decentralized intelligent service is implemented as another protocol Action moving through the same registration, execution, verification, and settlement framework. Rather than introducing separate systems for storage, identity, memory, execution, settlement, or future decentralized services, Lumera extends a common architecture built on shared protocol modules, economically bonded SuperNodes, and a unified execution model.
+
+As the protocol evolves, developers continue building against the same architectural foundation while inheriting new protocol capabilities without changing how they integrate with the network.

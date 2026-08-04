@@ -1,10 +1,10 @@
 ---
-title: "Lumera Protocol architecture"
-sidebarTitle: "Architecture"
-description: "How the base chain, custom modules, SuperNode layer, and clients fit together."
+title: "Protocol architecture"
+sidebarTitle: "Protocol Architecture"
+description: "How Lumera's layered architecture coordinates consensus, protocol services, and decentralized execution."
 ---
 
-Lumera Protocol is organized into four layers. The base chain provides consensus and three execution environments. Custom modules add storage, identity, and SuperNode coordination. The SuperNode layer does the heavy off-chain work. Client applications surface all of it to users. This page walks through each layer and how they interact.
+Lumera separates consensus, protocol logic, decentralized services, and developer interfaces into distinct architectural layers. The blockchain serves as the protocol's control plane, coordinating requests, governance, settlement, and cryptographic proofs, while economically bonded SuperNodes execute decentralized intelligent services. Together, these layers allow protocol services to scale independently while preserving the security and trust guarantees of blockchain consensus.
 
 <img
   className="block mx-auto dark:hidden"
@@ -17,42 +17,44 @@ Lumera Protocol is organized into four layers. The base chain provides consensus
   src="/images/diagrams/protocol-stack-dark.svg"
 />
 
-## Base layer
+## Protocol Foundation
 
-The base layer handles block production, consensus, accounts, governance, and smart contract execution.
+The protocol foundation provides consensus, accounts, governance, interoperability, and multiple smart contract execution environments. Together, these components provide the shared foundation upon which Lumera's protocol services are built.
 
-**Cosmos SDK v0.53.6** is the chain framework. It brings CometBFT consensus with fast finality, the standard modules (`x/bank`, `x/staking`, `x/gov`, `x/distribution`), and automatic gRPC and REST APIs for every module. The whole node ships as the single `lumerad` binary.
+| Component | Purpose |
+| --- | --- |
+| **Cosmos SDK** | Core blockchain framework providing accounts, staking, governance, transactions, gRPC, and REST APIs shipped as a single `lumerad` binary. |
+| **CometBFT** | Byzantine Fault Tolerant consensus engine providing fast deterministic finality. |
+| **CosmWasm** | Deterministic Rust smart contracts executed within a WebAssembly sandbox and gas metering. |
+| **Cosmos EVM** | Native Solidity execution with Ethereum-compatible tooling and accounts. [Find out how →](/smart-contracts/overview) |
+| **IBC** | Native interoperability with other Cosmos chains through token transfers, messaging, and Interchain Accounts. [Learn more →](/cascade/concepts/interchain-accounts) |
 
-**CosmWasm** runs Rust smart contracts compiled to WebAssembly, sandboxed with deterministic gas metering.
+## Validator–SuperNode architecture
 
-**IBC** connects Lumera to other Cosmos chains for token transfers and arbitrary messages. Interchain accounts (ICS-27) let external chains drive Cascade remotely. See [interchain accounts](/cascade/concepts/interchain-accounts).
+Lumera separates consensus from decentralized service execution through two complementary node types. This architectural separation allows the blockchain to establish shared truth while specialized infrastructure performs the protocol services applications consume.
 
-**Cosmos EVM** runs Solidity contracts with standard Ethereum tooling. One private key operates both an EVM address (`0x...`) and a bech32 address (`lumera1...`). The [smart contracts overview](/smart-contracts/overview) covers it in depth.
+**Validators** secure the network through Delegated Proof of Stake, proposing and validating blocks with CometBFT, maintaining consensus, and participating in on-chain governance. Together, they provide the security guarantees upon which every protocol service depends. [Run a validator →](/validators-mainnet/overview)
 
-## Two node types
+**SuperNodes** are specialized network nodes operated alongside validators. They execute decentralized intelligent services—including permanent storage, verification, retrieval, and decentralized execution—while remaining economically bonded to the validator they serve. Because protocol services execute outside of consensus, Lumera can scale sophisticated decentralized services without increasing the cost or complexity of block production. [Learn more about SuperNodes →](/supernodes/overview)
 
-Lumera separates consensus from services.
+The blockchain acts as the protocol's **control plane**, recording requests, commitments, payments, governance, and cryptographic proofs. SuperNodes form the **execution and data plane**, performing work directly for applications and returning verifiable evidence of completion. Data moves directly between clients and SuperNodes without passing through consensus, allowing the network to remain both scalable and trust-minimized.
 
-**Validators** secure the chain through delegated proof of stake. They propose and sign blocks with CometBFT and vote on governance. See the [validator overview](/validators-mainnet/overview).
+## Protocol Modules
 
-**SuperNodes** are companion daemons run by validators. They store files for Cascade, analyze content for Sense, and earn proof of service rewards from action fees. This split keeps consensus light while heavy compute and storage scale independently. See the [SuperNode overview](/supernodes/overview).
+Lumera's protocol logic is implemented through a set of custom Cosmos SDK modules that coordinate protocol services, decentralized identity, SuperNode operations, and network state. Support modules introduced with the Cosmos EVM extend interoperability while preserving the same architectural model.
 
-The chain is the control plane. It records requests, escrows fees, and tracks results. SuperNodes are the data plane. Files move directly between clients and SuperNodes and never pass through consensus.
-
-## Custom module layer
-
-Four custom modules implement the protocol logic. The EVM upgrade added support modules (`x/vm`, `x/feemarket`, `x/precisebank`, `x/erc20`, `x/evmigration`) documented on the [EVM upgrade page](/upgrades/evm-upgrade). This table is a map, not deep documentation. The linked pages cover the developer workflows.
+The EVM upgrade has added support modules (`x/vm`, `x/feemarket`, `x/precisebank`, `x/erc20`, `x/evmigration`) documented [here](/upgrades/evm-upgrade). This table is a map, not deep documentation. The linked pages cover the developer workflows.
 
 | Module | What it does |
 | --- | --- |
-| `x/action` | Manages the lifecycle of Cascade and Sense actions from registration to approval |
-| `x/supernode` | Registers SuperNodes, ranks the active top list, tracks metrics, and pays rewards |
+| `x/action` | Coordinates the lifecycle of protocol Actions from registration through settlement |
+| `x/supernode` | Registers SuperNodes, maintains the active service set, tracks performance, and distributes Proof-of-Service rewards. |
 | `x/lumeraid` | Anchors decentralized identities to Lumera addresses |
 | `x/claim` | Handles legacy token claims and migration |
 
 ### The action lifecycle
 
-Every Cascade or Sense request is an action, an on-chain record with a state machine.
+Every decentralized intelligent service is executed as one or more protocol Actions—on-chain records that move through a common lifecycle from registration to settlement.
 
 <Steps>
   <Step title="Register">
@@ -69,13 +71,17 @@ Every Cascade or Sense request is an action, an on-chain record with a state mac
   </Step>
 </Steps>
 
-The fee escrow makes storage trust free in both directions. You only pay when the network actually stores your file. Current Cascade parameters are 10000 `ulume` base plus 10 `ulume` per KB, about 0.02 LUME for a 1 MB file. Governance can change these parameters.
+Fee escrow aligns incentives for both clients and service providers. Applications pay only when protocol services complete successfully, while SuperNodes are compensated only after verifiable completion. Governance determines the fee parameters for each protocol service.
 
 ### SuperNode registry and ranking
 
 The `x/supernode` module is the source of truth for SuperNode registrations. It stores each node's address, endpoint, and stake, maintains the ranked top list that `x/action` routes work to, and accounts for completed actions. A SuperNode must stay tied to an active validator. If the validator is jailed or unbonds, the SuperNode drops off the list.
 
-## SuperNode layer
+## Protocol Services
+
+Protocol services are the decentralized capabilities applications consume through Lumera. Every service is implemented through the Action framework, executed by economically bonded SuperNodes, and coordinated by the blockchain through a common execution and settlement lifecycle.
+
+Current protocol services demonstrate this architecture today, while future services extend the same framework rather than introducing separate systems.
 
 Each SuperNode runs the `supernode` binary alongside `lumerad`.
 
@@ -83,23 +89,31 @@ Each SuperNode runs the `supernode` binary alongside `lumerad`.
 
 Cascade is permanent file storage with a pay once, store forever model. The SuperNode receives a file through its streaming gRPC endpoint, encodes it with RaptorQ erasure coding, and spreads the symbols across a Kademlia DHT. Any sufficiently large subset of symbols rebuilds the file, so the network self heals when nodes leave. Start with [how Cascade works](/cascade/how-cascade-works) and go deeper in [erasure coding](/cascade/concepts/erasure-coding).
 
-### Sense
-
-Sense is the network's attestation service for content. SuperNodes compute a perceptual fingerprint of submitted media, a feature vector that captures what the content looks like rather than its exact bytes. They compare it against the network's registered assets and record a similarity verdict on chain. Slightly altered copies still match, which plain hashing cannot do.
-
-Sense results include a similarity score between 0 and 1, the list of near duplicate candidates, and the fingerprint hash. All of it is permanently queryable, which makes Sense useful for originality checks, provenance records, and duplicate prevention in marketplaces. Sense actions cost less than Cascade because only the analysis result is stored, not the file.
-
 ### Identity with LumeraID
 
 LumeraID anchors identity records to Lumera addresses through the `x/lumeraid` module. There is no separate username. Your address is your identity, and the record is controlled by your private key. The protocol uses it wherever ownership must be proven. Cascade downloads of private files require a signature that matches the registering identity, which is why files are private by default even though their encoded symbols live on a public network. Signatures follow ADR-036, the Cosmos standard for signing arbitrary data.
 
-## Client layer
+### Future Services
+
+Lumera's execution framework is designed to support a growing ecosystem of decentralized intelligent services. Because every service shares the same Action framework, execution lifecycle, settlement model, and verification architecture, new capabilities extend the protocol rather than introducing separate systems.
+
+Future protocol services extend this same architectural foundation to capabilities such as durable memory, decentralized identity, verifiable execution, settlement, and additional decentralized intelligent services.
+
+## Developer Interfaces
 
 **Lumera Hub** is the official client for web, desktop, and mobile at [hub.lumera.io](https://hub.lumera.io). It covers balances, staking, storage, and identity. See the [Hub overview](/hub/overview).
 
 **LumeScope** is a read-only REST API aggregator for developers who want decoded network state without running a node. It decodes action metadata, aggregates SuperNode metrics, and serves 16 endpoints with a Swagger UI. See the [LumeScope API reference](/api/lumescope).
 
 **`lumerad`** is the chain binary and CLI. It runs nodes, manages keys, broadcasts transactions, and queries every module. See the [CLI reference](/sdk/lumerad-cli).
+
+## Extending the Protocol
+
+The architecture above is intentionally composable. Every new decentralized intelligent service is implemented as another protocol Action moving through the same registration, execution, verification, and settlement lifecycle.
+
+Rather than introducing separate systems for memory, identity, execution, settlement, or future protocol capabilities, Lumera extends a shared architectural foundation built on common protocol modules, economically bonded SuperNodes, and a unified execution framework.
+
+As the protocol evolves, developers continue building against the same APIs, execution model, and architectural foundation while inheriting new protocol capabilities as native services.
 
 The [SDKs](/sdk/javascript) wrap the chain APIs and the SuperNode protocol for JavaScript and Go applications.
 

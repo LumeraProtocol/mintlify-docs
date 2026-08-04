@@ -1,76 +1,96 @@
 ---
-title: "The Lumera ecosystem"
+title: "Ecosystem"
 sidebarTitle: "Ecosystem"
-description: "Find the apps, developer tools, infrastructure, and wallets built around Lumera Protocol."
+description: "Official applications, developer tools, infrastructure, wallets, and community resources for the Lumera Protocol."
 ---
 
-This page maps the ecosystem around Lumera Protocol. Every entry links to the app or the repository behind it.
+The Lumera ecosystem brings together the official applications, developer tools, infrastructure, wallets, and community resources that power the protocol. Whether you're building decentralized applications, operating infrastructure, or participating in governance, this page serves as a central directory for the tools and resources available across the network.
 
-## Apps
+## Official Applications
 
 <CardGroup cols={3}>
   <Card title="Lumera Hub" icon="browser" href="https://hub.lumera.io">
-    Web, desktop, and mobile client to manage tokens, interact with SuperNodes, and store data.
+    Official web, desktop, and mobile application for managing LUME, interacting with protocol services, and managing decentralized identity.
   </Card>
-  <Card title="Lumera Portal mainnet" icon="chart-line" href="https://portal.lumera.io/lumera-mainnet-1">
-    Explorer and dashboards for `lumera-mainnet-1` with staking and governance.
+
+  <Card title="Portal (Mainnet)" icon="chart-line" href="https://portal.lumera.io/lumera-mainnet-1">
+    Network explorer, staking dashboard, governance portal, and validator monitoring for Mainnet.
   </Card>
-  <Card title="Lumera Portal testnet" icon="flask" href="https://portal.testnet.lumera.io/lumera-testnet-2">
-    Explorer and dashboards for `lumera-testnet-2`, including the testnet faucet.
+
+  <Card title="Portal (Testnet)" icon="flask" href="https://portal.testnet.lumera.io/lumera-testnet-2">
+    Explorer, faucet, and operator dashboard for Testnet.
   </Card>
 </CardGroup>
 
-## Developer tools
+## Developer Tools
+
+Official SDKs, APIs, node software, and libraries for building applications on the Lumera Protocol.
 
 | Tool | Description |
-|---|---|
-| [`@lumera-protocol/sdk-js`](https://www.npmjs.com/package/@lumera-protocol/sdk-js) | TypeScript SDK for Node.js and browsers, published on npm. |
-| [`sdk-go`](https://github.com/LumeraProtocol/sdk-go) | Go SDK covering gRPC queries, transactions, and Cascade uploads and downloads. |
-| [`sdk-rs`](https://github.com/LumeraProtocol/sdk-rs) | Rust SDK for server-side apps, routing file transfers through SN-API. |
-| [`lumerad`](https://github.com/LumeraProtocol/lumera) | Full node and wallet CLI that ships with the chain. |
-| [`rq-go`](https://github.com/LumeraProtocol/rq-go) | Official Go library for RaptorQ (RFC 6330) erasure coding. |
-| [LumeScope](https://github.com/LumeraProtocol/lumescope) | Read-only REST API aggregator serving decoded action metadata, Cascade previews, and SuperNode metrics. |
+| --- | --- |
+| [`@lumera-protocol/sdk-js`](https://www.npmjs.com/package/@lumera-protocol/sdk-js) | TypeScript SDK for Node.js and browsers. |
+| [`sdk-go`](https://github.com/LumeraProtocol/sdk-go) | Go SDK for gRPC queries, transactions, and protocol services. |
+| [`sdk-rs`](https://github.com/LumeraProtocol/sdk-rs) | Rust SDK for server-side applications. |
+| [`lumerad`](https://github.com/LumeraProtocol/lumera) | Official chain binary and CLI for developers and node operators. |
+| [`rq-go`](https://github.com/LumeraProtocol/rq-go) | Official Go implementation of RaptorQ (RFC 6330) erasure coding. |
+| [LumeScope](https://github.com/LumeraProtocol/lumescope) | Read-only REST API for decoded protocol data, SuperNode metrics, and Action metadata. |
 
-Start with the [JavaScript SDK](/sdk/javascript) or [Go SDK](/sdk/go) docs. LumeScope endpoints are covered in the [API reference](/api/overview).
+Start with the [JavaScript SDK](/sdk/javascript) or [Go SDK](/sdk/go). LumeScope endpoints are documented in the [API reference](/api/overview).
 
 ## Infrastructure
 
-| Repository | Description |
-|---|---|
-| [`supernode`](https://github.com/LumeraProtocol/supernode) | Companion daemon that validators run to provide Cascade and Sense services. |
-| [`lumera-networks`](https://github.com/LumeraProtocol/lumera-networks) | Genesis files, seeds, network configs, and operator manuals. |
+Infrastructure repositories and operational resources for running and supporting the Lumera Protocol.
+
+| Resource | Description |
+| --- | --- |
+| [Validator Documentation](/validators-mainnet/overview) | Operate a validator, participate in consensus, and secure the network. |
+| [SuperNode Documentation](/supernodes/overview) | Provide decentralized protocol services and earn protocol-service fees. |
+| [`lumera-networks`](https://github.com/LumeraProtocol/lumera-networks) | Genesis files, chain configuration, seeds, snapshots, and network resources. |
+| [`supernode`](https://github.com/LumeraProtocol/supernode) | Open-source SuperNode implementation. |
+| [`lumerad`](...) | Official chain binary for validators, developers, and node operators. |
 
 ## Wallets
 
 | Wallet | Description |
-|---|---|
-| Keplr | Cosmos wallet that uses bech32 `lumera1...` addresses. |
+| --- | --- |
+| Keplr | Cosmos wallet supporting native `lumera1...` addresses. |
 | Leap | Cosmos wallet supported by the JavaScript SDK. |
-| MetaMask | Ethereum wallet that uses hex `0x...` addresses once an account completes [EVM migration](/upgrades/evm-upgrade). |
+| MetaMask | Ethereum-compatible wallet supporting Lumera's [Cosmos EVM](/smart-contracts/overview). |
 
-See the [Hub wallet guide](/hub/wallet) for setup.
+See the [Hub Wallet Guide](/hub/wallet) for setup instructions.
 
-## Community
+## Community & Resources
 
 <CardGroup cols={3}>
-  <Card title="GitHub" icon="github" href="https://github.com/LumeraProtocol">
-    Read the source for the chain, the SuperNode daemon, and the SDKs.
-  </Card>
-  <Card title="X" icon="x-twitter" href="https://x.com/lumera">
-    Follow protocol announcements and upgrade notices.
-  </Card>
   <Card title="Discord" icon="discord" href="https://discord.com/invite/lumeraprotocol">
-    Ask questions and get support from the team and other builders.
+    Ask questions, get support, and connect with the Lumera community.
+  </Card>
+
+  <Card title="GitHub" icon="github" href="https://github.com/LumeraProtocol">
+    Browse the protocol source code, SDKs, and infrastructure repositories.
+  </Card>
+
+  <Card title="X" icon="x-twitter" href="https://x.com/lumera">
+    Follow protocol announcements, releases, and ecosystem updates.
   </Card>
 </CardGroup>
 
-## Next steps
+## Building on Lumera
 
-<CardGroup cols={2}>
+Whether you're building decentralized applications, operating infrastructure, or contributing to the protocol, every component of the Lumera ecosystem is designed around a common architectural foundation. Developers build against shared SDKs and protocol services, operators provide decentralized infrastructure through Validators and SuperNodes, and the community governs the protocol through staked LUME.
+
+## Ready to Build?
+
+<CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Upload your first file to Cascade from TypeScript.
+    Upload your first file and build your first application on Lumera.
   </Card>
-  <Card title="Networks" icon="network-wired" href="/networks">
-    Find chain IDs, endpoints, seeds, and genesis files.
+
+  <Card title="SDK Documentation" icon="code" href="/sdk/javascript">
+    Explore the JavaScript, Go, and Rust SDKs.
+  </Card>
+
+  <Card title="Protocol Architecture" icon="sitemap" href="/architecture">
+    Understand how the protocol, SuperNodes, and execution framework work together.
   </Card>
 </CardGroup>

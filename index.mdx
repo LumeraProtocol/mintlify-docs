@@ -1,112 +1,132 @@
 ---
-title: "What is Lumera"
+title: "Lumera Protocol"
 sidebarTitle: "Introduction"
-description: "Lumera is a Layer 1 blockchain for permanent, provable data and decentralized intelligent services, built on a Validator-SuperNode architecture."
+description: "Infrastructure for permanent, provable data and decentralized intelligent services."
 ---
 
-Lumera is a Layer 1 blockchain built for permanent data and decentralized intelligent services. Files stored on Lumera are erasure-coded, distributed across a network of independent SuperNodes, and retained indefinitely for a single upfront payment. The network continuously re-verifies that stored data is intact and retrievable, and records those proofs on chain.
+Lumera is a decentralized protocol that enables enterprises and developers to build applications on permanent, provable data and decentralized intelligent services. By combining permanent data, verifiable execution, and long-lived digital state within a common protocol framework, Lumera provides infrastructure that remains transparent, auditable, and independent of centralized providers.
 
-Unlike general-purpose chains, Lumera is purpose-built for workloads that need provable data and verifiable execution. Its defining structural choice is the Validator-SuperNode architecture: validators secure consensus, while SuperNodes, dedicated servers bonded to those validators, perform the heavy work of storing data, verifying content, and running compute. Consensus stays light and fast; storage and computation scale independently of it.
+Unlike general-purpose blockchains, Lumera is built around a simple architectural principle: consensus should secure the network, not perform every service. Validators maintain consensus and governance, while economically bonded SuperNodes provide storage, verification, retrieval, and decentralized execution. This separation allows sophisticated services to scale independently without compromising security or decentralization.
 
-Lumera is building infrastructure for AI agents on this foundation: persistent memory, agent-owned identity, verifiable execution, and settlement. The storage layer, Cascade, is live on mainnet and fully documented here. Documentation for each new capability is added as it ships.
+The blockchain serves as the network's coordination layer, recording requests, commitments, payments, proofs, and governance, while SuperNodes perform the underlying work and return cryptographic evidence of completion. Rather than forcing every computation into consensus, Lumera combines the scalability of distributed systems with the trust guarantees of blockchain infrastructure.
 
-## Key features
+Lumera is a protocol designed to support an expanding ecosystem of decentralized intelligent services built on a shared architectural foundation. As the network evolves, each new capability extends the protocol through the same architectural principles, execution model, and economic framework—creating a unified platform where permanent storage, verification, identity, memory, execution, and settlement reinforce one another rather than exist as independent systems.
+
+## Key Features
 
 <CardGroup cols={2}>
-  <Card title="Permanent, provable storage" icon="database">
-    Pay once and data is retained indefinitely. SuperNodes must periodically prove they still hold what they are paid to keep, and those proofs are recorded on chain.
+  <Card title="Permanent, Provable Storage" icon="database">
+    Store data once and retain it indefinitely. SuperNodes continuously prove they still hold the data they are responsible for, with cryptographic proofs recorded on chain.
   </Card>
 
-  <Card title="Validator-SuperNode architecture" icon="server">
-    A Proof-of-Service layer sits alongside Proof-of-Stake consensus, rewarding operators for storage, verification, and compute rather than block production alone.
+  <Card title="Validator-SuperNode Architecture" icon="server">
+    Validators secure consensus while dedicated SuperNodes provide storage, verification, retrieval, and decentralized services, allowing execution to scale independently of consensus.
   </Card>
 
-  <Card title="Action and Agent framework" icon="diagram-project">
-    A modular execution model where atomic Actions handle storage, verification, and computation, and Agents compose them into autonomous workflows.
+  <Card title="Composable Services" icon="diagram-project">
+    Every decentralized intelligent service is delivered as a modular protocol service with a common lifecycle for registration, execution, settlement, and verification. New services extend the protocol without introducing separate systems.
   </Card>
 
-  <Card title="Adaptive economics" icon="chart-line">
-    Issuance adjusts block by block against a target bonded ratio, and a share of every transaction fee is burned, tying scarcity to network usage.
+  <Card title="Sustainable Protocol Economics" icon="chart-line">
+    Protocol fees compensate network operators, sustain long-lived services, and align economic incentives between developers, users, validators, and SuperNodes.
   </Card>
 
-  <Card title="Interoperable by default" icon="arrows-left-right">
-    Solidity contracts run with standard EVM tooling, and IBC lets applications on other chains use Lumera's services without migrating.
+  <Card title="Interoperable by Design" icon="arrows-left-right">
+    Build with familiar EVM tooling, integrate across the Cosmos ecosystem through IBC, or consume Lumera's services without migrating existing applications.
   </Card>
 
-  <Card title="On-chain governance" icon="landmark">
-    Staked LUME governs protocol parameters, fee structures, issuance, and ecosystem funding through a stake-weighted proposal and voting process.
+  <Card title="On-Chain Governance" icon="landmark">
+    LUME holders govern protocol parameters, service economics, treasury allocation, and future network upgrades through decentralized governance.
   </Card>
 </CardGroup>
+
+## Design Principle
+
+Lumera is built around a simple architectural principle:
+
+> **Reason off-chain. Verify on-chain.**
+
+**Consensus should establish truth—not perform every computation.**
+
+The blockchain acts as the protocol's control plane, recording commitments, permissions, payments, governance, and cryptographic proofs, while SuperNodes perform storage, verification, retrieval, and decentralized services.
+
+By separating consensus from execution, Lumera allows sophisticated protocol services to scale independently while ensuring every operation can produce verifiable evidence rather than requiring users to trust the party performing the work.
 
 ## The Action and Agent framework
 
-Lumera's execution model separates atomic work from orchestration. This distinction is fundamental to how the network operates and how it extends.
+Every decentralized intelligent service on Lumera is implemented through a common execution framework built around **Actions** and **Agents**. Together, they provide a consistent model for how protocol services are requested, executed, verified, and settled across the network.
 
-**Actions** are low-level, stateless operations executed by SuperNodes. Each Action is registered on chain, escrows a fee, moves through a defined lifecycle, and settles when the work is verifiably complete. Actions available today:
+**Actions** are the atomic building blocks of decentralized intelligent services. Each Action represents a single verifiable unit of work executed by SuperNodes, following a common lifecycle for registration, execution, settlement, and proof generation. Because every Action follows the same framework, new protocol services extend the network without introducing new execution models.
 
-| Action | What it does |
-| --- | --- |
-| **Cascade** | Stores data permanently, erasure-coded across SuperNodes with continuous retention proofs |
-| **Sense** | Records verifiable statements about content, starting with near-duplicate and manipulation detection |
+### Example: Cascade
 
-**Agents** are higher-level, goal-oriented processes that compose Actions into workflows: retrieving data, verifying it, computing over it, and acting on the result without a human driving each step. Agents are the reason the primitives below them are designed the way they are. An autonomous process needs memory that outlives its session, work it can prove to a counterparty, and settlement that does not depend on a trusted intermediary.
+Cascade is an Action that permanently stores data using erasure coding, decentralized SuperNode storage, and continuous cryptographic retention proofs.
 
-Because Actions are modular and share one lifecycle, registry, and settlement path, new capabilities extend the framework rather than replacing it. Every Action produces the same kind of on-chain evidence, which is what makes composition safe.
+**Agents** build on top of Actions. Rather than performing work directly, Agents coordinate and compose one or more Actions into higher-level decentralized intelligent services, allowing applications to orchestrate storage, verification, computation, and future protocol services through a single execution framework.
 
-## What you can build today
+This layered architecture allows Lumera to evolve through composition rather than reinvention. Every new decentralized intelligent service shares the same execution model, verification framework, and settlement lifecycle, creating a unified protocol where services remain interoperable by design.
 
-Cascade is live on mainnet. Store any data and it is encoded with RaptorQ erasure coding and spread across economically bonded SuperNodes, so any sufficiently large subset of the pieces can rebuild the original. No single node, and no single company, can lose or delete it. Ongoing retention is funded by Everlight, an endowment mechanism that pays operators for as long as they hold data, which is what makes a one-time payment sustainable.
+## Building on Lumera
 
-<img className="block dark:hidden mx-auto" alt="How Cascade works" src="/images/diagrams/how-cascade-works-light.svg" />
+Applications built on Lumera consume protocol services through a common execution framework. Today, developers can permanently store data using Cascade, with every file erasure-coded, distributed across economically bonded SuperNodes, and continuously verified through cryptographic retention proofs. Rather than relying on a centralized storage provider, applications receive permanent, verifiable data backed by the protocol itself.
 
-<img className="mx-auto hidden dark:block" alt="How Cascade works" src="/images/diagrams/how-cascade-works-dark.svg" />
+This foundation enables developers to build applications that require long-lived data, verifiable infrastructure, and decentralized execution without managing storage networks or trusted intermediaries. As additional protocol services are introduced, they become available through the same framework and developer experience.
+
+<img
+  className="block mx-auto dark:hidden"
+  alt="How Cascade works"
+  src="/images/diagrams/how-cascade-works-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="How Cascade works"
+  src="/images/diagrams/how-cascade-works-dark.svg"
+/>
 
 <CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Store your first file from TypeScript in a few minutes.
+    Store your first file from TypeScript in just a few minutes.
   </Card>
 
   <Card title="How Cascade works" icon="database" href="/cascade/how-cascade-works">
-    The actions, fees, and lifecycle behind permanent storage.
+    Learn how permanent storage, fees, and retention proofs work.
   </Card>
 
   <Card title="SDKs" icon="code" href="/sdk/javascript">
-    Build in TypeScript, Go, or Rust.
+    Build using TypeScript, Go, or Rust.
   </Card>
 </CardGroup>
 
-## How the network runs
+## Protocol Architecture
 
-Validators secure the chain through delegated proof of stake, proposing and signing blocks and voting on governance. A validator can also run a SuperNode, earning Proof-of-Service rewards from service fees on top of staking rewards. A SuperNode stays active only while its validator meets the self-stake threshold, which keeps service capacity tied to real economic commitment.
+Lumera separates consensus from service execution through a Validator–SuperNode architecture.
 
-The chain is the control plane: it records requests, escrows fees, tracks results, and holds identity and governance state. SuperNodes are the execution and memory planes: data moves directly between clients and SuperNodes and never passes through consensus. LUME is the native asset for staking, transaction fees, and service payments, and all protocol revenue accrues in it.
+Validators secure the network through delegated Proof of Stake, proposing and validating blocks while governing protocol parameters. SuperNodes provide the protocol services applications consume, including storage, verification, retrieval, and decentralized execution. A SuperNode remains active only while bonded to an eligible validator, ensuring service capacity is backed by real economic commitment.
+
+The blockchain serves as the protocol's control plane, recording requests, commitments, payments, governance, and cryptographic proofs. SuperNodes serve as the execution and memory layers, performing work directly for clients without routing data through consensus. LUME powers staking, transaction fees, governance, and protocol services, aligning the network's economic incentives around a single native asset.
 
 <CardGroup cols={2}>
   <Card title="Architecture" icon="sitemap" href="/architecture">
-    How the chain, modules, SuperNodes, and clients fit together.
+    Learn how validators, SuperNodes, modules, and clients interact.
   </Card>
 
   <Card title="LUME" icon="coins" href="/token">
-    Token utility, supply mechanics, and staking economics.
+    Explore token utility, supply mechanics, and staking.
   </Card>
 
-  <Card title="Protocol revenue" icon="receipt" href="/protocol-revenue">
-    The three revenue streams and how fees are distributed and burned.
+  <Card title="Protocol economics" icon="receipt" href="/protocol-revenue">
+    Understand protocol revenue, fee distribution, and sustainability.
   </Card>
 
   <Card title="Governance" icon="landmark" href="/governance">
-    How proposals, voting, and parameter changes work.
+    Learn how protocol upgrades and parameter changes are governed.
   </Card>
 </CardGroup>
 
-## Where this is going
+## Lumera Vision
 
-Permanent, provable storage is the first of five capabilities Lumera is building for agents:
+Lumera is designed as a long-lived protocol rather than a collection of independent products. The same architectural principles that enable permanent, provable data naturally extend to durable memory, decentralized identity, verifiable execution, settlement, trust, and future decentralized intelligent services.
 
-1. **Memory** - durable, verifiable state that survives sessions, models, and providers. Live today through Cascade.
-2. **Identity** - an on-chain identity an agent owns, with delegated authority and explicit spending limits.
-3. **Verifiable execution** - work that produces a signed receipt, so a counterparty can confirm what ran and what it cost.
-4. **Settlement** - payment that releases only against acknowledged work, with disputes resolved from evidence.
-5. **Trust** - a record compiled from what participants actually did rather than what they claim.
+Rather than introducing separate systems for each new capability, Lumera extends a common execution framework, economic model, and security architecture. Every new protocol service builds upon the same foundation, allowing the network to evolve through composition rather than reinvention.
 
-Each capability builds on the last, and each is expressed through the same Action and Agent framework. Everything documented here works today.
+The result is a unified protocol where storage, memory, identity, verification, execution, settlement, and intelligent services reinforce one another through a consistent architectural model—providing developers with a stable platform that becomes more capable over time without requiring them to rebuild on a different foundation.
