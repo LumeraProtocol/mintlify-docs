@@ -14,33 +14,14 @@ The scheme uses two keys. The wallet key is re-derived from a wallet signature w
 
 <img
   className="block mx-auto dark:hidden"
-  alt="Encrypted Storage Architecture"
+  alt="A wallet signature over a fixed ADR-036 message is hashed with BLAKE2b into a wallet key that is never stored. The wallet key encrypts a random per-file document key, the document key encrypts the file bytes, and the result is packaged into a manifest JSON and uploaded to Cascade, where it is public but unreadable without the keys."
   src="/images/diagrams/encrypted-storage-light.svg"
 />
 <img
   className="mx-auto hidden dark:block"
-  alt="Encrypted Storage Architecture"
+  alt="A wallet signature over a fixed ADR-036 message is hashed with BLAKE2b into a wallet key that is never stored. The wallet key encrypts a random per-file document key, the document key encrypts the file bytes, and the result is packaged into a manifest JSON and uploaded to Cascade, where it is public but unreadable without the keys."
   src="/images/diagrams/encrypted-storage-dark.svg"
 />
-
-```text
-wallet signs a fixed message (ADR-036)
-        |
-        v  BLAKE2b hash of the signature
-wallet key (256 bit, re-derived on demand, never stored)
-        |
-        v  encrypts
-document key (random, generated once per file)
-        |
-        v  encrypts
-file bytes
-        |
-        v
-manifest JSON (ciphertext, nonces, wrapped document key)
-        |
-        v
-upload to Cascade (public but unreadable without the keys)
-```
 
 ## Implement the pattern
 
