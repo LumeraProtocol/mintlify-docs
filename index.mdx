@@ -52,6 +52,17 @@ The blockchain acts as the protocol's control plane, recording commitments, perm
 
 By separating consensus from execution, Lumera allows sophisticated protocol services to scale independently while ensuring every operation can produce verifiable evidence rather than requiring users to trust the party performing the work.
 
+<img
+  className="block mx-auto dark:hidden"
+  alt="Your app sends a request and fee to the control plane. Data moves directly to the execution plane without passing through consensus. SuperNodes return evidence of completion to the chain."
+  src="/images/diagrams/protocol-planes-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Your app sends a request and fee to the control plane. Data moves directly to the execution plane without passing through consensus. SuperNodes return evidence of completion to the chain."
+  src="/images/diagrams/protocol-planes-dark.svg"
+/>
+
 ## The Action and Agent framework
 
 Every decentralized intelligent service on Lumera is implemented through a common execution framework built around **Actions** and **Agents**. Together, they provide a consistent model for how protocol services are requested, executed, verified, and settled across the network.
