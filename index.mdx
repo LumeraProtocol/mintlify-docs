@@ -52,6 +52,17 @@ The blockchain acts as the protocol's control plane, recording commitments, perm
 
 By separating consensus from execution, Lumera allows sophisticated protocol services to scale independently while ensuring every operation can produce verifiable evidence rather than requiring users to trust the party performing the work.
 
+<img
+  className="block mx-auto dark:hidden"
+  alt="Your app sends a request and fee to the control plane. Data moves directly to the execution plane without passing through consensus. SuperNodes return evidence of completion to the chain."
+  src="/images/diagrams/protocol-planes-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Your app sends a request and fee to the control plane. Data moves directly to the execution plane without passing through consensus. SuperNodes return evidence of completion to the chain."
+  src="/images/diagrams/protocol-planes-dark.svg"
+/>
+
 ## The Action and Agent framework
 
 Every decentralized intelligent service on Lumera is implemented through a common execution framework built around **Actions** and **Agents**. Together, they provide a consistent model for how protocol services are requested, executed, verified, and settled across the network.
@@ -71,17 +82,6 @@ This layered architecture allows Lumera to evolve through composition rather tha
 Applications built on Lumera consume protocol services through a common execution framework. Today, developers can permanently store data using Cascade, with every file erasure-coded, distributed across economically bonded SuperNodes, and continuously verified through cryptographic retention proofs. Rather than relying on a centralized storage provider, applications receive permanent, verifiable data backed by the protocol itself.
 
 This foundation enables developers to build applications that require long-lived data, verifiable infrastructure, and decentralized execution without managing storage networks or trusted intermediaries. As additional protocol services are introduced, they become available through the same framework and developer experience.
-
-<img
-  className="block mx-auto dark:hidden"
-  alt="How Cascade works"
-  src="/images/diagrams/how-cascade-works-light.svg"
-/>
-<img
-  className="mx-auto hidden dark:block"
-  alt="How Cascade works"
-  src="/images/diagrams/how-cascade-works-dark.svg"
-/>
 
 <CardGroup cols={3}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">

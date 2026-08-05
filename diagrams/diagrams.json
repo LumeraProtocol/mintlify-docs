@@ -909,7 +909,7 @@
     "y": 15,
     "w": 170,
     "h": 60,
-    "label": "Lumera SDK\n(works!)"
+    "label": "Lumera SDK\n"
    },
    {
     "type": "arrow",
@@ -962,7 +962,7 @@
     "y": 163,
     "w": 170,
     "h": 60,
-    "label": "Your API\n(Node.js, no Cascade)"
+    "label": "Your API\n(Node.js)"
    }
   ]
  },

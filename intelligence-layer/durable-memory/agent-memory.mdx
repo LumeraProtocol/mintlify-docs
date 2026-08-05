@@ -22,30 +22,16 @@ Agent Memory separates those roles. The record is append-only and content-addres
 
 ## System layers
 
-```text
-  Agent frameworks (LangGraph, Claude Code, and similar hosts)
-        │  MCP connector          │  framework memory provider
-        ▼                         ▼
-  ┌─────────────────────────────────────────────────────┐
-  │  Agent Memory client (Python, TypeScript)           │  ← encryption
-  │  entries · sealing policy · keys · verification     │    boundary
-  └───────────────┬─────────────────────┬───────────────┘
-       gateway mode                self-custody mode
-                │                         │
-  ┌─────────────▼─────────────┐           │
-  │  Hosted gateway           │           │
-  │  staging log · sealer     │           │
-  │  per-developer fee accounts│          │
-  └─────────────┬─────────────┘           │
-                └────────────┬────────────┘
-                             ▼
-  ┌─────────────────────────────────────────────────────┐
-  │  Lumera mainnet (unchanged)                         │
-  │  Cascade actions, LEP-5 commitments, fees           │
-  │  SuperNodes, RaptorQ symbols, storage challenges    │
-  │  Everlight retention funding                        │
-  └─────────────────────────────────────────────────────┘
-```
+<img
+  className="block mx-auto dark:hidden"
+  alt="Agent frameworks reach the Agent Memory client through an MCP connector or a framework memory provider. The client is the encryption boundary. Gateway mode passes through a hosted gateway, self-custody mode anchors directly, and both settle on Lumera mainnet, which is unchanged."
+  src="/images/diagrams/agent-memory-layers-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="Agent frameworks reach the Agent Memory client through an MCP connector or a framework memory provider. The client is the encryption boundary. Gateway mode passes through a hosted gateway, self-custody mode anchors directly, and both settle on Lumera mainnet, which is unchanged."
+  src="/images/diagrams/agent-memory-layers-dark.svg"
+/>
 
 Two modes exist because two different developers exist. Gateway mode hides keys, gas, and SuperNode routing entirely, so a developer never touches a wallet. Self-custody mode removes the gateway from the path and has the client anchor directly. The data written is identical either way, and a log created in one mode remains readable in the other.
 
@@ -69,9 +55,16 @@ The latest manifest CID is the portable root of the entire log.
 
 The design refuses to present a fast acknowledgement as durability. Every entry is in exactly one of three states, and the client always reports which.
 
-```text
-accepted ──► anchored(block H) ──► proven(block X)
-```
+<img
+  className="block mx-auto dark:hidden"
+  alt="An entry moves from accepted, a fast acknowledgement that is the only centralized window, to anchored at block H, to proven at block X."
+  src="/images/diagrams/agent-memory-durability-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="An entry moves from accepted, a fast acknowledgement that is the only centralized window, to anchored at block H, to proven at block X."
+  src="/images/diagrams/agent-memory-durability-dark.svg"
+/>
 
 | State | Meaning | Backed by |
 | --- | --- | --- |

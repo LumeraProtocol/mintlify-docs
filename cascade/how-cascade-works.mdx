@@ -10,18 +10,18 @@ Cascade is the permanent storage service of Lumera Protocol. You pay one fee at 
 
 Cascade splits the work between two planes. The control plane is the Lumera blockchain. It records every stored file as an action and holds the storage fee. The data plane is the SuperNode network. It encodes, stores, and serves the actual bytes. The SDK drives both, so your app makes a single function call.
 
+## The upload flow
+
 <img
   className="block mx-auto dark:hidden"
-  alt="Cascade Architecture"
-  src="/images/diagrams/cascade-architecture-light.svg"
+  alt="Upload flow from your app through the SDK, registering the action on chain, uploading the file to SN-API, RaptorQ encoding across the SuperNode mesh, and finalizing on chain."
+  src="/images/diagrams/how-cascade-works-light.svg"
 />
 <img
   className="mx-auto hidden dark:block"
-  alt="Cascade Architecture"
-  src="/images/diagrams/cascade-architecture-dark.svg"
+  alt="Upload flow from your app through the SDK, registering the action on chain, uploading the file to SN-API, RaptorQ encoding across the SuperNode mesh, and finalizing on chain."
+  src="/images/diagrams/how-cascade-works-dark.svg"
 />
-
-## The upload flow
 
 <Steps>
   <Step title="Register the action on chain">

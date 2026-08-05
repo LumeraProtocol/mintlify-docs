@@ -468,7 +468,7 @@ Use this workflow to register a new NFT as an artist/creator. You'll need your P
 - `ws://127.0.0.1:8080/nfts/register/<<task_id>>/state`: Connect to this Websocket URL to monitor the status of the NFT register task. A successful registration will display the Task Completed status. NFT registration can take between 20 and 60 minutes.
 - `http://localhost:8080/nfts/<<task_id>>/history`: View task status history and details.
 - `http://localhost:8080/nfts/download?pid=<<pastel_id>>L&txid=<<tx_id>>`: Download the NFT. Only the current owner can download the original NFT.
-- `ws://localhost:8080/nfts/search?query=<<query>>&creator_name=true&art_title=true`: Search for an NFT. This WS provides various filters. Please consult the swagger docs for details.
+- `ws://localhost:8080/nfts/search?query=<<query>>&creator_name=true&art_title=true`: Search for an NFT. This WS provides various filters. Please refer the swagger docs for details.
 
 #### Cascade Register
 
