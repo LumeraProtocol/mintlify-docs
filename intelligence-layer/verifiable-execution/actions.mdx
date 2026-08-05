@@ -31,11 +31,16 @@ The `action_id` is returned in an `action_registered` event when the registering
 
 ## States
 
-```text
-PENDING ──► PROCESSING ──► DONE
-    │            │
-    └────────────┴────────► FAILED
-```
+<img
+  className="block mx-auto dark:hidden"
+  alt="An action starts PENDING with its fee escrowed, moves to PROCESSING while SuperNodes execute, and ends DONE with the fee released. From either PENDING or PROCESSING it can instead end FAILED, which returns the escrow."
+  src="/images/diagrams/action-states-light.svg"
+/>
+<img
+  className="mx-auto hidden dark:block"
+  alt="An action starts PENDING with its fee escrowed, moves to PROCESSING while SuperNodes execute, and ends DONE with the fee released. From either PENDING or PROCESSING it can instead end FAILED, which returns the escrow."
+  src="/images/diagrams/action-states-dark.svg"
+/>
 
 | State | Meaning |
 | --- | --- |

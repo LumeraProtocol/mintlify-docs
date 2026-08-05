@@ -20,13 +20,11 @@ with open(SRC / "diagrams-extra.json") as f:
     DIAGRAMS.update(json.load(f))
 
 EXPORTS = {
-    "architecture": ("cascade-architecture", {}),
     "how-cascade-works": ("how-cascade-works", {}),
     "erasure-coding": ("erasure-coding", {}),
     "interchain-accounts": ("interchain-accounts", {}),
     "encrypted-storage": ("encrypted-storage", {}),
     "collaboration-flow": ("collaboration-flow", {}),
-    "sdk-architecture": ("sdk-architecture", {}),
     "node-architecture": ("node-architecture", {}),
     "supernode-architecture": ("supernode-architecture", {}),
     "injective-pattern-a": ("pattern-user-signed", {"Injective\n(your CW)": "Your chain\n(contract)"}),
