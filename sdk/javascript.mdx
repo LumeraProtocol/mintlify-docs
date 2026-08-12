@@ -6,7 +6,7 @@ description: Install the Lumera JavaScript SDK and store your first file on Casc
 
 `@lumera-protocol/sdk-js` is the official JavaScript and TypeScript SDK for Lumera Protocol. It puts chain queries, transaction signing, and Cascade storage behind a single client. Cascade is the Lumera permanent storage network with a pay once, store forever model.
 
-The SDK runs in Node.js 18 or later and in modern browsers with the Keplr and Leap wallets. File transfers go through SN-API, a REST gateway in front of SuperNodes. The current release is 0.3.0. This page takes you from install to your first upload and download. Every method is listed in the [JavaScript SDK reference](/sdk/javascript-reference).
+The SDK runs in Node.js 18 or later and in modern browsers with the Keplr wallet. File transfers go through SN-API, a REST gateway in front of SuperNodes. The current release is 0.3.0. This page takes you from install to your first upload and download. Every method is listed in the [JavaScript SDK reference](/sdk/javascript-reference).
 
 ## Install the SDK
 
@@ -37,19 +37,19 @@ import { createLumeraClient } from "@lumera-protocol/sdk-js";
 
 const client = await createLumeraClient({
   preset: "testnet",         // or "mainnet"
-  signer,                    // Keplr, Leap, or a wrapped HD wallet
+  signer,                    // Keplr or a wrapped HD wallet
   address: account.address,  // sender bech32 address
   gasPrice: "0.025ulume",
 });
 ```
 
-The signer must provide three methods. `signDirect` and `signAmino` sign transactions. `signArbitrary` implements ADR-036, the Cosmos standard for arbitrary message signing, which Cascade uses to authenticate with SuperNodes. Keplr and Leap cover all three in the browser. In Node.js you build a compatible signer from a mnemonic, as shown below.
+The signer must provide three methods. `signDirect` and `signAmino` sign transactions. `signArbitrary` implements ADR-036, the Cosmos standard for arbitrary message signing, which Cascade uses to authenticate with SuperNodes. Keplr covers all three in the browser. In Node.js you build a compatible signer from a mnemonic, as shown below.
 
 ## Wallet options
 
 Browser wallets must know the Lumera chain before they can sign for it. Register it once with `experimentalSuggestChain` using this config. The config uses coin type 60 with the Ethereum key features because testnet derives keys the Ethereum way since the `v1.20.0` upgrade.
 
-<Accordion title="chain-config.ts for Keplr and Leap">
+<Accordion title="chain-config.ts for Keplr">
 
 ```ts chain-config.ts
 export const CHAIN_ID = "lumera-testnet-2";
@@ -116,38 +116,6 @@ export const LUMERA_CHAIN_INFO = {
       preset: "testnet",
       signer,
       address: account.address,
-      gasPrice: "0.025ulume",
-    });
-    ```
-  </Tab>
-  <Tab title="Leap">
-    Leap's auto signer covers transactions. Add `signArbitrary` yourself with a small wrapper.
-
-    ```ts leap-client.ts
-    import { createLumeraClient } from "@lumera-protocol/sdk-js";
-    import { CHAIN_ID, LUMERA_CHAIN_INFO } from "./chain-config";
-
-    // Register the Lumera chain and request wallet access
-    await window.leap.experimentalSuggestChain(LUMERA_CHAIN_INFO);
-    await window.leap.enable(CHAIN_ID);
-
-    // getOfflineSignerAuto provides getAccounts, signAmino, and signDirect.
-    // Cascade also needs signArbitrary for SuperNode auth, so add it here.
-    const offlineSigner = await window.leap.getOfflineSignerAuto(CHAIN_ID);
-    const accounts = await offlineSigner.getAccounts();
-
-    const signer = {
-      ...offlineSigner,
-      async signArbitrary(_chainId: string, signerAddress: string, data: string) {
-        const result = await window.leap.signArbitrary(_chainId, signerAddress, data);
-        return { signed: data, signature: result.signature, pub_key: result.pub_key };
-      },
-    };
-
-    const client = await createLumeraClient({
-      preset: "testnet",
-      signer,
-      address: accounts[0].address,
       gasPrice: "0.025ulume",
     });
     ```
