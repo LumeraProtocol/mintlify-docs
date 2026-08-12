@@ -53,7 +53,7 @@ Starts a Cascade upload. Send the file as `multipart/form-data` after the on-cha
 ```
 
 <ResponseField name="task_id" type="string">
-  Upload task identifier. Use it to poll the task endpoints below.
+  Upload task identifier. Use it with the task endpoints below.
 </ResponseField>
 
 ### Status codes
@@ -117,7 +117,19 @@ Returns the full details for an upload task.
 
 ## GET /api/v1/actions/cascade/tasks/\{task_id\}/status
 
-Returns a simplified status body for the same task. Use it in tight polling loops where the full task detail is not needed.
+Streams progress updates for an upload task as Server-Sent Events (SSE), a one-way HTTP stream of messages. Send `Accept: text/event-stream`.
+
+<ParamField path="task_id" type="string" required>
+  Task ID returned by the upload endpoint.
+</ParamField>
+
+Each event carries a JSON payload on a `data:` line with the fields `id`, `task_id`, `status`, `data`, and `created_at`.
+
+---
+
+## GET /api/v1/actions/cascade/tasks/\{task_id\}/history
+
+Returns the status history for an upload task as JSON. Use this when you want to poll rather than hold a stream open.
 
 <ParamField path="task_id" type="string" required>
   Task ID returned by the upload endpoint.
@@ -207,6 +219,18 @@ es.onmessage = (event) => {
   }
 };
 ```
+
+To poll for status as JSON instead of holding this stream open, use the history endpoint below.
+
+---
+
+## GET /api/v1/downloads/cascade/\{task_id\}/history
+
+Returns the status history for a download task as JSON. This is the polling counterpart to the stream above.
+
+<ParamField path="task_id" type="string" required>
+  Download task ID returned by the download request endpoint.
+</ParamField>
 
 ---
 
