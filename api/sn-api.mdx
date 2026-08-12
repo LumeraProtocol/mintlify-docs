@@ -60,9 +60,12 @@ Starts a Cascade upload. Send the file as `multipart/form-data` after the on-cha
 
 | Code | Meaning |
 |---|---|
-| 200 | Upload started |
+| 202 | Accepted. The upload task was created and the response carries the `task_id`. |
 | 400 | Invalid request. Missing fields or bad signature. |
+| 401 | Unauthorized |
+| 403 | Forbidden |
 | 404 | Action not found. Retry after a short delay. |
+| 409 | Conflict |
 | 500 | Server error |
 
 <Note>
@@ -157,6 +160,17 @@ Requests a download task for a stored file. The body is JSON.
 <ResponseField name="task_id" type="string">
   Download task identifier. Use it with the status and file endpoints below.
 </ResponseField>
+
+### Status codes
+
+| Code | Meaning |
+|---|---|
+| 202 | Accepted. The download task was created and the response carries the `task_id`. |
+| 400 | Invalid request |
+| 404 | Action not found |
+| 500 | Server error |
+
+As with the upload endpoint, this creates a task and returns `202 Accepted`. The file itself comes from the file endpoint below.
 
 ---
 
