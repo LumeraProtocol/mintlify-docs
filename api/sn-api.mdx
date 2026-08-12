@@ -19,7 +19,7 @@ The JavaScript SDK picks the endpoint from its `preset` configuration. The Rust 
 
 ## Authentication
 
-Every endpoint requires an ADR-036 signature. ADR-036 is the Cosmos standard for signing arbitrary data off chain. The SDKs produce these signatures for you. When calling the API directly, follow two steps.
+Uploads and private downloads require an ADR-036 signature. ADR-036 is the Cosmos standard for signing arbitrary data off chain. The SDKs produce these signatures for you. When calling the API directly, follow two steps.
 
 1. Sign the relevant data with ADR-036 `signArbitrary`. Uploads sign the data hash. Downloads sign the action ID.
 2. Include the Base64 encoded signature in the request body.
@@ -139,7 +139,7 @@ Returns the status history for an upload task as JSON. Use this when you want to
 
 ## POST /api/v1/actions/cascade/\{action_id\}/downloads
 
-Requests a download task for a stored file. The body is JSON.
+Requests a download task for a stored file. Private files need an ADR-036 signature. Files stored with `isPublic: true` can be requested without one.
 
 ### Path parameters
 
@@ -147,19 +147,33 @@ Requests a download task for a stored file. The body is JSON.
   The on-chain action ID of the stored file.
 </ParamField>
 
-### Request body
+### Query parameters
 
-<ParamField body="signature" type="string" required>
-  Base64 encoded ADR-036 signature of the action ID.
+<ParamField query="public" type="boolean">
+  Set to `true` for a file that was stored with `isPublic: true`. The signature then becomes optional.
 </ParamField>
 
-### Example request
+### Request body
+
+<ParamField body="signature" type="string">
+  Base64 encoded ADR-036 signature of the action ID. Required unless you pass `public=true`.
+</ParamField>
+
+### Example request for a private file
 
 ```json
 {
   "signature": "base64-encoded ADR-036 signature of the action_id"
 }
 ```
+
+### Example request for a public file
+
+```bash
+curl -X POST "https://snapi.lumera.io/api/v1/actions/cascade/{action_id}/downloads?public=true"
+```
+
+Requesting a private file without a signature returns `400` with the message `signature is required`.
 
 ### Example response
 
