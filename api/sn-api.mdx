@@ -76,7 +76,7 @@ Starts a Cascade upload. Send the file as `multipart/form-data` after the on-cha
 
 ## GET /api/v1/actions/cascade/tasks/\{task_id\}
 
-Returns the full details for an upload task.
+Returns the stored request metadata for an upload task. This endpoint describes what was requested, not how far it has progressed. For task state use the status stream or the history endpoint below.
 
 ### Path parameters
 
@@ -89,9 +89,12 @@ Returns the full details for an upload task.
 ```json
 {
   "task_id": "uuid",
-  "status": "processing",
-  "progress": 45,
-  "created_at": "2024-01-01T00:00:00Z"
+  "action_id": "232794",
+  "file_name": "example.png",
+  "file_path": "/data/uploads/example.png",
+  "file_size_kbs": 11,
+  "signature": "base64-encoded ADR-036 signature",
+  "created_at": "2026-01-01T00:00:00Z"
 }
 ```
 
@@ -101,12 +104,24 @@ Returns the full details for an upload task.
   Upload task identifier.
 </ResponseField>
 
-<ResponseField name="status" type="string">
-  Current task state, for example `processing`.
+<ResponseField name="action_id" type="string">
+  The on-chain action this upload belongs to.
 </ResponseField>
 
-<ResponseField name="progress" type="integer">
-  Completion percentage from 0 to 100.
+<ResponseField name="file_name" type="string">
+  Name of the uploaded file.
+</ResponseField>
+
+<ResponseField name="file_path" type="string">
+  Path the SuperNode stored the incoming file at.
+</ResponseField>
+
+<ResponseField name="file_size_kbs" type="integer">
+  File size in kilobytes.
+</ResponseField>
+
+<ResponseField name="signature" type="string">
+  The ADR-036 signature submitted with the upload.
 </ResponseField>
 
 <ResponseField name="created_at" type="string">
@@ -208,15 +223,19 @@ Streams progress updates as Server-Sent Events (SSE), a one-way HTTP stream of m
   Download task ID returned by the download request endpoint.
 </ParamField>
 
+Each event carries the same fields as a history entry, so `id`, `task_id`, `status`, `data`, and `created_at`. There is no percentage field. Progress is expressed as a sequence of named states, and `data` carries any detail that state has.
+
 ### Example stream
 
 ```text
-data: {"status": "processing", "progress": 0}
+data: {"id":1,"task_id":"7ca7b6c9","status":"sdk:started","data":{},"created_at":"2026-01-01T00:00:00Z"}
 
-data: {"status": "processing", "progress": 50}
+data: {"id":2,"task_id":"7ca7b6c9","status":"sdk:supernodes_found","data":{"count":7,"total":10},"created_at":"2026-01-01T00:00:03Z"}
 
-data: {"status": "completed", "progress": 100}
+data: {"id":3,"task_id":"7ca7b6c9","status":"sdk:completed","data":{},"created_at":"2026-01-01T00:00:41Z"}
 ```
+
+States are namespaced by who reported them. `sdk:` states come from the gateway's client, and `supernode:` states come from the SuperNode serving the request. The terminal states are `sdk:completed` and `sdk:failed`.
 
 In browsers, consume the stream with `EventSource`.
 
@@ -226,9 +245,10 @@ const es = new EventSource(
 );
 
 es.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log(`Progress: ${data.progress}%`);
-  if (data.status === "completed") {
+  const update = JSON.parse(event.data);
+  console.log(update.status, update.data);
+
+  if (update.status === "sdk:completed" || update.status === "sdk:failed") {
     es.close();
   }
 };
