@@ -72,11 +72,11 @@ const result = await client.Cascade.uploader.uploadFile(fileBytes, {
 | `taskOptions.pollInterval` | `number` | Milliseconds between status polls, default 2000 |
 | `taskOptions.timeout` | `number` | Milliseconds before timeout, default 300000 |
 
-Returns a result with `action_id`, the permanent on-chain reference to the file.
+Resolves to the completed upload `Task`. It does **not** return the action ID. `uploadFile` registers the action internally and then discards the reference, so use the lower level steps below whenever you need to keep it.
 
 ### Lower level upload steps
 
-Use these when you need control over individual phases.
+Use these when you need control over individual phases, or when you need the action ID.
 
 | Method | Purpose |
 |---|---|

@@ -33,7 +33,7 @@ const { actionId, authSignature } = await client.Cascade.uploader.registerAction
   {
     fileName: "paper.pdf",
     isPublic: true,
-    taskOptions: { pollInterval: 2000, timeout: 300000 },
+    expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
   }
 );
 ```
@@ -157,16 +157,27 @@ FormData {
 For most use cases, call `uploadFile` to run all three phases.
 
 ```ts
-const result = await client.Cascade.uploader.uploadFile(fileBytes, {
+const prepared = await client.Cascade.uploader.prepareFile(fileBytes);
+
+const registered = await client.Cascade.uploader.registerAction(prepared, {
   fileName: "document.pdf",
   isPublic: true,
-  taskOptions: {
-    pollInterval: 2000,  // Check every 2 seconds
-    timeout: 300000,     // Fail after 5 minutes
-  },
+  expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
 });
 
-console.log(result.action_id); // Use this to download later
+await client.Cascade.uploader.sendFileToSupernodes(
+  registered.actionId,
+  registered.authSignature,
+  fileBytes,
+  {
+    taskOptions: {
+      pollInterval: 2000,  // Check every 2 seconds
+      timeout: 300000,     // Fail after 5 minutes
+    },
+  }
+);
+
+console.log(registered.actionId); // Use this to download later
 ```
 
 ## Action states on chain
