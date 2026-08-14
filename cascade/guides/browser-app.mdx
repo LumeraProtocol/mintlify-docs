@@ -324,7 +324,7 @@ The app talks to Cascade straight from the browser. The SDK handles the SN-API t
 
 ## Key takeaways
 
-1. Use `getKeplrSigner` or `getLeapSigner` from the SDK. They wrap the wallet extension signer with the ADR-036 `signArbitrary` support that Cascade requires.
+1. Use `getKeplrSigner` from the SDK. It wraps the Keplr extension signer with the ADR-036 `signArbitrary` support that Cascade requires.
 2. The action ID is your permanent reference. Store it in your database, on chain, or wherever your application tracks state.
 3. Uploads run in two phases. The SDK first registers the action on chain, then transfers the file to a SuperNode.
 4. Downloads are streamed. Read from the `ReadableStream` so large files never sit fully in memory.

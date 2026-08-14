@@ -8,7 +8,7 @@ Every Cascade operation starts with a client. The `createLumeraClient` factory c
 
 ## Chain configuration
 
-Keplr and Leap require a chain configuration to register the Lumera network. Define it once and reuse it.
+Keplr requires a chain configuration to register the Lumera network. Define it once and reuse it.
 
 ```ts chain-config.ts
 export const CHAIN_ID = "lumera-testnet-2";
@@ -69,39 +69,6 @@ const client = await createLumeraClient({
   preset: "testnet",
   signer,
   address: account.address,
-  gasPrice: "0.025ulume",
-});
-```
-
-### Browser with Leap
-
-Leap's `getOfflineSignerAuto` covers `getAccounts`, `signAmino`, and `signDirect`. You only add `signArbitrary`.
-
-```ts leap-client.ts
-import { createLumeraClient } from "@lumera-protocol/sdk-js";
-import { CHAIN_ID, LUMERA_CHAIN_INFO } from "./chain-config";
-
-// Register the Lumera chain and request wallet access
-await window.leap.experimentalSuggestChain(LUMERA_CHAIN_INFO);
-await window.leap.enable(CHAIN_ID);
-
-// getOfflineSignerAuto provides getAccounts, signAmino, and signDirect.
-// We only need to add signArbitrary, Cascade uses it for Supernode auth.
-const offlineSigner = await window.leap.getOfflineSignerAuto(CHAIN_ID);
-const accounts = await offlineSigner.getAccounts();
-
-const signer = {
-  ...offlineSigner,
-  async signArbitrary(_chainId: string, signerAddress: string, data: string) {
-    const result = await window.leap.signArbitrary(_chainId, signerAddress, data);
-    return { signed: data, signature: result.signature, pub_key: result.pub_key };
-  },
-};
-
-const client = await createLumeraClient({
-  preset: "testnet",
-  signer,
-  address: accounts[0].address,
   gasPrice: "0.025ulume",
 });
 ```

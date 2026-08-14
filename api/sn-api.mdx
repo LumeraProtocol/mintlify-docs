@@ -19,7 +19,7 @@ The JavaScript SDK picks the endpoint from its `preset` configuration. The Rust 
 
 ## Authentication
 
-Every endpoint requires an ADR-036 signature. ADR-036 is the Cosmos standard for signing arbitrary data off chain. The SDKs produce these signatures for you. When calling the API directly, follow two steps.
+Uploads and private downloads require an ADR-036 signature. ADR-036 is the Cosmos standard for signing arbitrary data off chain. The SDKs produce these signatures for you. When calling the API directly, follow two steps.
 
 1. Sign the relevant data with ADR-036 `signArbitrary`. Uploads sign the data hash. Downloads sign the action ID.
 2. Include the Base64 encoded signature in the request body.
@@ -53,16 +53,19 @@ Starts a Cascade upload. Send the file as `multipart/form-data` after the on-cha
 ```
 
 <ResponseField name="task_id" type="string">
-  Upload task identifier. Use it to poll the task endpoints below.
+  Upload task identifier. Use it with the task endpoints below.
 </ResponseField>
 
 ### Status codes
 
 | Code | Meaning |
 |---|---|
-| 200 | Upload started |
+| 202 | Accepted. The upload task was created and the response carries the `task_id`. |
 | 400 | Invalid request. Missing fields or bad signature. |
+| 401 | Unauthorized |
+| 403 | Forbidden |
 | 404 | Action not found. Retry after a short delay. |
+| 409 | Conflict |
 | 500 | Server error |
 
 <Note>
@@ -73,7 +76,7 @@ Starts a Cascade upload. Send the file as `multipart/form-data` after the on-cha
 
 ## GET /api/v1/actions/cascade/tasks/\{task_id\}
 
-Returns the full details for an upload task.
+Returns the stored request metadata for an upload task. This endpoint describes what was requested, not how far it has progressed. For task state use the status stream or the history endpoint below.
 
 ### Path parameters
 
@@ -86,9 +89,12 @@ Returns the full details for an upload task.
 ```json
 {
   "task_id": "uuid",
-  "status": "processing",
-  "progress": 45,
-  "created_at": "2024-01-01T00:00:00Z"
+  "action_id": "232794",
+  "file_name": "example.png",
+  "file_path": "/data/uploads/example.png",
+  "file_size_kbs": 11,
+  "signature": "base64-encoded ADR-036 signature",
+  "created_at": "2026-01-01T00:00:00Z"
 }
 ```
 
@@ -98,12 +104,24 @@ Returns the full details for an upload task.
   Upload task identifier.
 </ResponseField>
 
-<ResponseField name="status" type="string">
-  Current task state, for example `processing`.
+<ResponseField name="action_id" type="string">
+  The on-chain action this upload belongs to.
 </ResponseField>
 
-<ResponseField name="progress" type="integer">
-  Completion percentage from 0 to 100.
+<ResponseField name="file_name" type="string">
+  Name of the uploaded file.
+</ResponseField>
+
+<ResponseField name="file_path" type="string">
+  Path the SuperNode stored the incoming file at.
+</ResponseField>
+
+<ResponseField name="file_size_kbs" type="integer">
+  File size in kilobytes.
+</ResponseField>
+
+<ResponseField name="signature" type="string">
+  The ADR-036 signature submitted with the upload.
 </ResponseField>
 
 <ResponseField name="created_at" type="string">
@@ -114,7 +132,19 @@ Returns the full details for an upload task.
 
 ## GET /api/v1/actions/cascade/tasks/\{task_id\}/status
 
-Returns a simplified status body for the same task. Use it in tight polling loops where the full task detail is not needed.
+Streams progress updates for an upload task as Server-Sent Events (SSE), a one-way HTTP stream of messages. Send `Accept: text/event-stream`.
+
+<ParamField path="task_id" type="string" required>
+  Task ID returned by the upload endpoint.
+</ParamField>
+
+Each event carries a JSON payload on a `data:` line with the fields `id`, `task_id`, `status`, `data`, and `created_at`.
+
+---
+
+## GET /api/v1/actions/cascade/tasks/\{task_id\}/history
+
+Returns the status history for an upload task as JSON. Use this when you want to poll rather than hold a stream open.
 
 <ParamField path="task_id" type="string" required>
   Task ID returned by the upload endpoint.
@@ -124,7 +154,7 @@ Returns a simplified status body for the same task. Use it in tight polling loop
 
 ## POST /api/v1/actions/cascade/\{action_id\}/downloads
 
-Requests a download task for a stored file. The body is JSON.
+Requests a download task for a stored file. Private files need an ADR-036 signature. Files stored with `isPublic: true` can be requested without one.
 
 ### Path parameters
 
@@ -132,19 +162,33 @@ Requests a download task for a stored file. The body is JSON.
   The on-chain action ID of the stored file.
 </ParamField>
 
-### Request body
+### Query parameters
 
-<ParamField body="signature" type="string" required>
-  Base64 encoded ADR-036 signature of the action ID.
+<ParamField query="public" type="boolean">
+  Set to `true` for a file that was stored with `isPublic: true`. The signature then becomes optional.
 </ParamField>
 
-### Example request
+### Request body
+
+<ParamField body="signature" type="string">
+  Base64 encoded ADR-036 signature of the action ID. Required unless you pass `public=true`.
+</ParamField>
+
+### Example request for a private file
 
 ```json
 {
   "signature": "base64-encoded ADR-036 signature of the action_id"
 }
 ```
+
+### Example request for a public file
+
+```bash
+curl -X POST "https://snapi.lumera.io/api/v1/actions/cascade/{action_id}/downloads?public=true"
+```
+
+Requesting a private file without a signature returns `400` with the message `signature is required`.
 
 ### Example response
 
@@ -158,6 +202,17 @@ Requests a download task for a stored file. The body is JSON.
   Download task identifier. Use it with the status and file endpoints below.
 </ResponseField>
 
+### Status codes
+
+| Code | Meaning |
+|---|---|
+| 202 | Accepted. The download task was created and the response carries the `task_id`. |
+| 400 | Invalid request |
+| 404 | Action not found |
+| 500 | Server error |
+
+As with the upload endpoint, this creates a task and returns `202 Accepted`. The file itself comes from the file endpoint below.
+
 ---
 
 ## GET /api/v1/downloads/cascade/\{task_id\}/status
@@ -168,15 +223,19 @@ Streams progress updates as Server-Sent Events (SSE), a one-way HTTP stream of m
   Download task ID returned by the download request endpoint.
 </ParamField>
 
+Each event carries the same fields as a history entry, so `id`, `task_id`, `status`, `data`, and `created_at`. There is no percentage field. Progress is expressed as a sequence of named states, and `data` carries any detail that state has.
+
 ### Example stream
 
 ```text
-data: {"status": "processing", "progress": 0}
+data: {"id":1,"task_id":"7ca7b6c9","status":"sdk:started","data":{},"created_at":"2026-01-01T00:00:00Z"}
 
-data: {"status": "processing", "progress": 50}
+data: {"id":2,"task_id":"7ca7b6c9","status":"sdk:supernodes_found","data":{"count":7,"total":10},"created_at":"2026-01-01T00:00:03Z"}
 
-data: {"status": "completed", "progress": 100}
+data: {"id":3,"task_id":"7ca7b6c9","status":"sdk:completed","data":{},"created_at":"2026-01-01T00:00:41Z"}
 ```
+
+States are namespaced by who reported them. `sdk:` states come from the gateway's client, and `supernode:` states come from the SuperNode serving the request. The terminal states are `sdk:completed` and `sdk:failed`.
 
 In browsers, consume the stream with `EventSource`.
 
@@ -186,13 +245,26 @@ const es = new EventSource(
 );
 
 es.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log(`Progress: ${data.progress}%`);
-  if (data.status === "completed") {
+  const update = JSON.parse(event.data);
+  console.log(update.status, update.data);
+
+  if (update.status === "sdk:completed" || update.status === "sdk:failed") {
     es.close();
   }
 };
 ```
+
+To poll for status as JSON instead of holding this stream open, use the history endpoint below.
+
+---
+
+## GET /api/v1/downloads/cascade/\{task_id\}/history
+
+Returns the status history for a download task as JSON. This is the polling counterpart to the stream above.
+
+<ParamField path="task_id" type="string" required>
+  Download task ID returned by the download request endpoint.
+</ParamField>
 
 ---
 

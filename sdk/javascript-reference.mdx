@@ -24,13 +24,28 @@ const client = await createLumeraClient({
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `preset` | `"testnet"` or `"mainnet"` | No | Fills in chain ID and endpoints for the chosen network |
-| `rpcUrl` | `string` | No | Custom CometBFT RPC endpoint |
-| `lcdUrl` | `string` | No | Custom LCD or REST endpoint |
-| `chainId` | `string` | No | Custom chain ID when not using a preset |
-| `cascade.snapiBaseUrl` | `string` | No | Custom SN-API gateway endpoint |
-| `signer` | `OfflineSigner` | No | Wallet signer, required for writes |
-| `address` | `string` | No | Sender address, required for writes |
-| `gasPrice` | `string` | No | Gas price string such as `"0.025ulume"` |
+| `rpcUrl` | `string` | No | Custom CometBFT RPC endpoint, overrides the preset |
+| `lcdUrl` | `string` | No | Custom LCD or REST endpoint, overrides the preset |
+| `chainId` | `string` | No | Custom chain ID, overrides the preset |
+| `snapiUrl` | `string` | No | Custom SN-API gateway endpoint, overrides the preset |
+| `signer` | `OfflineSigner` | Yes | CosmJS offline signer used for transaction signing |
+| `address` | `string` | Yes | Bech32 address of the signing account |
+| `gasPrice` | `string` | No | Gas price string. Defaults to `"0.025ulume"` |
+| `http.timeout` | `number` | No | Request timeout in milliseconds. Defaults to `30000` |
+| `http.maxRetries` | `number` | No | Maximum retry attempts. Defaults to `3` |
+
+All four endpoint fields sit at the top level of the config. Use a preset for the standard networks, or set them individually to point at your own infrastructure.
+
+```ts
+const client = await createLumeraClient({
+  chainId: "lumera-testnet-2",
+  rpcUrl: "https://rpc.testnet.lumera.io",
+  lcdUrl: "https://lcd.testnet.lumera.io",
+  snapiUrl: "https://snapi.testnet.lumera.io",
+  signer: wallet,
+  address: "lumera1...",
+});
+```
 
 Returns `Promise<LumeraClient>`. The signer needs `signDirect`, `signAmino`, and `signArbitrary` for the full feature set. See [wallet options](/sdk/javascript#wallet-options).
 
@@ -101,8 +116,9 @@ Chain parameter queries are cached for 5 minutes.
 | Helper | Purpose |
 |---|---|
 | `getKeplrSigner(chainId)` | Signer from the Keplr extension with `signDirect`, `signAmino`, and `signArbitrary` |
-| `getLeapSigner(chainId)` | The same interface for the Leap extension |
 | `isKeplrAvailable()` | Whether the Keplr extension is present |
+
+Keplr is the only browser wallet with an exported helper.
 
 ## LEP-1 helpers
 

@@ -40,7 +40,7 @@ The scripts below use top-level await, so set `"type": "module"` in your `packag
 
 <Step title="Create a programmatic signer">
 
-In Node.js there is no Keplr or Leap wallet. Use `DirectSecp256k1HdWallet` for transaction signing and build a custom signer that adds `signArbitrary` (ADR-036) for Cascade's off-chain signatures.
+In Node.js there is no browser wallet. Use `DirectSecp256k1HdWallet` for transaction signing and build a custom signer that adds `signArbitrary` (ADR-036) for Cascade's off-chain signatures.
 
 ```ts signer.ts
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
