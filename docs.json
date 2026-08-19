@@ -290,6 +290,7 @@
                 "group": "Network upgrades",
                 "icon": "arrow-up-right-dots",
                 "pages": [
+                  "title-evm-migration-sidebar-title-evm-migration-description-lumera-mainnet-is-upgrading-to-evm-compatible-accounts-migrate-within-the-window-to-keep-your-staking-and-delegations-lumera-mainnet-is",
                   "upgrades/evm-upgrade"
                 ]
               }

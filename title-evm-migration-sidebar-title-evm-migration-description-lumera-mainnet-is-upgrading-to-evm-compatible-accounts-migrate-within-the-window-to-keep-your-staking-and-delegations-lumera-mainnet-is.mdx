@@ -1,0 +1,162 @@
+---
+title: "EVM migration"
+sidebarTitle: "EVM migration"
+description: "Lumera mainnet upgrades to EVM compatible accounts at block 6,715,000. Migrate before 30 November 2026 to keep your staking and delegations."
+---
+
+Lumera mainnet is upgrading to full EVM compatibility. The upgrade changes how account keys derive, which means your existing address is replaced by a new one derived from the same recovery phrase.
+
+Migration moves everything you hold at the old address to the new one. It is free, it takes a few minutes, and there is a deadline.
+
+<Warning>
+  **The upgrade activates at block height `6,715,000`, expected on 1 September 2026.** You then have 90 days to migrate. The window closes on **30 November 2026**.
+</Warning>
+
+<Card title="Migrate now" icon="arrow-right" href="https://portal.lumera.io/lumera-mainnet-1">
+  Open the EVM Migration page in the Lumera Portal.
+</Card>
+
+## What happens if you do nothing
+
+This is the part worth reading twice, because the two halves of your account behave differently.
+
+**Your liquid balance is safe either way.** It stays at your legacy address and cannot be lost. You can still recover it after the window closes.
+
+**Your staking is not.** Delegations, unbonding delegations, redelegations, and accrued rewards become permanently unrecoverable once the window expires. There is no recovery path and no exception process.
+
+If you have anything staked, migrating inside the window is not optional.
+
+## The four things to know
+
+<CardGroup cols={2}>
+  <Card title="It is free" icon="circle-dollar-to-slot">
+    Zero gas. The migration transaction carries no fee, so you do not need a balance to migrate.
+  </Card>
+
+  <Card title="It is one way" icon="arrow-right-long">
+    Your legacy address is permanently blocked once migration completes. Always use the official flow.
+  </Card>
+
+  <Card title="It is atomic" icon="cube">
+    Everything moves in a single transaction. There is no partial state to recover from.
+  </Card>
+
+  <Card title="You have 90 days" icon="clock">
+    From 1 September to 30 November 2026. The window mirrors the one that has run on testnet since late June.
+  </Card>
+</CardGroup>
+
+## Why Lumera is doing this
+
+Lumera is adding a native Ethereum execution layer alongside the existing Cosmos layer. Both environments run on the same chain, share the same state, and share the same security.
+
+In practice that means MetaMask compatible accounts, full Ethereum JSON-RPC, Solidity and Vyper contracts, and precompiles that let EVM contracts call Lumera staking and SuperNode logic directly. Developers deploy with Hardhat, Foundry, or Remix without learning a new SDK. Wallets, indexers, and explorers built for EVM chains integrate without custom work.
+
+The reason is reach. Lumera is infrastructure for permanent data and decentralized services, and that depends on developers being able to build on it. Ethereum has the largest pool of contract developers and the deepest tooling of any platform. Reaching them from a Cosmos chain previously meant bridges and wrappers, which add friction for everyone. This removes it.
+
+Nothing on the Cosmos side goes away. IBC, validators, SuperNodes, governance, and bech32 addresses all keep working exactly as they do today.
+
+## Do you need to migrate
+
+Everyone holding a pre-upgrade account does. What differs is the path.
+
+| You are | What to do | Full guide |
+| --- | --- | --- |
+| A token holder | Migrate through the Portal wizard, the helper scripts, or the CLI | [Migration guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/migration.md) |
+| Holding many accounts | Use the bundled scripts, which add pre-flight checks and verification | [Helper scripts](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/migration-scripts.md) |
+| A validator operator | Plan a maintenance window, then migrate the operator key | [Validator guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/validator-migration.md) |
+| A SuperNode operator | Set `evm_key_name` and restart, or migrate first and let the daemon detect it | [SuperNode guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/supernode-migration.md) |
+| A Hermes relayer operator | Re-key Hermes with the new derivation path before migrating | [Relayer guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/relayer-migration.md) |
+| A node operator | Review the new EVM sections of `app.toml` | [Node config guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/node-evm-config-guide.md) |
+| Connecting MetaMask | Add the Lumera network and import your migrated account | [MetaMask guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/metamask-configuration.md) |
+
+## How to migrate
+
+Most people should use the Portal wizard. It handles both signatures and shows you the result.
+
+<Steps>
+  <Step title="Add the EVM chain profile to Keplr">
+    Keplr needs the coin type 60 profile alongside your existing one. You will end up with two Lumera profiles, the legacy one and the EVM one, and this is expected.
+  </Step>
+  <Step title="Open the EVM Migration page in the Portal">
+    Connect with your legacy account. The page shows your legacy address, your new address, and everything currently held at the legacy address.
+  </Step>
+  <Step title="Check both addresses">
+    Confirm the destination matches what your recovery phrase derives under coin type 60. Migration is irreversible, so this is the step to slow down on.
+  </Step>
+  <Step title="Sign twice and submit">
+    The transaction carries two proofs, an ADR-036 signature from the legacy key and an EIP-191 signature from the new key. The wizard prompts for both. There is no fee.
+  </Step>
+  <Step title="Re-import in Keplr and verify">
+    Re-import your account under the EVM profile. The state panel on the migration page confirms what moved. Your balance and delegations should appear at the new address.
+  </Step>
+</Steps>
+
+Prefer the command line, or migrating in bulk? The [migration guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/migration.md) covers the shell scripts and the raw `lumerad` path, including the offline four step ceremony for multisig accounts.
+
+## What moves
+
+Migration transfers all on-chain state in one transaction.
+
+- Bank balances in every denomination
+- Staking delegations, unbonding delegations, and redelegations
+- Authz grants and feegrant allowances, as granter and as grantee
+- Action records and claim records
+- SuperNode registration, where applicable
+- Vesting schedules, where applicable
+
+For validators it additionally re-keys the operator address, every delegation pointing at the validator, distribution state, and any bound SuperNode.
+
+## After you migrate
+
+One account now works in both wallets. Keplr shows the bech32 form starting `lumera1`. MetaMask shows the hex form starting `0x`. Both point at the same funds.
+
+To use MetaMask, add the Lumera network and import the migrated account. The [MetaMask guide](https://github.com/LumeraProtocol/lumera/blob/master/docs/evm-integration/user-guides/metamask-configuration.md) has the network values and the full walkthrough.
+
+## Questions
+
+<AccordionGroup>
+  <Accordion title="Do I need to do anything before 1 September?">
+    No. Nothing works differently until mainnet upgrades at block `6,715,000`. If you want to rehearse, testnet has run the identical flow since late June.
+  </Accordion>
+
+  <Accordion title="Does my recovery phrase change?">
+    No. The same phrase now derives a second address under coin type 60. That new address is your EVM compatible account, and migration moves your state to it.
+  </Accordion>
+
+  <Accordion title="What if I miss the window?">
+    Your liquid balance stays recoverable at the legacy address. Staking, delegations, unbonding, and rewards do not. They are permanently lost after 30 November 2026.
+  </Accordion>
+
+  <Accordion title="Does migration cost anything?">
+    No. The migration transaction is fee-free by design, so an empty account can still migrate.
+  </Accordion>
+
+  <Accordion title="Can I reverse it?">
+    No. The legacy account is removed from the auth module once migration completes, and the mapping is permanent. Only ever migrate through the official Portal flow or the guides linked here.
+  </Accordion>
+
+  <Accordion title="I run a validator. Is my consensus key affected?">
+    No. Only your operator key changes, from `secp256k1` to `eth_secp256k1`. Your `priv_validator_key.json` is untouched. Validators must use `MsgMigrateValidator`, which the chain requires instead of the standard claim message.
+  </Accordion>
+
+  <Accordion title="I have a multisig account.">
+    A K-of-N legacy multisig migrates to a K-of-N EVM multisig, same K and same N. The chain enforces this. The destination can do everything on the Cosmos side but cannot originate EVM transactions, so set up a separate single-key account if you need EVM DeFi access.
+  </Accordion>
+
+  <Accordion title="Will my delegations keep earning while I wait?">
+    Yes, until the window closes. Migrating early costs nothing and removes the risk of forgetting, so there is no reason to wait.
+  </Accordion>
+</AccordionGroup>
+
+## Get help
+
+<CardGroup cols={2}>
+  <Card title="Discord" icon="discord" href="https://discord.com/invite/lumeraprotocol">
+    Ask in the support channel. Fastest route to a human.
+  </Card>
+
+  <Card title="What changed in v1.20.0" icon="file-code" href="/upgrades/evm-upgrade">
+    The technical release record, new modules, and the developer view.
+  </Card>
+</CardGroup>
