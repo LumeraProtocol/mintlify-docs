@@ -156,11 +156,12 @@ The scheme uses two keys. The wallet key is re-derived from a wallet signature w
       const result = await client.Cascade.uploader.uploadFile(manifestBytes, {
         fileName: `${fileName}.encrypted.json`,
         isPublic: true, // The encryption handles confidentiality
+        expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
         taskOptions: { pollInterval: 2000, timeout: 300000 },
       });
     
       return {
-        actionId: (result as any).action_id || result.taskId,
+        actionId: result.action_id,
         documentKey: sodium.to_base64(documentKey),
       };
     }
@@ -234,7 +235,11 @@ The scheme uses two keys. The wallet key is re-derived from a wallet signature w
     // Upload the invitation to Cascade
     await client.Cascade.uploader.uploadFile(
       new TextEncoder().encode(JSON.stringify(invitation)),
-      { fileName: `invitation_${collaboratorAddress}_${actionId}.json`, isPublic: true }
+      {
+        fileName: `invitation_${collaboratorAddress}_${actionId}.json`,
+        isPublic: true,
+        expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+      }
     );
     ```
 

@@ -170,14 +170,11 @@ The app talks to Cascade straight from the browser. The SDK handles the SN-API t
       const result = await client.Cascade.uploader.uploadFile(fileBytes, {
         fileName: file.name,
         isPublic: true,
-        taskOptions: {
-          pollInterval: 2000,
-          timeout: 300000,
-        },
+        expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+        taskOptions: { pollInterval: 2000, timeout: 300000 },
       });
     
-      const actionId =
-        (result as any).action_id || result.taskId || `file-${Date.now()}`;
+      const actionId = result.action_id;
     
       onProgress?.(`Upload complete! Action ID: ${actionId}`);
       return actionId;

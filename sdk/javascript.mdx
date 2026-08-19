@@ -192,7 +192,7 @@ export const LUMERA_CHAIN_INFO = {
 ```ts upload.ts
 const data = new TextEncoder().encode("Hello, Lumera!");
 
-// Optional expiration, 25 hours from now as a Unix timestamp
+// Expiration, 25 hours from now as a Unix timestamp
 const expirationTime = String(Math.floor(Date.now() / 1000) + 25 * 60 * 60);
 
 const result = await client.Cascade.uploader.uploadFile(data, {
@@ -204,7 +204,7 @@ const result = await client.Cascade.uploader.uploadFile(data, {
 console.log("Stored with action ID:", result.action_id);
 ```
 
-The `action_id` is the permanent on-chain reference to your file. Save it. You need it for every download.
+`result.action_id` is the permanent on-chain reference to your file. Save it. You need it for every download.
 
 ## Download a file
 
