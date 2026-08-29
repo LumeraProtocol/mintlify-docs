@@ -72,7 +72,7 @@ const client = await createLumeraClient({
 const result = await client.Cascade.uploader.uploadFile(file, {
   fileName: "artifact.json",
   isPublic: true,
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
 });
 // result.action_id points at the stored bytes forever
 ```

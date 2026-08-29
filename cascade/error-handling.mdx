@@ -102,7 +102,7 @@ Increase the timeout in `taskOptions`.
 const result = await client.Cascade.uploader.uploadFile(file, {
   fileName: "large-file.zip",
   isPublic: true,
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400),
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60),
   taskOptions: {
     timeout: 600000, // 10 minutes
   },

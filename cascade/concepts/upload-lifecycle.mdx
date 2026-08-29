@@ -33,7 +33,7 @@ const { actionId, authSignature } = await client.Cascade.uploader.registerAction
   {
     fileName: "paper.pdf",
     isPublic: true,
-    expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+    expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
   }
 );
 ```
@@ -162,7 +162,7 @@ const prepared = await client.Cascade.uploader.prepareFile(fileBytes);
 const registered = await client.Cascade.uploader.registerAction(prepared, {
   fileName: "document.pdf",
   isPublic: true,
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
 });
 
 await client.Cascade.uploader.sendFileToSupernodes(
