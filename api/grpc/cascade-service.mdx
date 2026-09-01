@@ -119,7 +119,7 @@ Each message in the response stream is one of two types (`oneof`).
 
   <Expandable title="DownloadEvent fields">
     <ResponseField name="event.event_type" type="SupernodeEventType">
-      The event milestone. Download-phase events include `SIGNATURE_VERIFIED`, `ACTION_RETRIEVED`, `RQID_VERIFIED`, `ARTEFACTS_DOWNLOADED`, and `DATA_HASH_VERIFIED`.
+      The event milestone. Download emits `ACTION_RETRIEVED`, `METADATA_DECODED`, `NETWORK_RETRIEVE_STARTED`, `ARTEFACTS_DOWNLOADED`, and `DECODE_COMPLETED`, then `SERVE_READY` immediately before the first `chunk`.
     </ResponseField>
     <ResponseField name="event.message" type="string">
       Human-readable description of the event.
@@ -172,6 +172,10 @@ The `SupernodeEventType` enum is shared by both `Register` and `Download`. Not e
 | `11` | `ARTEFACTS_STORED` | Register |
 | `12` | `ACTION_FINALIZED` | Register |
 | `13` | `ARTEFACTS_DOWNLOADED` | Download |
+| `14` | `FINALIZE_SIMULATION_FAILED` | Register |
+| `15` | `NETWORK_RETRIEVE_STARTED` | Download |
+| `16` | `DECODE_COMPLETED` | Download |
+| `17` | `SERVE_READY` | Download |
 
 ---
 
