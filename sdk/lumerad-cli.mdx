@@ -89,8 +89,11 @@ Query commands read on-chain state without submitting any transactions. They are
   </Tab>
   <Tab title="Claims">
     ```shell
-    # Check the claim status for an address
-    lumerad query claim get-claim <address>
+    # Show the claim record for a legacy address
+    lumerad query claim claim-record <old-address>
+
+    # List claimed records for a vested term (0 if not vested)
+    lumerad query claim list-claimed <vested-term>
     ```
   </Tab>
   <Tab title="Node status">
@@ -133,8 +136,13 @@ Transaction commands broadcast signed messages to the chain. Every transaction c
   </Tab>
   <Tab title="Claims">
     ```shell
-    # Claim your allocated LUME tokens (if eligible)
-    lumerad tx claim claim-tokens \
+    # Claim LUME to a new address, signed with the legacy key
+    lumerad tx claim claim <old-address> <new-address> <pub-key> <signature> \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1
+
+    # Same claim into a vesting tier
+    lumerad tx claim delayed-claim <old-address> <new-address> <pub-key> <signature> <tier> \
       --from <key-name> \
       --chain-id lumera-mainnet-1
     ```

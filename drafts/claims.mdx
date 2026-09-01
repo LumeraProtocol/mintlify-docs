@@ -25,7 +25,7 @@ Make sure you are using the **Lumera address that corresponds to your Pastel Net
 Before claiming, verify that your address has an allocation on-chain:
 
 ```shell
-lumerad query claim get-claim <your-lumera-address>
+lumerad query claim claim-record <your-pastel-address>
 ```
 
 If your address is in the snapshot, the response shows your claimable LUME amount and whether it has already been claimed. If the query returns an error or an empty result, your address was not included in the snapshot — see the [Troubleshooting](#troubleshooting) section below.
@@ -41,7 +41,7 @@ If your address is in the snapshot, the response shows your claimable LUME amoun
   </Step>
   <Step title="Broadcast the claim transaction">
     ```shell
-    lumerad tx claim claim-tokens \
+    lumerad tx claim claim <old-address> <new-address> <pub-key> <signature> \
       --from <key-name> \
       --chain-id lumera-mainnet-1 \
       --fees 5000ulume
@@ -96,7 +96,7 @@ This error means the address you queried was not included in the Pastel Network 
 The `--fees 5000ulume` value in the example is a baseline. If the network is congested or the chain's `min_gas_price` has been updated via governance, you may need to increase the fee:
 
 ```shell
-lumerad tx claim claim-tokens \
+lumerad tx claim claim <old-address> <new-address> <pub-key> <signature> \
   --from <key-name> \
   --chain-id lumera-mainnet-1 \
   --gas auto \
