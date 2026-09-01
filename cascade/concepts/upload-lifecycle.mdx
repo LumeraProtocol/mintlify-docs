@@ -157,27 +157,15 @@ FormData {
 For most use cases, call `uploadFile` to run all three phases.
 
 ```ts
-const prepared = await client.Cascade.uploader.prepareFile(fileBytes);
-
-const registered = await client.Cascade.uploader.registerAction(prepared, {
+const task = await client.Cascade.uploader.uploadFile(fileBytes, {
   fileName: "document.pdf",
   isPublic: true,
   expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
+  taskOptions: {
+    pollInterval: 2000,  // Check every 2 seconds
+    timeout: 300000,     // Fail after 5 minutes
+  },
 });
-
-await client.Cascade.uploader.sendFileToSupernodes(
-  registered.actionId,
-  registered.authSignature,
-  fileBytes,
-  {
-    taskOptions: {
-      pollInterval: 2000,  // Check every 2 seconds
-      timeout: 300000,     // Fail after 5 minutes
-    },
-  }
-);
-
-console.log(registered.actionId); // Use this to download later
 ```
 
 ## Action states on chain
