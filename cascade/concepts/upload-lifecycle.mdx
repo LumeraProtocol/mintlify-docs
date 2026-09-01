@@ -45,7 +45,7 @@ Registration runs seven sub-steps.
 The SDK queries the chain for the current action parameters.
 
 ```ts
-const actionParams = await client.Blockchain.getActionParams();
+const actionParams = await client.Blockchain.Action.getParams();
 // Returns: { max_raptor_q_symbols, ... }
 ```
 

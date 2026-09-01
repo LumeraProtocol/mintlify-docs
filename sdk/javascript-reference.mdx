@@ -102,10 +102,10 @@ Every download authenticates with an ADR-036 signature over the action ID. The [
 | Method | Returns |
 |---|---|
 | `Blockchain.getChainId()` | The connected chain ID |
-| `Blockchain.getActionParams()` | Current action parameters such as `max_raptor_q_symbols` |
-| `Blockchain.getAction(actionId)` | The action record with `creator`, `actionType`, `dataHash`, and `state` |
-| `Blockchain.getActionFee(fileSizeBytes)` | The estimated storage fee in `ulume` |
-| `Blockchain.getSupernodes()` | All registered SuperNodes |
+| `Blockchain.Action.getParams()` | Current action parameters such as `max_raptor_q_symbols` |
+| `Blockchain.Action.getAction(actionId)` | The action record with `creator`, `actionID`, `actionType`, `metadata`, and `state` |
+| `Blockchain.Action.getActionFee(fileSizeBytes)` | The estimated storage fee in `ulume` |
+| `Blockchain.Supernode.listSupernodes()` | All registered SuperNodes |
 | `Blockchain.Tx.simulate(address, msgs)` | Gas estimate for a set of messages |
 | `Blockchain.Tx.broadcast(signedTx)` | Broadcast result for a signed transaction |
 
