@@ -129,7 +129,7 @@ LEP-5 proves possession once, at finalization. Retention over time is enforced s
 
 The current mechanism is epoch-based. Challengers, recipients, and observers are selected deterministically, a challenged operator returns a hash over a byte range of a stored artifact, and observers reach quorum on the result. Evidence is batched into epoch health reports rather than submitted as individual transactions. Repair already exists as well, gated by request, verify, and commit, with reconstructed content validated against the expected hash before it is persisted.
 
-**LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved** and upgrades both halves. Its substantive changes are worth knowing because they define the direction of the integrity model.
+**LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved** and upgrades both halves. The runtime ships in SuperNode v2.6.0 and later, gated by operator config and by the `x/audit` parameter `storage_truth_enforcement_mode`, which disables every LEP-6 service while it is `UNSPECIFIED`. Its substantive changes are worth knowing because they define the direction of the integrity model.
 
 - One third of active SuperNodes are challenged per epoch, deterministically selected, keeping traffic bounded.
 - Each challenged operator receives one compound challenge containing a **recent-ticket** and an **old-ticket** subchallenge, so ingestion and long-term retention are tested separately.
