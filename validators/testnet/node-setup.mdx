@@ -34,14 +34,14 @@ go version
 
 ## Step 3. Install lumerad
 
-Lumera publishes a prebuilt `linux/amd64` binary for every release, so there is nothing to compile. Run the version testnet is on, currently v1.20.1.
+Lumera publishes a prebuilt `linux/amd64` binary for every release, so there is nothing to compile. Run the version testnet is on. Testnet is on the `v1.20.2` line; a binary older than that halts at the v1.20.2 upgrade height and cannot sync to the tip.
 
 ```bash
 # what testnet is running right now
 curl -fsSL https://lumera-testnet-rpc.polkachu.com/abci_info | jq -r .result.response.version
-# 1.20.1
 
-LUMERA_VERSION=v1.20.1
+# use the tag matching the line above
+LUMERA_VERSION=v1.20.2
 
 mkdir -p ~/lumera-install && cd ~/lumera-install
 curl -fsSL -O "https://github.com/LumeraProtocol/lumera/releases/download/${LUMERA_VERSION}/release_checksum"
@@ -73,7 +73,6 @@ Confirm the binary runs. The version must match what the chain reports above.
 
 ```bash
 lumerad version
-# 1.20.1
 ```
 
 ## Step 4. Initialize the node
