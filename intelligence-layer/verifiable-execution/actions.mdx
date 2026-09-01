@@ -44,13 +44,16 @@ The `action_id` is returned in an `action_registered` event when the registering
 
 | State | Meaning |
 | --- | --- |
+| `UNSPECIFIED` | Zero value. Also the sentinel a handler returns for no state change |
 | `PENDING` | Registered on chain and the fee is escrowed. No operator has begun work |
 | `PROCESSING` | One or more SuperNodes are executing the request |
 | `DONE` | Completion was verified on chain. The escrowed fee is released |
-| `FAILED` | The action failed or expired. The escrow returns to the creator |
 | `APPROVED` | Used by cross-chain flows that require an explicit approval step before settlement |
+| `REJECTED` | Reserved in the enum. No chain logic sets it |
+| `FAILED` | Finalization failed. The escrow returns to the creator |
+| `EXPIRED` | The expiration passed while the action was still `PENDING` or `PROCESSING`. The escrow returns to the creator |
 
-The terminal states are what a caller should build against. `DONE` means the chain verified completion, not that an operator claimed it.
+Wire values carry the `ACTION_STATE_` prefix, as in `ACTION_STATE_DONE`. The terminal states are what a caller should build against. `DONE` means the chain verified completion, not that an operator claimed it.
 
 ## The lifecycle
 
