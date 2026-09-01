@@ -46,20 +46,27 @@ Burning the deposit on failure is deliberate. It puts a real cost on frivolous o
 
 ## Governance Parameters
 
-The following values are the protocol's initial governance parameters. Like most protocol settings, they are themselves governable and may change over time.
+Governance parameters are set per network and change through proposals. Query the live values on any node:
 
-| Parameter | Value |
-| --- | --- |
-| Minimum deposit | 1,250 LUME |
-| Minimum initial deposit ratio | 0.25% |
-| Minimum deposit ratio | 1.0% |
-| Maximum deposit period | 3 days |
-| Voting period | 7 days |
-| Expedited minimum deposit | 5,000 LUME |
-| Expedited voting period | 2 days |
-| Veto threshold | 40% |
+```bash
+lumerad query gov params
+```
 
-Expedited proposals exist for changes that cannot wait a full voting period. They require a higher deposit and pass through a shorter vote. These parameters are themselves governable, and current values are queryable on chain.
+
+| Parameter | Mainnet | Testnet |
+| --- | --- | --- |
+| Minimum deposit | 1,000 LUME | 1,000 LUME |
+| Minimum initial deposit ratio | 0.25% | 0.25% |
+| Minimum deposit ratio | 1.0% | 1.0% |
+| Maximum deposit period | 3 days | 3 days |
+| Voting period | 7 days | 2 days |
+| Expedited minimum deposit | 5,000 LUME | 5,000 LUME |
+| Expedited voting period | 1 day | 3 hours |
+| Quorum | 33.4% | 33.4% |
+| Threshold | 50% | 50% |
+| Veto threshold | 40% | 40% |
+
+Expedited proposals exist for changes that cannot wait a full voting period. They require a higher deposit and pass through a shorter vote.
 
 ## Validators and Delegators
 
