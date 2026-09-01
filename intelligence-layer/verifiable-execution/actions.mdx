@@ -33,12 +33,12 @@ The `action_id` is returned in an `action_registered` event when the registering
 
 <img
   className="block mx-auto dark:hidden"
-  alt="An action starts PENDING with its fee escrowed, moves to PROCESSING while SuperNodes execute, and ends DONE with the fee released. From either PENDING or PROCESSING it can instead end FAILED, which returns the escrow."
+  alt="An action starts PENDING with its fee escrowed, moves to PROCESSING while SuperNodes execute, and ends DONE with the fee released. From either PENDING or PROCESSING it can instead end EXPIRED, which returns the escrow."
   src="/images/diagrams/action-states-light.svg"
 />
 <img
   className="mx-auto hidden dark:block"
-  alt="An action starts PENDING with its fee escrowed, moves to PROCESSING while SuperNodes execute, and ends DONE with the fee released. From either PENDING or PROCESSING it can instead end FAILED, which returns the escrow."
+  alt="An action starts PENDING with its fee escrowed, moves to PROCESSING while SuperNodes execute, and ends DONE with the fee released. From either PENDING or PROCESSING it can instead end EXPIRED, which returns the escrow."
   src="/images/diagrams/action-states-dark.svg"
 />
 
@@ -50,7 +50,7 @@ The `action_id` is returned in an `action_registered` event when the registering
 | `DONE` | Completion was verified on chain. The escrowed fee is released |
 | `APPROVED` | Used by cross-chain flows that require an explicit approval step before settlement |
 | `REJECTED` | Reserved in the enum. No chain logic sets it |
-| `FAILED` | Finalization failed. The escrow returns to the creator |
+| `FAILED` | Finalization was rejected. The escrow is neither released nor refunded |
 | `EXPIRED` | The expiration passed while the action was still `PENDING` or `PROCESSING`. The escrow returns to the creator |
 
 Wire values carry the `ACTION_STATE_` prefix, as in `ACTION_STATE_DONE`. The terminal states are what a caller should build against. `DONE` means the chain verified completion, not that an operator claimed it.
@@ -73,7 +73,7 @@ Wire values carry the `ACTION_STATE_` prefix, as in `ACTION_STATE_DONE`. The ter
     An operator submits the finalization message with whatever evidence the action type requires. For Cascade that includes Merkle proofs for the chunks committed at registration, which the chain verifies before accepting the finalization.
   </Step>
   <Step title="Settle">
-    On verified finalization the state becomes `DONE` and the escrow releases to the participating SuperNodes. If finalization never arrives before expiration, or verification fails, the state becomes `FAILED` and the escrow returns. See [Escrow and settlement](/intelligence-layer/economic-coordination/escrow-and-settlement).
+    On verified finalization the state becomes `DONE` and the escrow releases to the participating SuperNodes. If finalization never arrives before the expiration, the state becomes `EXPIRED` and the escrow returns. A finalization the chain rejects settles nothing. See [Escrow and settlement](/intelligence-layer/economic-coordination/escrow-and-settlement).
   </Step>
 </Steps>
 
@@ -81,7 +81,7 @@ Wire values carry the `ACTION_STATE_` prefix, as in `ACTION_STATE_DONE`. The ter
 
 Every action carries an expiration supplied at registration. It is a deadline for operators to complete the work, and it exists so escrowed funds cannot be held indefinitely by inaction.
 
-An expired action fails and refunds. A caller therefore never has capital stranded by an unresponsive operator, which is what makes it safe to register work with a party you have no relationship with.
+An expired action refunds. A caller therefore never has capital stranded by an unresponsive operator, which is what makes it safe to register work with a party you have no relationship with.
 
 ## Why the lifecycle matters architecturally
 

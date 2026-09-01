@@ -64,7 +64,7 @@ Every decentralized intelligent service is executed as one or more protocol Acti
     Top ranked SuperNodes pick up the action, receive the file over gRPC, and do the work. The state is `PROCESSING`.
   </Step>
   <Step title="Finalize">
-    When the work completes and results are committed, the state becomes `DONE`. A failed or expired action becomes `FAILED` and the escrowed fee is refunded.
+    When the work completes and results are committed, the state becomes `DONE`. An action still unfinalized at its `expirationTime` becomes `EXPIRED` and the chain refunds the escrowed fee.
   </Step>
   <Step title="Approve">
     Where a flow requires explicit approval, an approval transaction moves the action to `APPROVED` and the escrowed fee pays out to the SuperNodes that served it.
@@ -168,7 +168,7 @@ const { amount } = await client.Blockchain.Action.getActionFee(fileSizeKb);
 // amount is a string in ulume. The SDK sets this as the action price.
 ```
 
-The fee is locked in escrow at registration and released when the Action settles, following [the action lifecycle](#the-action-lifecycle). On mainnet, 98% of each fee pays the SuperNodes that served the Action and 2% goes to the foundation. If the Action fails or expires, the full fee is refunded. You pay once, with no recurring charges.
+The fee is locked in escrow at registration and released when the Action settles, following [the action lifecycle](#the-action-lifecycle). On mainnet, 98% of each fee pays the SuperNodes that served the Action and 2% goes to the foundation. If the Action expires before finalization, the chain refunds the full fee. You pay once, with no recurring charges.
 
 The service fee is separate from the gas fee charged on every transaction. The minimum gas price is `0.025ulume`. See [Networks](/networks) for chain parameters and [Protocol revenue](/protocol-revenue) for how fees flow through the network.
 

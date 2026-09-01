@@ -186,7 +186,7 @@ PENDING --> PROCESSING --> DONE
 | `FAILED` | Finalization failed |
 | `EXPIRED` | No SuperNode finalized before `expirationTime` |
 
-The storage fee is escrowed at registration. If the action fails or expires, the fee is refunded. The current fee is a 10000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.02 LUME. Fee parameters can change through governance.
+The storage fee is escrowed at registration. The chain refunds it if the action expires before finalization. The current fee is a 10000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.02 LUME. Fee parameters can change through governance.
 
 ## SDK task states
 
