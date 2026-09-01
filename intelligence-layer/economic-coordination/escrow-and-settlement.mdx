@@ -23,13 +23,13 @@ For Cascade that evidence is Merkle proofs for the chunks committed at registrat
 
 Payment goes to the SuperNodes that served the action.
 
-## Refund on failure or expiration
+## Refund on expiration
 
-If verification fails, or the action expires before finalization, the state becomes `FAILED` and the escrow returns to the creator automatically.
+If the action is not finalized before its expiration, the state becomes `EXPIRED` and the escrow returns to the creator automatically. A finalization the chain rejects settles nothing and leaves the action open until a later attempt succeeds or it expires.
 
 No claim is filed and no counterparty has to cooperate. The refund is a consequence of the state transition, evaluated by the chain against the on-chain record.
 
-This is the property that makes the write path safe to retry. A failed upload costs a transaction fee, not the service fee.
+This is the property that makes the write path safe to retry. An upload that never finalizes costs a transaction fee, not the service fee.
 
 ## Where the fee goes
 
@@ -48,7 +48,7 @@ Two payments occur when you register an action, and conflating them causes confu
 | Service fee | The work itself. Escrowed, then released or refunded | Serving SuperNodes, with a share to the Everlight pool |
 | Transaction fee | Including the transaction in a block | Validators and delegators, with a share burned |
 
-The service fee is refundable. Gas is not, because the transaction was processed regardless of whether the work succeeded. Distribution of both is covered in [Protocol Economics](/protocol-revenue).
+The service fee is refundable on expiration. Gas is not, because the transaction was processed regardless of whether the work succeeded. Distribution of both is covered in [Protocol Economics](/protocol-revenue).
 
 ## The approval path
 

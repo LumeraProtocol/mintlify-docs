@@ -37,7 +37,7 @@ Cascade splits the work between two planes. The control plane is the Lumera bloc
     The chain validates the transaction, escrows the fee, and emits an `action_registered` event that contains the `action_id`. The SDK extracts the ID from the transaction response. The `action_id` is the permanent on-chain reference for your file.
   </Step>
   <Step title="Upload the file to a SuperNode">
-    The SDK sends a multipart POST to `/api/v1/actions/cascade` on SN-API, the REST gateway that runs inside each SuperNode. The request carries three fields.
+    The SDK sends a multipart POST to `/api/v1/actions/cascade` on SN-API, the REST gateway in front of the SuperNode network. The request carries three fields.
 
     | Field | Contents |
     | --- | --- |
@@ -61,7 +61,7 @@ Cascade splits the work between two planes. The control plane is the Lumera bloc
 
 ## Pay once, store forever
 
-Cascade charges one storage fee when the action registers, and never bills again. The current fee is 10,000 `ulume` base plus 10 `ulume` per KB, which comes to about 0.02 LUME for a 1 MB file. These parameters can change through governance. The protocol handles payments and refunds automatically, so a failed or expired upload returns the escrowed fee to your wallet.
+Cascade charges one storage fee when the action registers, and never bills again. The current fee is 10,000 `ulume` base plus 10 `ulume` per KB, which comes to about 0.02 LUME for a 1 MB file. These parameters can change through governance. The protocol handles payment automatically. An upload still unfinalized at its `expirationTime` returns the escrowed fee to your wallet.
 
 ## Retrieving your file
 

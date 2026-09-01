@@ -37,8 +37,9 @@ The on-chain state of your SuperNode determines whether it is actively serving t
 | `STOPPED` | Manually stopped via transaction | Start with the `start-supernode` tx |
 | `PENALIZED` | Penalized for violations | Cannot re-register |
 | `POSTPONED` | Non-compliant metrics | Recovers automatically when compliant |
+| `STORAGE_FULL` | Disk usage above the configured threshold | Free disk space to return to `ACTIVE` |
 
-Everlight, the storage retention compensation program, adds a `STORAGE_FULL` state for nodes whose disk usage crosses the configured limit. Those nodes stop receiving new storage assignments but keep serving compute tasks and keep earning Everlight payouts for data they already hold. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
+ `STORAGE_FULL` node stops receiving new Cascade storage assignments but stays eligible for Sense and Agent duties, and keeps earning Everlight payouts for data it already holds. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
 
 ## On-chain metrics (LEP-4)
 
@@ -153,7 +154,7 @@ If you initialized with `--auto-upgrade`, `sn-manager` upgrades itself and the `
 
 ## Configuration reference
 
-All runtime parameters live in `~/.supernode/config.yml`. Path values that do not start with `/` resolve relative to the base directory.
+All runtime parameters live in `~/.supernode/config.yml`. Path values that do not start with `/` resolve relative to the base directory. The block below is what `supernode init` writes on v2.6.x. Optional fields are omitted from it and listed in the tables that follow.
 
 ```yaml config.yml
 supernode:
@@ -189,8 +190,10 @@ Restart the SuperNode after any configuration change. Changes only apply on proc
 |-------|-------------|
 | `key_name` | Keyring key used to sign transactions |
 | `identity` | The `lumera1...` address derived from the key. Written by `init`. Must match your registered `SN_ACCOUNT` |
-| `host` | Bind address for the gRPC service |
+| `host` | Bind address for the gRPC service. `ip_address` is accepted as an alias for older configs |
 | `port` | gRPC service port, default `4444` |
+| `gateway_port` | Optional. HTTP gateway port for `SupernodeService`, default `8002` |
+| `evm_key_name` | Optional. Name of the `eth_secp256k1` key used for one-time legacy account migration. Remove it after migrating |
 
 ### keyring section
 
@@ -210,6 +213,7 @@ If `passphrase_plain` is set it takes precedence over the other two. Leave it em
 |-------|-------------|
 | `port` | P2P listen port. Keep the default `4445`, the network expects it |
 | `data_dir` | Where DHT records and peer metadata live, default `data/p2p` |
+| `bootstrap_nodes` | Optional. Explicit peers to dial on start. Leave unset to use the network defaults |
 
 ### lumera section
 
@@ -217,6 +221,12 @@ If `passphrase_plain` is set it takes precedence over the other two. Leave it em
 |-------|-------------|
 | `grpc_addr` | The Lumera gRPC endpoint. A public endpoint or `<VALIDATOR_IP>:9090` when self-hosting |
 | `chain_id` | `lumera-testnet-2` or `lumera-mainnet-1`, must match the network |
+| `gas_adjustment` | Optional. Multiplier on simulated gas, default `1.3` |
+| `gas_adjustment_multiplier` | Optional. Per-retry multiplier after an out-of-gas error, default `1.3` |
+| `gas_adjustment_max_attempts` | Optional. Retries on out of gas, default `3`, capped at `10` |
+| `gas_padding` | Optional. Flat gas added to the estimate, default `50000` |
+| `gas_price` | Optional. `0.025` or `0.025ulume`, default `0.025` |
+| `fee_denom` | Optional. Fee coin denom, default `ulume` |
 
 ### raptorq section
 
@@ -227,6 +237,42 @@ If `passphrase_plain` is set it takes precedence over the other two. Leave it em
 <Tip>
 Cascade encode and decode are I/O heavy. If the server has a dedicated NVMe volume, point `files_dir` at an absolute path on it.
 </Tip>
+
+### log section
+
+| Field | Description |
+|-------|-------------|
+| `level` | Log verbosity, for example `info` or `debug` |
+
+### storage_challenge section
+
+| Field | Description |
+|-------|-------------|
+| `enabled` | Runs the storage challenge service |
+| `poll_interval_ms` | Optional. Dispatcher tick cadence |
+| `submit_evidence` | Optional. Submits challenge evidence on chain |
+| `lep6` | Optional. LEP-6 compound challenges. Requires v2.6.0 or later |
+
+The `lep6` block takes `enabled` (default `true` when the block is present), `max_concurrent_targets` (default `4`), `recipient_read_timeout`, and a nested `recheck` block with `enabled`, `lookback_epochs`, `max_per_tick`, `tick_interval_ms`, `max_failure_attempts_per_ticket`, and `failure_backoff_ttl_ms`.
+
+### self_healing section
+
+Requires v2.6.0 or later. A missing block defaults to disabled.
+
+| Field | Description |
+|-------|-------------|
+| `enabled` | Runs the self-healing dispatcher and transport server |
+| `poll_interval_ms` | Optional. Dispatcher tick cadence, default `30000` |
+| `max_concurrent_reconstructs` | Optional. Reconstruct workers, default `2` |
+| `max_concurrent_verifications` | Optional. Verification workers, default `4` |
+| `max_concurrent_publishes` | Optional. Publish-to-DHT workers, default `2` |
+| `staging_dir` | Optional. Staging root, default `~/.supernode/heal-staging` |
+| `verifier_fetch_timeout_ms` | Optional. Caps one fetch from the healer, default `60000` |
+| `verifier_fetch_attempts` | Optional. Fetch attempts, default `3` |
+| `verifier_backoff_base_ms` | Optional. Backoff base between attempts, default `2000` |
+| `audit_query_timeout_ms` | Optional. Caps audit status and params calls, default `10000` |
+
+Both blocks are also gated on chain: while the `x/audit` parameter `storage_truth_enforcement_mode` is `UNSPECIFIED`, every LEP-6 service stays off regardless of local config. See [compliance and enforcement](/supernodes/enforcement).
 
 ## Monitoring
 

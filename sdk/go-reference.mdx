@@ -45,7 +45,7 @@ alice, err := factory.WithSigner(ctx, aliceAddr, "alice")
 | `Blockchain.Action` | `GetAction(ctx, actionID)` returns the action record with its state |
 | `Blockchain.SuperNode` | SuperNode registration state and listings |
 
-Action states are `PENDING`, `PROCESSING`, `DONE`, and `FAILED`. Approved cross-chain actions can also reach `APPROVED` after `MsgApproveAction`.
+Action states are `PENDING`, `PROCESSING`, `DONE`, `FAILED`, and `EXPIRED`. Approved cross-chain actions can also reach `APPROVED` after `MsgApproveAction`.
 
 ## Cascade surface
 

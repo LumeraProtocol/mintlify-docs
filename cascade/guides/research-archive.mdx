@@ -54,7 +54,7 @@ const result = await client.Cascade.uploader.uploadFile(
   {
     fileName: `${manifest.title}.json`,
     isPublic: true,
-    expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+    expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
     taskOptions: { pollInterval: 2000, timeout: 300000 },
   }
 );
@@ -80,7 +80,7 @@ const manifest = {
 await client.Cascade.uploader.uploadFile(manifestBytes, {
   fileName: `draft_${draftId}_v${version}.json`,
   isPublic: true, // Encrypted, so publicly accessible but unreadable
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
 });
 ```
 
@@ -101,7 +101,7 @@ const invitation = {
 await client.Cascade.uploader.uploadFile(invitationBytes, {
   fileName: `invitation_${collaboratorAddress}_${draftId}.json`,
   isPublic: true,
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
 });
 ```
 

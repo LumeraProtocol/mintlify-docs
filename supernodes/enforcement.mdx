@@ -55,6 +55,8 @@ Repair already exists alongside this. It is gated by request, verify, and commit
 
 LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved and changes how challenge evidence is used. Operators should understand it because it changes what gets you penalized.
 
+The runtime ships in SuperNode v2.6.0 and later, behind two gates. Locally, the `storage_challenge.lep6` and `self_healing` blocks must be enabled in `config.yml`; a missing block defaults to disabled. On chain, the `x/audit` parameter `storage_truth_enforcement_mode` must be above `UNSPECIFIED`, which otherwise disables every LEP-6 service. The modes are `UNSPECIFIED`, `SHADOW`, `SOFT`, and `FULL`.
+
 The coverage model changes. One third of active SuperNodes are challenged per epoch, deterministically selected, and each challenged node receives one compound challenge containing a recent-ticket and an old-ticket subchallenge. Testing both separately answers two different questions, namely whether a node ingests new assignments and whether it silently drops cold data later.
 
 Byte sampling changes. Instead of a fixed leading kilobyte, challenges sample four deterministic 256-byte ranges, which removes any benefit from retaining only the start of a file.
@@ -82,6 +84,7 @@ Track status in the [LEP repository](https://github.com/LumeraProtocol/lumera/tr
 3. **Keep reports fresh.** A missed or stale report forfeits a distribution regardless of how much you retain.
 4. **Actually retain the data.** Challenges sample randomly across recent and old assignments. Partial retention is caught probabilistically and the evidence accumulates.
 5. **Stay current.** Enforcement behavior arrives through governance-approved upgrades. Keep the node on current releases with `sn-manager`.
+6. **Opt in to LEP-6.** A config carried over from v2.5.x has no `storage_challenge.lep6` or `self_healing` block, and a missing block defaults to disabled. Add both before the chain moves past `SHADOW`.
 
 <CardGroup cols={2}>
   <Card title="Operations guide" icon="wrench" href="/supernodes/operations">

@@ -31,7 +31,7 @@ None of it is self-attested in the way a review or an endorsement is. Retained v
 
 ## Three scores, deliberately separate
 
-LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved and specifies the scoring model explicitly. The design decision worth understanding is the separation.
+LEP-6, Storage-Truth Enforcement and Ticket-Driven Self-Healing, is approved and specifies the scoring model explicitly. The scores are computed and applied only while the `x/audit` parameter `storage_truth_enforcement_mode` is above `UNSPECIFIED`. The design decision worth understanding is the separation.
 
 | Score | Question it answers | Used for |
 | --- | --- | --- |

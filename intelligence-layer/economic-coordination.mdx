@@ -22,7 +22,7 @@ Escrow is the mechanism that makes this safe in both directions.
 
 When an Action is registered, its fee is committed on chain before work begins. The requester's funds are locked and cannot be spent elsewhere. The operator's compensation is real but contingent on completion.
 
-If the Action completes and is confirmed, the escrow releases to the SuperNodes that served it. If it fails or expires, the escrow returns to the requester. Neither outcome depends on either party's cooperation after the fact, because the condition is evaluated against the on-chain record.
+If the Action completes and is confirmed, the escrow releases to the SuperNodes that served it. If it expires before finalization, the escrow returns to the requester. Neither outcome depends on either party's cooperation after the fact, because the condition is evaluated against the on-chain record.
 
 This is the same discipline documented in the Action Lifecycle. Economic Coordination generalizes it rather than introducing a second payment path.
 

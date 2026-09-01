@@ -84,13 +84,16 @@ Query commands read on-chain state without submitting any transactions. They are
     lumerad query action list-actions
 
     # Fetch a specific action by ID
-    lumerad query action get-action <action-id>
+    lumerad query action action <action-id>
     ```
   </Tab>
   <Tab title="Claims">
     ```shell
-    # Check the claim status for an address
-    lumerad query claim get-claim <address>
+    # Show the claim record for a legacy address
+    lumerad query claim claim-record <old-address>
+
+    # List claimed records for a vested term (0 if not vested)
+    lumerad query claim list-claimed <vested-term>
     ```
   </Tab>
   <Tab title="Node status">
@@ -133,8 +136,13 @@ Transaction commands broadcast signed messages to the chain. Every transaction c
   </Tab>
   <Tab title="Claims">
     ```shell
-    # Claim your allocated LUME tokens (if eligible)
-    lumerad tx claim claim-tokens \
+    # Claim LUME to a new address, signed with the legacy key
+    lumerad tx claim claim <old-address> <new-address> <pub-key> <signature> \
+      --from <key-name> \
+      --chain-id lumera-mainnet-1
+
+    # Same claim into a vesting tier
+    lumerad tx claim delayed-claim <old-address> <new-address> <pub-key> <signature> <tier> \
       --from <key-name> \
       --chain-id lumera-mainnet-1
     ```
@@ -197,10 +205,10 @@ These flags apply to every `lumerad` command. You can set frequently-used flags 
 
   <Accordion title="Query an action and verify it is finalized">
     ```shell
-    lumerad query action get-action <action-id> --output json | jq '{state: .action.state, tx_hash: .action.finalize_tx_hash}'
+    lumerad query action action <action-id> --output json | jq '.action.state'
     ```
 
-    A finalized Cascade action has `state: "ACTION_STATE_DONE"` and a populated `finalize_tx_hash`.
+    A finalized Cascade action has `state: "ACTION_STATE_DONE"`.
   </Accordion>
 
   <Accordion title="Connect to a remote node">

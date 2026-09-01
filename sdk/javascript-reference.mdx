@@ -72,11 +72,11 @@ const result = await client.Cascade.uploader.uploadFile(fileBytes, {
 | `taskOptions.pollInterval` | `number` | Milliseconds between status polls, default 2000 |
 | `taskOptions.timeout` | `number` | Milliseconds before timeout, default 300000 |
 
-Resolves to the completed upload `Task`. It does **not** return the action ID. `uploadFile` registers the action internally and then discards the reference, so use the lower level steps below whenever you need to keep it.
+Resolves to the completed upload `Task`, which carries `action_id` alongside `task_id`.
 
 ### Lower level upload steps
 
-Use these when you need control over individual phases, or when you need the action ID.
+Use these when you need control over individual phases.
 
 | Method | Purpose |
 |---|---|
@@ -102,12 +102,17 @@ Every download authenticates with an ADR-036 signature over the action ID. The [
 | Method | Returns |
 |---|---|
 | `Blockchain.getChainId()` | The connected chain ID |
-| `Blockchain.getActionParams()` | Current action parameters such as `max_raptor_q_symbols` |
-| `Blockchain.getAction(actionId)` | The action record with `creator`, `actionType`, `dataHash`, and `state` |
-| `Blockchain.getActionFee(fileSizeBytes)` | The estimated storage fee in `ulume` |
-| `Blockchain.getSupernodes()` | All registered SuperNodes |
+| `Blockchain.Action.getParams()` | Current action parameters such as `max_raptor_q_symbols` |
+| `Blockchain.Action.getAction(actionId)` | The action record with `creator`, `actionID`, `actionType`, `metadata`, and `state` |
+| `Blockchain.Action.getActionFee(dataSizeKb)` | The storage fee in `ulume` for that size in KB, rounded up from bytes |
+| `Blockchain.Supernode.listSupernodes()` | All registered SuperNodes |
 | `Blockchain.Tx.simulate(address, msgs)` | Gas estimate for a set of messages |
 | `Blockchain.Tx.broadcast(signedTx)` | Broadcast result for a signed transaction |
+
+```ts
+const dataSizeKb = Math.ceil(fileSizeBytes / 1024);
+const { amount } = await client.Blockchain.Action.getActionFee(dataSizeKb);
+```
 
 Chain parameter queries are cached for 5 minutes.
 
@@ -155,7 +160,7 @@ The SDK reports task progress with these statuses.
 | `sdk:processing_timeout` | Failure | Processing exceeded the timeout |
 | `sdk:download_failure` | Failure | Download reconstruction failed |
 
-On-chain action states are separate. They move from `PENDING` to `PROCESSING` to `DONE` or `FAILED`. See [error handling](/cascade/error-handling) for recovery patterns.
+On-chain action states are separate. They move from `PENDING` to `PROCESSING` to `DONE`, `FAILED`, or `EXPIRED`. See [error handling](/cascade/error-handling) for recovery patterns.
 
 ## Next steps
 

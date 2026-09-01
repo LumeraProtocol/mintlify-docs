@@ -98,7 +98,7 @@ res, err := cascadeClient.Upload(ctx, addr, nil, filePath,
 
 `WithICASendFunc` takes the callback the SDK invokes when it needs to send an ICA message from your controller chain. The file itself streams over gRPC directly to SuperNodes. It never crosses the IBC channel.
 
-Track progress with `SubscribeToEvents`, or poll `GetAction` until the state moves from `PENDING` through `PROCESSING` to `DONE`. A `FAILED` action refunds the escrowed fee.
+Track progress with `SubscribeToEvents`, or poll `GetAction` until the state moves from `PENDING` through `PROCESSING` to `DONE`. An action still unfinalized at its `expirationTime` becomes `EXPIRED` and the escrowed fee is refunded.
 
 ## Step 7. Download the file
 

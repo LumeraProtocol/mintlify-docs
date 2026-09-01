@@ -33,7 +33,7 @@ const { actionId, authSignature } = await client.Cascade.uploader.registerAction
   {
     fileName: "paper.pdf",
     isPublic: true,
-    expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+    expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
   }
 );
 ```
@@ -45,7 +45,7 @@ Registration runs seven sub-steps.
 The SDK queries the chain for the current action parameters.
 
 ```ts
-const actionParams = await client.Blockchain.getActionParams();
+const actionParams = await client.Blockchain.Action.getParams();
 // Returns: { max_raptor_q_symbols, ... }
 ```
 
@@ -157,37 +157,25 @@ FormData {
 For most use cases, call `uploadFile` to run all three phases.
 
 ```ts
-const prepared = await client.Cascade.uploader.prepareFile(fileBytes);
-
-const registered = await client.Cascade.uploader.registerAction(prepared, {
+const task = await client.Cascade.uploader.uploadFile(fileBytes, {
   fileName: "document.pdf",
   isPublic: true,
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
+  taskOptions: {
+    pollInterval: 2000,  // Check every 2 seconds
+    timeout: 300000,     // Fail after 5 minutes
+  },
 });
-
-await client.Cascade.uploader.sendFileToSupernodes(
-  registered.actionId,
-  registered.authSignature,
-  fileBytes,
-  {
-    taskOptions: {
-      pollInterval: 2000,  // Check every 2 seconds
-      timeout: 300000,     // Fail after 5 minutes
-    },
-  }
-);
-
-console.log(registered.actionId); // Use this to download later
 ```
 
 ## Action states on chain
 
-After registration, the on-chain action moves through four states.
+After registration, a Cascade upload moves through these states. For the full `ActionState` enum see [Actions](/intelligence-layer/verifiable-execution/actions).
 
 ```text
 PENDING --> PROCESSING --> DONE
-                |
-                +--> FAILED
+   |            |
+   +------------+--> FAILED / EXPIRED
 ```
 
 | State | Meaning |
@@ -195,9 +183,10 @@ PENDING --> PROCESSING --> DONE
 | `PENDING` | Action registered and fee escrowed, waiting for the file |
 | `PROCESSING` | SuperNodes encode the file and distribute symbols |
 | `DONE` | Symbols stored, the file is permanently available |
-| `FAILED` | The upload failed or expired |
+| `FAILED` | Finalization failed |
+| `EXPIRED` | No SuperNode finalized before `expirationTime` |
 
-The storage fee is escrowed at registration. If the action fails or expires, the fee is refunded. The current fee is a 10000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.02 LUME. Fee parameters can change through governance.
+The storage fee is escrowed at registration. The chain refunds it if the action expires before finalization. The current fee is a 10000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.02 LUME. Fee parameters can change through governance.
 
 ## SDK task states
 

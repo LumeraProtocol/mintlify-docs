@@ -97,7 +97,7 @@ Treat the mnemonic like a private key. Load it from an environment variable or a
 
 <Step title="Upload a file">
 
-The upload registers an action on chain, escrows the storage fee, and transfers the file to a SuperNode. The optional `expirationTime` sets a deadline for the upload. If the upload fails or expires, the escrowed fee is refunded.
+The upload registers an action on chain, escrows the storage fee, and transfers the file to a SuperNode. The optional `expirationTime` sets a deadline for the upload. If no SuperNode finalizes the action by then, it becomes `EXPIRED` and the escrowed fee is refunded.
 
 ```ts upload.ts
 import fs from "node:fs";

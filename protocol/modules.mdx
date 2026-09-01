@@ -16,7 +16,7 @@ Lumera Protocol runs on the Cosmos SDK with five custom modules that implement t
 
 ## x/action
 
-`x/action` records every Cascade and Sense request as an action, an on-chain record with a state machine. It escrows the service fee at registration and refunds it if the action fails. States run `PENDING`, `PROCESSING`, then `DONE` or `FAILED`. Cross-chain flows can add `APPROVED` after an explicit approval.
+`x/action` records every Cascade and Sense request as an action, an on-chain record with a state machine. It escrows the service fee at registration and refunds it when an action expires unfinalized. States run `PENDING`, `PROCESSING`, then `DONE`, `FAILED`, or `EXPIRED`. Cross-chain flows can add `APPROVED` after an explicit approval.
 
 The module stores action records keyed by `action_id`, each with its type, creator, current state, and escrowed fee. Its key messages are `MsgRequestAction` to register an action and `MsgApproveAction` for flows that require approval. Query any record with `lumerad query action action <action-id>`.
 

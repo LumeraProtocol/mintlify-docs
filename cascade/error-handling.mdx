@@ -102,7 +102,7 @@ Increase the timeout in `taskOptions`.
 const result = await client.Cascade.uploader.uploadFile(file, {
   fileName: "large-file.zip",
   isPublic: true,
-  expirationTime: String(Math.floor(Date.now() / 1000) + 86400),
+  expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60),
   taskOptions: {
     timeout: 600000, // 10 minutes
   },
@@ -162,10 +162,7 @@ Only the wallet that uploaded the file can download it when `isPublic: false`. C
 
 ## Automatic refunds
 
-The storage fee is escrowed on chain when you register an action. The protocol refunds it to your wallet automatically in two cases.
-
-- The upload fails and the action ends in a failed state.
-- The action expires because no SuperNode finalized it before its `expirationTime`.
+The storage fee is escrowed on chain when you register an action. The chain refunds it to your wallet automatically when the action expires because no SuperNode finalized it before its `expirationTime`. A rejected finalization does not refund on its own; the action stays open until it is finalized or expires.
 
 You do not file a claim or send another transaction. The refund is part of the protocol.
 

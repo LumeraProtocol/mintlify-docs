@@ -243,7 +243,7 @@ const action = await client.Blockchain.Action.getAction(actionId);
 console.log("State:", action.state);
 ```
 
-The state starts at `PENDING` after registration. It moves to `PROCESSING` while SuperNodes encode and distribute the file, then ends at `DONE`. A failed upload ends at `FAILED` and the escrowed fee is refunded.
+The state starts at `PENDING` after registration. It moves to `PROCESSING` while SuperNodes encode and distribute the file, then ends at `DONE`. An upload still unfinalized at its `expirationTime` ends at `EXPIRED` and the escrowed fee is refunded.
 
 ## Next steps
 
