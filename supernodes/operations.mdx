@@ -37,8 +37,9 @@ The on-chain state of your SuperNode determines whether it is actively serving t
 | `STOPPED` | Manually stopped via transaction | Start with the `start-supernode` tx |
 | `PENALIZED` | Penalized for violations | Cannot re-register |
 | `POSTPONED` | Non-compliant metrics | Recovers automatically when compliant |
+| `STORAGE_FULL` | Disk usage above the configured threshold | Free disk space to return to `ACTIVE` |
 
-Everlight, the storage retention compensation program, adds a `STORAGE_FULL` state for nodes whose disk usage crosses the configured limit. Those nodes stop receiving new storage assignments but keep serving compute tasks and keep earning Everlight payouts for data they already hold. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
+ `STORAGE_FULL` node stops receiving new Cascade storage assignments but stays eligible for Sense and Agent duties, and keeps earning Everlight payouts for data it already holds. See [Everlight for SuperNode operators](/cascade/everlight/supernode-operators).
 
 ## On-chain metrics (LEP-4)
 
