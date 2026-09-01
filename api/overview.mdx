@@ -1,10 +1,10 @@
 ---
 title: "Lumera REST API overview"
 sidebarTitle: "Overview"
-description: "Learn the base URLs, authentication model, and response format for the LumeScope and LCD REST APIs."
+description: "Learn the base URLs, authentication model, and response format for the LumeScope, LCD, and SN-API REST surfaces."
 ---
 
-Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD** endpoint speaks directly to the chain. Use it to query state and broadcast transactions with no middleware in the way. **LumeScope** sits in front of the network as a neutral, read-only aggregator. It decodes Action metadata for Cascade and Sense, tracks SuperNode hardware metrics, and assembles network-wide statistics. Your application does not have to reconstruct that data from raw chain state. Both surfaces return JSON and require no authentication for read operations.
+Lumera Protocol gives you three complementary REST API surfaces. The **Lumera LCD** endpoint speaks directly to the chain. Use it to query state and broadcast transactions with no middleware in the way. **LumeScope** sits in front of the network as a neutral, read-only aggregator. It decodes Action metadata for Cascade and Sense, tracks SuperNode hardware metrics, and assembles network-wide statistics. Your application does not have to reconstruct that data from raw chain state. **SN-API** is the HTTP gateway in front of the SuperNode network and carries Cascade file transfers. All three return JSON. LCD and LumeScope need no authentication for reads; SN-API uploads and private downloads require an ADR-036 signature.
 
 ## API surfaces
 
@@ -12,12 +12,14 @@ Lumera Protocol gives you two complementary REST API surfaces. The **Lumera LCD*
 
 **LumeScope API** is a purpose-built aggregator that decodes, stores, and serves Lumera-specific data in developer-friendly shapes. It is the recommended starting point for application developers who want paginated Action lists, decoded metadata, and SuperNode health without writing their own chain-indexing logic.
 
+**SN-API** is the HTTP gateway that fronts the SuperNode network for Cascade uploads and downloads. The JavaScript and Rust SDKs call it for you. Call it directly when you already hold an on-chain action ID and an upload signature. The direct SuperNode gRPC service is a separate, lower-level path documented in the [CascadeService reference](/api/grpc/cascade-service).
+
 ## Base URLs
 
-| Network | LumeScope Base | LCD Base |
-|---------|----------------|----------|
-| Mainnet | `https://api.lumera.io` | `https://lcd.lumera.io` |
-| Testnet | `https://api.testnet.lumera.io` | `https://lcd.testnet.lumera.io` |
+| Network | LumeScope Base | LCD Base | SN-API Base |
+|---------|----------------|----------|-------------|
+| Mainnet | `https://api.lumera.io` | `https://lcd.lumera.io` | `https://snapi.lumera.io` |
+| Testnet | `https://api.testnet.lumera.io` | `https://lcd.testnet.lumera.io` | `https://snapi.testnet.lumera.io` |
 
 <Note>
   All examples in this documentation target mainnet. Replace the base URL with the testnet equivalent when developing against **lumera-testnet-2**.
@@ -58,6 +60,13 @@ For example, on mainnet browse to `https://api.lumera.io/docs` to open the inter
     href="/api/supernodes"
   >
     Fetch SuperNode hardware metrics, payment statistics, version compatibility matrix, and availability status.
+  </Card>
+  <Card
+    title="SN-API"
+    icon="upload"
+    href="/api/sn-api"
+  >
+    Upload and download Cascade files through the SuperNode HTTP gateway.
   </Card>
 </CardGroup>
 
