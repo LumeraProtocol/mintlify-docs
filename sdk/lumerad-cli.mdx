@@ -84,7 +84,7 @@ Query commands read on-chain state without submitting any transactions. They are
     lumerad query action list-actions
 
     # Fetch a specific action by ID
-    lumerad query action get-action <action-id>
+    lumerad query action action <action-id>
     ```
   </Tab>
   <Tab title="Claims">
@@ -197,10 +197,10 @@ These flags apply to every `lumerad` command. You can set frequently-used flags 
 
   <Accordion title="Query an action and verify it is finalized">
     ```shell
-    lumerad query action get-action <action-id> --output json | jq '{state: .action.state, tx_hash: .action.finalize_tx_hash}'
+    lumerad query action action <action-id> --output json | jq '.action.state'
     ```
 
-    A finalized Cascade action has `state: "ACTION_STATE_DONE"` and a populated `finalize_tx_hash`.
+    A finalized Cascade action has `state: "ACTION_STATE_DONE"`.
   </Accordion>
 
   <Accordion title="Connect to a remote node">
