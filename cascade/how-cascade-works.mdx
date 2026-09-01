@@ -37,7 +37,7 @@ Cascade splits the work between two planes. The control plane is the Lumera bloc
     The chain validates the transaction, escrows the fee, and emits an `action_registered` event that contains the `action_id`. The SDK extracts the ID from the transaction response. The `action_id` is the permanent on-chain reference for your file.
   </Step>
   <Step title="Upload the file to a SuperNode">
-    The SDK sends a multipart POST to `/api/v1/actions/cascade` on SN-API, the REST gateway that runs inside each SuperNode. The request carries three fields.
+    The SDK sends a multipart POST to `/api/v1/actions/cascade` on SN-API, the REST gateway in front of the SuperNode network. The request carries three fields.
 
     | Field | Contents |
     | --- | --- |

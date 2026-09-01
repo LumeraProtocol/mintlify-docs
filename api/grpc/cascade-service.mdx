@@ -6,6 +6,10 @@ description: "CascadeService provides streaming gRPC RPCs for registering files 
 
 `CascadeService` is the gRPC interface you use to register files in Lumera's Cascade permanent-storage layer and to retrieve them later. Both operations use gRPC streaming. The `Register` RPC is bidirectional. You stream file chunks to the SuperNode while it streams progress events back. The `Download` RPC streams chunks from the SuperNode to you. The SuperNode handles RaptorQ encoding, P2P distribution, and on-chain finalization. Your client only needs to send the data and act on the event stream.
 
+<Note>
+  Two layers reach Cascade. Applications go through [SN-API](/api/sn-api), the HTTP gateway in front of the SuperNode network, which the [JavaScript](/sdk/javascript) and [Rust](/sdk/rust) SDKs use. `CascadeService` is the direct path to a SuperNode on port 4444, used by the [Go SDK](/sdk/go) and operator tooling. Use SN-API for app-facing upload and download.
+</Note>
+
 ## Proto definition
 
 ```proto
@@ -179,9 +183,9 @@ The `SupernodeEventType` enum is shared by both `Register` and `Download`. Not e
 
 ---
 
-## HTTP gateway alternative
+## HTTP alternative
 
-If you cannot use gRPC directly, the SuperNode also exposes an HTTP/JSON gateway that wraps these RPCs. See [`docs/gateway.md`](https://github.com/LumeraProtocol/supernode/blob/master/docs/gateway.md) in the SuperNode repository for the full list of endpoints, request/response examples, and a link to the Swagger UI.
+`CascadeService` has no HTTP gateway. The SuperNode's own gateway on port 8002 exposes `SupernodeService` only, documented in [`docs/gateway.md`](https://github.com/LumeraProtocol/supernode/blob/master/docs/gateway.md). To move Cascade files over HTTP, use [SN-API](/api/sn-api).
 
 <Note>
   The HTTP gateway is useful for quick testing and browser-based tooling, but for production file transfers you should use the native gRPC streaming interface or the Go SDK. Streaming large files over the HTTP gateway may be subject to buffering and timeout constraints that the gRPC path avoids.
