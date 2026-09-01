@@ -104,10 +104,15 @@ Every download authenticates with an ADR-036 signature over the action ID. The [
 | `Blockchain.getChainId()` | The connected chain ID |
 | `Blockchain.Action.getParams()` | Current action parameters such as `max_raptor_q_symbols` |
 | `Blockchain.Action.getAction(actionId)` | The action record with `creator`, `actionID`, `actionType`, `metadata`, and `state` |
-| `Blockchain.Action.getActionFee(fileSizeBytes)` | The estimated storage fee in `ulume` |
+| `Blockchain.Action.getActionFee(dataSizeKb)` | The storage fee in `ulume` for that size in KB, rounded up from bytes |
 | `Blockchain.Supernode.listSupernodes()` | All registered SuperNodes |
 | `Blockchain.Tx.simulate(address, msgs)` | Gas estimate for a set of messages |
 | `Blockchain.Tx.broadcast(signedTx)` | Broadcast result for a signed transaction |
+
+```ts
+const dataSizeKb = Math.ceil(fileSizeBytes / 1024);
+const { amount } = await client.Blockchain.Action.getActionFee(dataSizeKb);
+```
 
 Chain parameter queries are cached for 5 minutes.
 
