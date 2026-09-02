@@ -290,6 +290,7 @@
                 "group": "Network upgrades",
                 "icon": "arrow-up-right-dots",
                 "pages": [
+                  "evm-migration",
                   "upgrades/evm-upgrade"
                 ]
               }
