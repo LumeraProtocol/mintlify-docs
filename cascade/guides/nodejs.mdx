@@ -114,7 +114,7 @@ const client = await createLumeraClient({
 });
 
 const file = await fs.promises.readFile("./my-document.pdf");
-const expirationTime = String(Math.floor(Date.now() / 1000) + 24 * 60 * 60);
+const expirationTime = String(Math.floor(Date.now() / 1000) + 25 * 60 * 60); // 25 hours
 
 const result = await client.Cascade.uploader.uploadFile(new Uint8Array(file), {
   fileName: "my-document.pdf",
