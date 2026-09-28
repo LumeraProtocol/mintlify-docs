@@ -32,7 +32,7 @@ As new decentralized intelligent services are introduced, they inherit the same 
     A proposal is submitted with an initial deposit. Anyone holding LUME can submit one.
   </Step>
   <Step title="Deposit period">
-    The proposal must reach the minimum deposit threshold before it advances. Any community member can contribute to the deposit, so a proposal with support can clear the bar even if the author cannot fund it alone. If the threshold is not met before the deposit period expires, the proposal is rejected and the deposit is burned.
+    The proposal must reach the minimum deposit threshold before it advances. Any community member can contribute to the deposit, so a proposal with support can clear the bar even if the author cannot fund it alone. If the threshold is not met before the deposit period expires, the proposal is removed and the deposit is refunded.
   </Step>
   <Step title="Voting period">
     Staked LUME votes. Options are Yes, No, Abstain, and No With Veto.
@@ -42,31 +42,36 @@ As new decentralized intelligent services are introduced, they inherit the same 
   </Step>
 </Steps>
 
-Burning the deposit on failure is deliberate. It puts a real cost on frivolous or malicious proposals while leaving legitimate ones cheap for anyone with community backing.
+Deposits are burned only when a proposal is vetoed. That puts a real cost on harmful proposals. A proposal that fails, misses quorum, or never reaches its minimum deposit refunds its depositors.
 
 ## Governance Parameters
 
-Governance parameters are set per network and change through proposals. Query the live values on any node:
+Governance parameters are set per network and change through proposals. Query the live values on any node with this command.
 
 ```bash
 lumerad query gov params
 ```
-
 
 | Parameter | Mainnet | Testnet |
 | --- | --- | --- |
 | Minimum deposit | 1,000 LUME | 1,000 LUME |
 | Minimum initial deposit ratio | 0.25% | 0.25% |
 | Minimum deposit ratio | 1.0% | 1.0% |
-| Maximum deposit period | 3 days | 3 days |
-| Voting period | 7 days | 2 days |
+| Maximum deposit period | 3 days (`259200s`) | 3 days (`259200s`) |
+| Voting period | 4 days (`345600s`) | 3 days (`259200s`) |
 | Expedited minimum deposit | 5,000 LUME | 5,000 LUME |
-| Expedited voting period | 1 day | 3 hours |
+| Expedited voting period | 1 day (`86400s`) | 12 hours (`43200s`) |
+| Expedited threshold | 66.7% | 66.7% |
 | Quorum | 33.4% | 33.4% |
 | Threshold | 50% | 50% |
 | Veto threshold | 40% | 40% |
+| Burn deposit on veto | Yes | Yes |
+| Burn deposit when quorum fails | No | No |
+| Burn deposit when the deposit period expires | No | No |
 
-Expedited proposals exist for changes that cannot wait a full voting period. They require a higher deposit and pass through a shorter vote.
+Values as of 28 September 2026, at mainnet block 7,123,917 and testnet block 6,839,029.
+
+Expedited proposals exist for changes that cannot wait a full voting period. They require a higher deposit and a 66.7% Yes threshold, and they pass through a shorter vote.
 
 ## Validators and Delegators
 
