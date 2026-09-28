@@ -116,14 +116,18 @@ const client = await createLumeraClient({
 const file = await fs.promises.readFile("./my-document.pdf");
 const expirationTime = String(Math.floor(Date.now() / 1000) + 25 * 60 * 60); // 25 hours
 
-const result = await client.Cascade.uploader.uploadFile(new Uint8Array(file), {
+const uploader = client.Cascade.uploader;
+const prepared = await uploader.prepareFile(new Uint8Array(file));
+const { actionId, authSignature } = await uploader.registerAction(prepared, {
   fileName: "my-document.pdf",
   isPublic: true,
   expirationTime,
+});
+await uploader.sendFileToSupernodes(actionId, authSignature, prepared.fileBytes, {
   taskOptions: { pollInterval: 2000, timeout: 300000 },
 });
 
-console.log("Stored with action ID:", result.action_id);
+console.log("Stored with action ID:", actionId);
 ```
 
 </Step>

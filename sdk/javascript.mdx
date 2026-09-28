@@ -187,7 +187,7 @@ export const LUMERA_CHAIN_INFO = {
 
 ## Upload a file
 
-`uploadFile` runs the whole flow. It registers the action on chain, escrows the storage fee, sends the file to a SuperNode, and polls until processing completes. An action is the on-chain record of a storage request. The fee is paid in LUME, so fund your testnet account from the [faucet](/faucet) first.
+An upload runs in three steps. `prepareFile` hashes the file. `registerAction` registers the action on chain and escrows the storage fee. `sendFileToSupernodes` sends the file to a SuperNode and polls until processing completes. An action is the on-chain record of a storage request. The fee is paid in LUME, so fund your testnet account from the [faucet](/faucet) first.
 
 ```ts upload.ts
 const data = new TextEncoder().encode("Hello, Lumera!");
@@ -195,24 +195,26 @@ const data = new TextEncoder().encode("Hello, Lumera!");
 // Expiration, 25 hours from now as a Unix timestamp
 const expirationTime = String(Math.floor(Date.now() / 1000) + 25 * 60 * 60);
 
-const result = await client.Cascade.uploader.uploadFile(data, {
+const uploader = client.Cascade.uploader;
+const prepared = await uploader.prepareFile(data);
+const { actionId, authSignature } = await uploader.registerAction(prepared, {
   fileName: "hello.txt",
   isPublic: true,
   expirationTime,
 });
+await uploader.sendFileToSupernodes(actionId, authSignature, prepared.fileBytes);
 
-console.log("Stored with action ID:", result.action_id);
+console.log("Stored with action ID:", actionId);
 ```
 
-`result.action_id` is the permanent on-chain reference to your file. Save it. You need it for every download.
+`actionId` is the permanent on-chain reference to your file. Save it. You need it for every download. `uploadFile` runs the same three steps in one call, but it resolves to the SN-API task, not the action ID.
 
 ## Download a file
 
 `download` signs the action ID with ADR-036 to authenticate, then returns a `ReadableStream` of the file bytes.
 
 ```ts download.ts
-const actionId = result.action_id; // from the upload
-
+// actionId comes from registerAction in the upload step
 const stream = await client.Cascade.downloader.download(actionId);
 const reader = stream.getReader();
 const chunks: Uint8Array[] = [];
