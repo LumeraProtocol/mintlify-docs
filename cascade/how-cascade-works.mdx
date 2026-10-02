@@ -10,6 +10,15 @@ Cascade is the permanent storage service of Lumera Protocol. You pay one fee at 
 
 Cascade splits the work between two planes. The control plane is the Lumera blockchain. It records every stored file as an action and holds the storage fee. The data plane is the SuperNode network. It encodes, stores, and serves the actual bytes. The SDK drives both, so your app makes a single function call.
 
+### Which layer you integrate against
+
+Two layers reach Cascade, and they are not the same API.
+
+1. **Application path.** The [JavaScript](/sdk/javascript) and [Rust](/sdk/rust) SDKs call [SN-API](/api/sn-api), the HTTP gateway in front of the SuperNode network. This is the path app and browser code should take.
+2. **Direct SuperNode path.** [`CascadeService`](/api/grpc/cascade-service) gRPC streaming on a SuperNode, used by the [Go SDK](/sdk/go) and operator tooling. It needs outbound access to the node's gRPC port.
+
+Use SN-API for app-facing upload and download. Reach for direct gRPC only when you are integrating with a SuperNode itself.
+
 ## The upload flow
 
 <img
