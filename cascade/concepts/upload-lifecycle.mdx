@@ -170,9 +170,9 @@ const task = await client.Cascade.uploader.uploadFile(fileBytes, {
 
 `uploadFile` resolves to the completed SN-API task, not the action ID. If you need to store the action ID, run the three phases yourself as shown above.
 
-## Action states on chain
+## Action states on chain (simplified)
 
-After registration, a Cascade upload moves through these states. For the full `ActionState` enum see [Actions](/intelligence-layer/verifiable-execution/actions).
+This is the simplified path a Cascade upload takes. The chain's `ActionState` enum has eight values, including `UNSPECIFIED`, `APPROVED` and `REJECTED`, which a Cascade upload does not pass through. See [Actions](/intelligence-layer/verifiable-execution/actions) for the full enum.
 
 ```text
 PENDING --> PROCESSING --> DONE
