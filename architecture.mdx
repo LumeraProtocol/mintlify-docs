@@ -87,7 +87,7 @@ Each SuperNode runs the `supernode` binary alongside `lumerad`.
 
 ### Cascade
 
-Cascade is permanent file storage with a pay once, store forever model. The SuperNode receives a file through its streaming gRPC endpoint, encodes it with RaptorQ erasure coding, and spreads the symbols across a Kademlia DHT. Any sufficiently large subset of symbols rebuilds the file, so the network self heals when nodes leave. Start with [how Cascade works](/cascade/how-cascade-works) and go deeper in [erasure coding](/cascade/concepts/erasure-coding).
+Cascade is permanent file storage, paid once at upload. The SuperNode receives a file through its streaming gRPC endpoint, encodes it with RaptorQ erasure coding, and spreads the symbols across a Kademlia DHT. Any sufficiently large subset of symbols rebuilds the file, so the network self heals when nodes leave. Start with [how Cascade works](/cascade/how-cascade-works) and go deeper in [erasure coding](/cascade/concepts/erasure-coding).
 
 ### Identity with LumeraID
 
@@ -168,7 +168,7 @@ const { amount } = await client.Blockchain.Action.getActionFee(fileSizeKb);
 // amount is a string in ulume. The SDK sets this as the action price.
 ```
 
-The fee is locked in escrow at registration and released when the Action settles, following [the action lifecycle](#the-action-lifecycle). On mainnet, 98% of each fee pays the SuperNodes that served the Action and 2% goes to the foundation. If the Action expires before finalization, the chain refunds the full fee. You pay once, with no recurring charges.
+The fee is locked in escrow at registration and released when the Action settles, following [the action lifecycle](#the-action-lifecycle). On mainnet, 98% of each fee pays the SuperNodes that served the Action and 2% goes to the foundation. If the Action expires before finalization, the chain refunds the full fee. Storage is paid once, with no recurring charges, and reads are not metered by the protocol.
 
 The service fee is separate from the gas fee charged on every transaction. The minimum gas price is `0.025ulume`. See [Networks](/networks) for chain parameters and [Protocol revenue](/protocol-revenue) for how fees flow through the network.
 

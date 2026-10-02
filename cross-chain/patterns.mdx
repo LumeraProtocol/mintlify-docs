@@ -77,7 +77,7 @@ const { actionId, authSignature } = await uploader.registerAction(prepared, {
   expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
 });
 await uploader.sendFileToSupernodes(actionId, authSignature, prepared.fileBytes);
-// actionId points at the stored bytes forever
+// actionId is the permanent reference to the stored bytes
 ```
 
 **Choose it when** UX matters. One signature instead of two, no Lumera address required from users, and a single key you can monitor, quota, and rotate. This is the default in the Injective reference integration and the fastest path to shipping.
