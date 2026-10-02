@@ -1,7 +1,7 @@
 ---
 title: "EVM Migration"
 sidebarTitle: "EVM Migration"
-description: "Lumera mainnet upgrades to EVM compatible accounts at block 6,715,000. Migrate before 30 November 2026 to keep your staking and delegations."
+description: "Move your Lumera account to its EVM compatible address within three months of the mainnet upgrade to keep your staking."
 ---
 
 Lumera mainnet is upgrading to full EVM compatibility. The upgrade changes how account keys derive, which means your existing address is replaced by a new one derived from the same recovery phrase.
@@ -9,11 +9,11 @@ Lumera mainnet is upgrading to full EVM compatibility. The upgrade changes how a
 Migration moves everything you hold at the old address to the new one. It is free, it takes a few minutes, and there is a deadline.
 
 <Warning>
-  **The upgrade activates at block height `6,715,000`, expected on 1 September 2026.** You then have 90 days to migrate. The window closes on **30 November 2026**.
+  **The mainnet upgrade has been rescheduled. The new date is to be announced.** It was planned for block `6,715,000`. Mainnet passed that height on `v1.12.0` without upgrading, and no upgrade plan is on chain yet. Once the upgrade activates, you have three calendar months to migrate. [Network status and upgrades](/networks-status) carries the current versions and the queries behind them.
 </Warning>
 
-<Card title="Migrate now" icon="arrow-right" href="https://portal.lumera.io/lumera-mainnet-1">
-  Open the EVM Migration page in the Lumera Portal.
+<Card title="Migrate in the Portal" icon="arrow-right" href="https://portal.lumera.io/lumera-mainnet-1">
+  Open the EVM Migration page in the Lumera Portal once the mainnet upgrade activates.
 </Card>
 
 ## What happens if you do nothing
@@ -41,8 +41,8 @@ If you have anything staked, migrating inside the window is not optional.
     Everything moves in a single transaction. There is no partial state to recover from.
   </Card>
 
-  <Card title="You have 90 days" icon="clock">
-    From 1 September to 30 November 2026. The window mirrors the one that has run on testnet since late June.
+  <Card title="You have three months" icon="clock">
+    The window opens at the upgrade block and closes three calendar months later. Testnet has run the same window since 2 July 2026.
   </Card>
 </CardGroup>
 
@@ -116,8 +116,12 @@ To use MetaMask, add the Lumera network and import the migrated account. The [Me
 ## Questions
 
 <AccordionGroup>
-  <Accordion title="Do I need to do anything before 1 September?">
-    No. Nothing works differently until mainnet upgrades at block `6,715,000`. If you want to rehearse, testnet has run the identical flow since late June.
+  <Accordion title="Do I need to do anything before the upgrade?">
+    No. Nothing works differently until mainnet upgrades. If you want to rehearse, testnet has run the identical flow since 2 July 2026. The testnet window closes on 2 October 2026.
+  </Accordion>
+
+  <Accordion title="How do I find the exact deadline?">
+    The upgrade records it on chain as the `migration_end_time` parameter, three calendar months after the upgrade block time. Governance can change it. Once your network has upgraded, check it with `lumerad query evmigration params`.
   </Accordion>
 
   <Accordion title="Does my recovery phrase change?">
@@ -125,7 +129,7 @@ To use MetaMask, add the Lumera network and import the migrated account. The [Me
   </Accordion>
 
   <Accordion title="What if I miss the window?">
-    Your liquid balance stays recoverable at the legacy address. Staking, delegations, unbonding, and rewards do not. They are permanently lost after 30 November 2026.
+    Your liquid balance stays recoverable at the legacy address. Staking, delegations, unbonding, and rewards do not. They are permanently lost once the window closes, three calendar months after the upgrade.
   </Accordion>
 
   <Accordion title="Does migration cost anything?">

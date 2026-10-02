@@ -72,7 +72,7 @@ const result = await client.Cascade.uploader.uploadFile(fileBytes, {
 | `taskOptions.pollInterval` | `number` | Milliseconds between status polls, default 2000 |
 | `taskOptions.timeout` | `number` | Milliseconds before timeout, default 300000 |
 
-Resolves to the completed upload `Task`, which carries `action_id` alongside `task_id`.
+Resolves to the completed SN-API `Task`, not the action ID. The `Task` type declares only `taskId`, `status`, and `progress`. When you need the action ID, run the lower level steps below. `registerAction` returns it as `actionId`.
 
 ### Lower level upload steps
 
@@ -81,7 +81,7 @@ Use these when you need control over individual phases.
 | Method | Purpose |
 |---|---|
 | `prepareFile(file)` | Convert `Uint8Array`, `File`, or `Blob` to bytes and compute the BLAKE3 hash |
-| `registerAction({ fileBytes, dataHash }, options)` | Generate the layout, sign it, and broadcast the registration transaction |
+| `registerAction({ fileBytes, dataHash }, options)` | Generate the layout, sign it, and broadcast the registration transaction. Returns `{ actionId, authSignature }` |
 | `makeAuthSignature(actionId, dataHash)` | Create an auth signature for an existing action |
 | `sendFileToSupernodes(actionId, authSignature, fileBytes, options)` | Send the file to the SN-API gateway after registration |
 

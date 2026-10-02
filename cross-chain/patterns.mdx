@@ -69,12 +69,15 @@ const client = await createLumeraClient({
   gasPrice: "0.025ulume",
 });
 
-const result = await client.Cascade.uploader.uploadFile(file, {
+const uploader = client.Cascade.uploader;
+const prepared = await uploader.prepareFile(file);
+const { actionId, authSignature } = await uploader.registerAction(prepared, {
   fileName: "artifact.json",
   isPublic: true,
   expirationTime: String(Math.floor(Date.now() / 1000) + 25 * 60 * 60), // 25 hours
 });
-// result.action_id points at the stored bytes forever
+await uploader.sendFileToSupernodes(actionId, authSignature, prepared.fileBytes);
+// actionId is the permanent reference to the stored bytes
 ```
 
 **Choose it when** UX matters. One signature instead of two, no Lumera address required from users, and a single key you can monitor, quota, and rotate. This is the default in the Injective reference integration and the fastest path to shipping.

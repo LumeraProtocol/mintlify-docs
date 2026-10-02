@@ -63,6 +63,7 @@
               "index",
               "architecture",
               "networks",
+              "networks-status",
               "protocol-revenue",
               "token",
               "governance",

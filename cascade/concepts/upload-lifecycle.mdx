@@ -168,9 +168,11 @@ const task = await client.Cascade.uploader.uploadFile(fileBytes, {
 });
 ```
 
-## Action states on chain
+`uploadFile` resolves to the completed SN-API task, not the action ID. If you need to store the action ID, run the three phases yourself as shown above.
 
-After registration, a Cascade upload moves through these states. For the full `ActionState` enum see [Actions](/intelligence-layer/verifiable-execution/actions).
+## Action states on chain (simplified)
+
+This is the simplified path a Cascade upload takes. The chain's `ActionState` enum has eight values, including `UNSPECIFIED`, `APPROVED` and `REJECTED`, which a Cascade upload does not pass through. See [Actions](/intelligence-layer/verifiable-execution/actions) for the full enum.
 
 ```text
 PENDING --> PROCESSING --> DONE
@@ -186,7 +188,7 @@ PENDING --> PROCESSING --> DONE
 | `FAILED` | Finalization failed |
 | `EXPIRED` | No SuperNode finalized before `expirationTime` |
 
-The storage fee is escrowed at registration. The chain refunds it if the action expires before finalization. The current fee is a 10000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.02 LUME. Fee parameters can change through governance.
+The storage fee is escrowed at registration. The chain refunds it if the action expires before finalization. The current mainnet fee is a 30,000 `ulume` base plus 10 `ulume` per KB. A 1 MB file costs about 0.04 LUME. Testnet uses a 10,000 `ulume` base, so the same file costs about 0.02 LUME there. Fee parameters can change through governance.
 
 ## SDK task states
 
