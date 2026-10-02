@@ -7,7 +7,7 @@ description: "Query SuperNode hardware metrics, payment statistics, version comp
 The LumeScope SuperNodes API aggregates hardware telemetry, payment statistics, availability probes, and version compatibility data for every SuperNode registered on the Lumera network. LumeScope probes each SuperNode on a configurable interval and stores the results. Your application can query current status, rank individual nodes by resources, and identify nodes that are temporarily unreachable. You never need direct access to an operator's machine.
 
 <Note>
-  All SuperNodes API endpoints are read-only and require no authentication. The base URL for mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for testnet.
+  All SuperNodes API endpoints are read-only and require no authentication. The base URL for mainnet is `https://lumescope.lumera.io`. Substitute `https://lumescope.testnet.lumera.io` for testnet.
 </Note>
 
 ---
@@ -46,11 +46,11 @@ Returns hardware and network metrics for all SuperNodes. Use query parameters to
 
 <CodeGroup>
 ```shell All supernodes
-curl https://api.lumera.io/v1/supernodes/metrics
+curl https://lumescope.lumera.io/v1/supernodes/metrics
 ```
 
 ```shell Available nodes only
-curl "https://api.lumera.io/v1/supernodes/metrics?status=available&limit=10"
+curl "https://lumescope.lumera.io/v1/supernodes/metrics?status=available&limit=10"
 ```
 </CodeGroup>
 
@@ -150,7 +150,7 @@ Returns the current hardware and network metrics for a single SuperNode identifi
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/supernodes/lumera15abc.../metrics
+curl https://lumescope.lumera.io/v1/supernodes/lumera15abc.../metrics
 ```
 
 ### Example response
@@ -191,7 +191,7 @@ Returns payment statistics broken down by denomination for a specific SuperNode.
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/supernodes/lumera15abc.../paymentInfo
+curl https://lumescope.lumera.io/v1/supernodes/lumera15abc.../paymentInfo
 ```
 
 ### Example response
@@ -240,7 +240,7 @@ Returns aggregated hardware statistics across all SuperNodes. You get network-wi
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/supernodes/stats
+curl https://lumescope.lumera.io/v1/supernodes/stats
 ```
 
 ### Example response
@@ -291,7 +291,7 @@ Returns per-SuperNode action statistics. The response shows how many Cascade and
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/supernodes/action-stats
+curl https://lumescope.lumera.io/v1/supernodes/action-stats
 ```
 
 ### Example response
@@ -345,7 +345,7 @@ Returns the list of SuperNodes whose most recent probe reported an unavailable s
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/supernodes/unavailable
+curl https://lumescope.lumera.io/v1/supernodes/unavailable
 ```
 
 ### Example response
@@ -397,7 +397,7 @@ Triggers an immediate, out-of-schedule sync and probe of all SuperNodes. Under n
 ### Example request
 
 ```shell
-curl -X POST https://api.lumera.io/v1/supernodes/sync
+curl -X POST https://lumescope.lumera.io/v1/supernodes/sync
 ```
 
 ### Example response
@@ -428,7 +428,7 @@ Returns the version compatibility matrix for SuperNode software, implementing a 
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/version/matrix
+curl https://lumescope.lumera.io/v1/version/matrix
 ```
 
 ### Example response

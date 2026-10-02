@@ -7,7 +7,7 @@ description: "Query Cascade and Sense actions on the Lumera network with decoded
 The LumeScope Actions API gives you a decoded view of every Cascade and Sense action registered on the Lumera network. Rather than parsing raw chain transactions yourself, you query a pre-indexed store. The store tracks each action through its full lifecycle, from the initial `register` transaction through `finalize` and `approve`. Three endpoints cover the most common needs. You can list actions with filters, fetch the full detail for a single action, and retrieve aggregate counts across the network.
 
 <Note>
-  All Actions API endpoints are read-only and require no authentication. The base URL for mainnet is `https://api.lumera.io`. Substitute `https://api.testnet.lumera.io` for testnet.
+  All Actions API endpoints are read-only and require no authentication. The base URL for mainnet is `https://lumescope.lumera.io`. Substitute `https://lumescope.testnet.lumera.io` for testnet.
 </Note>
 
 ---
@@ -58,15 +58,15 @@ Returns a paginated list of Cascade and Sense actions with fully decoded metadat
 
 <CodeGroup>
 ```shell Cascade actions
-curl https://api.lumera.io/v1/actions?type=cascade&limit=10
+curl https://lumescope.lumera.io/v1/actions?type=cascade&limit=10
 ```
 
 ```shell With transactions
-curl "https://api.lumera.io/v1/actions?type=sense&limit=5&include_transactions=true"
+curl "https://lumescope.lumera.io/v1/actions?type=sense&limit=5&include_transactions=true"
 ```
 
 ```shell Height range
-curl "https://api.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=20"
+curl "https://lumescope.lumera.io/v1/actions?fromHeight=100000&toHeight=200000&limit=20"
 ```
 </CodeGroup>
 
@@ -139,7 +139,7 @@ Returns the full details for a single action, including its complete transaction
 ### Example request
 
 ```shell
-curl https://api.lumera.io/v1/actions/abc123
+curl https://lumescope.lumera.io/v1/actions/abc123
 ```
 
 ### Example response
@@ -254,15 +254,15 @@ Returns aggregated action statistics across the entire network. Use this endpoin
 
 <CodeGroup>
 ```shell All actions
-curl https://api.lumera.io/v1/actions/stats
+curl https://lumescope.lumera.io/v1/actions/stats
 ```
 
 ```shell Cascade only
-curl "https://api.lumera.io/v1/actions/stats?type=cascade"
+curl "https://lumescope.lumera.io/v1/actions/stats?type=cascade"
 ```
 
 ```shell Time-bounded
-curl "https://api.lumera.io/v1/actions/stats?from=2024-01-01T00:00:00Z&to=2024-12-31T23:59:59Z"
+curl "https://lumescope.lumera.io/v1/actions/stats?from=2024-01-01T00:00:00Z&to=2024-12-31T23:59:59Z"
 ```
 </CodeGroup>
 
