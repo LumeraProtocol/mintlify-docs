@@ -125,6 +125,9 @@ Scrape both in Prometheus.
 global:
   scrape_interval: 15s
 
+rule_files:
+  - alerts.yml   # the rules below; the path is relative to this file
+
 scrape_configs:
   - job_name: 'validator'
     static_configs:
