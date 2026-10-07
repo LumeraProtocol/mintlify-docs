@@ -285,6 +285,10 @@ sudo sshd -T | grep -iE "^permitrootlogin|^passwordauthentication|^maxauthtries"
 Keep your current session open and confirm you can log in from a second terminal before closing it. The new config applies to the next connection. Locking yourself out of a validator means downtime and eventual jailing.
 </Warning>
 
+<Tip>
+For sentry nodes, consensus key protection, and more hardening, see [validator security and monitoring](/validators/security).
+</Tip>
+
 ## Step 8. Sync the chain
 
 Pick one of the two options below. The snapshot is fastest and is the recommended path.

@@ -241,7 +241,8 @@
                       "validators/testnet/create-validator",
                       "validators/testnet/operations"
                     ]
-                  }
+                  },
+                  "validators/security"
                 ]
               },
               {

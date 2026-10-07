@@ -1,0 +1,172 @@
+---
+title: "Validator security and monitoring"
+sidebarTitle: "Security and monitoring"
+description: "Sentry nodes, consensus key protection, extra host hardening, and Prometheus alerts for a Lumera validator."
+---
+
+Node setup already covers the firewall, a dedicated user, and SSH hardening ([mainnet](/validators/mainnet/node-setup#step-7-harden-the-server), [testnet](/validators/testnet/node-setup#step-7-harden-the-server)). This page adds the practices from the Lumera validator operations manual that go further: a sentry layer in front of the validator, protection for the consensus key, more host hardening, and metrics alerts. They apply to mainnet and testnet alike. On mainnet, treat them as the baseline.
+
+## Sentry node architecture
+
+A sentry layer keeps the validator off the public internet. The validator talks only to a few full nodes you run, the sentries, and the sentries talk to the rest of the network. A DDoS attack then hits a replaceable full node instead of costing you missed blocks.
+
+Each sentry is an ordinary full node, set up like the validator (same `lumerad`, genesis, and sync), on its own server. Run at least two. If every sentry is down, the validator has no peers.
+
+Find each node's ID on that node.
+
+```bash
+lumerad comet show-node-id
+```
+
+On each **sentry**, set these in `~/.lumera/config/config.toml`.
+
+```toml
+pex = true
+persistent_peers = "<validator-node-id>@<validator-private-ip>:26656"
+private_peer_ids = "<validator-node-id>"
+```
+
+On the **validator**, set these in `~/.lumera/config/config.toml`.
+
+```toml
+pex = false
+persistent_peers = "<sentry1-node-id>@<sentry1-private-ip>:26656,<sentry2-node-id>@<sentry2-private-ip>:26656"
+private_peer_ids = ""
+```
+
+`private_peer_ids` keeps the sentries from gossiping the validator's address. With `pex = false`, the validator dials only the peers listed.
+
+Then let only the sentries reach the validator's P2P port, and restart.
+
+```bash
+sudo ufw delete allow 26656/tcp
+sudo ufw allow from <sentry1-private-ip> to any port 26656 proto tcp
+sudo ufw allow from <sentry2-private-ip> to any port 26656 proto tcp
+sudo ufw status
+
+sudo systemctl restart lumera
+```
+
+## Protect the consensus key
+
+The validator signs blocks with `~/.lumera/config/priv_validator_key.json`. The node's P2P identity is `~/.lumera/config/node_key.json`.
+
+- Back up both files offline, encrypted. Never keep the only copy on the server.
+- Never run the same `priv_validator_key.json` on two machines at once. Two signers double-sign, and double signing is slashed and tombstoned permanently.
+- When you restore or move a validator, stop the old node and make sure it can't start again before you start the new one. See [migrating to a new server](/validators/mainnet/operations#migrating-to-a-new-server).
+- Protect the operator key's keyring with a strong passphrase.
+
+The operations manual recommends keeping the consensus key in a hardware security module: a YubiHSM 2, or a Ledger Nano S or X with the Tendermint app. Follow the device's own documentation to generate the key and connect it to the node.
+
+## Host hardening beyond node setup
+
+Install security updates automatically.
+
+```bash
+sudo apt install -y unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+Ban addresses that keep failing SSH logins.
+
+```bash
+sudo apt install -y fail2ban
+sudo systemctl enable --now fail2ban
+```
+
+Lock the root password. Root SSH is already off after node setup.
+
+```bash
+sudo passwd -l root
+```
+
+<Warning>
+Before locking root, confirm from a second terminal that your own user can still log in and run `sudo -v`.
+</Warning>
+
+## Metrics and alerts
+
+The operations pages list what to alert on ([mainnet](/validators/mainnet/operations#monitoring), [testnet](/validators/testnet/operations#monitoring)). This is a minimal Prometheus setup to start from.
+
+Turn on the node's metrics: set `prometheus = true` in the `[instrumentation]` section of `~/.lumera/config/config.toml` and restart. Metrics are then served on `localhost:26660/metrics`.
+
+Add host metrics with node_exporter. Check the [node_exporter releases](https://github.com/prometheus/node_exporter/releases) for the current version.
+
+```bash
+wget https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
+tar xvf node_exporter-1.7.0.linux-amd64.tar.gz
+sudo mv node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/
+
+sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<EOF
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=validator
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now node_exporter
+```
+
+<Warning>
+Keep ports 26660 and 9100 closed to the internet. Scrape them from Prometheus on the same host or over a private network.
+</Warning>
+
+Scrape both in Prometheus.
+
+```yaml
+# /etc/prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+
+rule_files:
+  - alerts.yml   # the rules below; the path is relative to this file
+
+scrape_configs:
+  - job_name: 'validator'
+    static_configs:
+      - targets: ['localhost:26660']
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+```
+
+Two alert rules to start with.
+
+```yaml
+# /etc/prometheus/alerts.yml
+groups:
+- name: validator
+  rules:
+  - alert: ValidatorDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+  - alert: BlocksMissed
+    expr: cometbft_consensus_validator_missed_blocks > 10
+    for: 10m
+    labels:
+      severity: warning
+```
+
+<Note>
+Metric names start with the `namespace` set in the `[instrumentation]` section, `cometbft` by default. List what your node exports with `curl -s localhost:26660/metrics | grep missed` and adjust the rule to match.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Mainnet operations" icon="server" href="/validators/mainnet/operations">
+    Upgrades, monitoring, troubleshooting, and migration on mainnet.
+  </Card>
+  <Card title="Testnet operations" icon="flask" href="/validators/testnet/operations">
+    The same procedures on testnet.
+  </Card>
+</CardGroup>

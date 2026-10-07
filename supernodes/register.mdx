@@ -76,6 +76,18 @@ Replace `<SN_ACCOUNT>` with your SuperNode's address and `<amount>` with the amo
 
 Request testnet tokens for your `SN_ACCOUNT` address from the [testnet faucet](/faucet), the [AstroStake faucet](https://faucet.astrostake.xyz/lumera), or [Discord](https://discord.com/invite/lumeraprotocol).
 
+### Option C. Foundation-funded SN account (vesting)
+
+The Lumera foundation can fund your SuperNode account. It does not delegate for you. It sends funds, and you delegate them in Step 2.
+
+1. Give the foundation a **fresh** `SN_ACCOUNT` address, from a newly created key. That is either the key `sn-manager init` created in [node setup, Step 5](/supernodes/node-setup#step-5-initialize-the-supernode), or a new key you created elsewhere and [recovered on the SuperNode host](/supernodes/node-setup#recover-an-existing-key).
+2. The foundation sends the funds as a vesting account, either temporarily locked (delayed vesting, which unlocks after a delay or over time) or permanently locked (permanent vesting, which never unlocks).
+3. You delegate from `SN_ACCOUNT` to your validator in Step 2. Delegated vesting funds count toward the LEP-3 minimum.
+
+<Warning>
+Keep your validator's own self-delegation above zero. The eligibility check requires some self-delegation even when the SN account's delegation covers the minimum. Funds sitting in `SN_ACCOUNT` without a delegation do not count. Treat the `SN_ACCOUNT` key as critical: if you lose it, you can no longer manage its delegation, even while the funds are still vesting.
+</Warning>
+
 <Note>
 SuperNode registration uses a **LEP-3 dual-source stake** model. The minimum is the combined total of your validator self-delegation plus the SN account delegation. On testnet-2 this is currently **10,000 LUME**. Check the current value with `lumerad query supernode params`. This parameter is governable and can change.
 </Note>

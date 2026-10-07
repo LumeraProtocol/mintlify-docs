@@ -273,6 +273,8 @@ What to alert on.
 
 With `prometheus = true` in `config.toml`, metrics are served on `localhost:26660/metrics`. Scrape them with Prometheus and build alerts in Grafana. Purpose-built options include [tenderduty](https://github.com/blockpane/tenderduty) and [cosmos-validator-watcher](https://github.com/kilnfi/cosmos-validator-watcher). Both page you on missed blocks directly.
 
+For a node_exporter, Prometheus, and alert-rule starting point, see [validator security and monitoring](/validators/security#metrics-and-alerts).
+
 <Note>
 Treat alerting as important even on testnet. At minimum, page a human on missed blocks. Practicing the alert flow here means it already works when you move to mainnet.
 </Note>
@@ -339,7 +341,7 @@ Never shortcut step 3. Missing a few blocks during a clean cutover costs almost 
 
 - [Lumera releases](https://github.com/LumeraProtocol/lumera/releases)
 - [Network configurations](https://github.com/LumeraProtocol/lumera-networks)
-- [Validator operations manual](https://github.com/LumeraProtocol/lumera-networks/blob/master/docs/VALIDATOR_GUIDE.md)
+- [Validator security and monitoring](/validators/security)
 - [SuperNode operator guide](https://github.com/LumeraProtocol/lumera-networks/blob/master/docs/SUPERNODE_GUIDE.md)
 - [Testnet explorer](https://portal.testnet.lumera.io/lumera-testnet-2)
 - [Testnet snapshots](https://www.polkachu.com/testnets/lumera/snapshots)

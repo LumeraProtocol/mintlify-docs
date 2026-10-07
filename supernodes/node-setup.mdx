@@ -293,6 +293,69 @@ lumerad keys show supernode -a --keyring-backend file --keyring-dir ~/.supernode
 
 You will be prompted for the keyring passphrase from Step 5. A successful output is a single `lumera1...` line.
 
+## Alternative: run without sn-manager
+
+`sn-manager` installs the SuperNode and keeps it updated safely. If you would rather manage the `supernode` binary yourself, replace Steps 4 to 7 with the following. Updates are then yours to do by hand.
+
+<Accordion title="Run the supernode binary directly">
+
+Install the binary.
+
+```bash
+sudo curl -L -o /usr/local/bin/supernode \
+  https://github.com/LumeraProtocol/supernode/releases/latest/download/supernode-linux-amd64
+sudo chmod +x /usr/local/bin/supernode
+supernode version
+```
+
+Initialize it with the keyring and network settings from Step 5. Add `--recover` to restore an existing key from its mnemonic.
+
+```bash
+export SUPERNODE_PASSPHRASE="your-secure-passphrase"
+
+supernode init \
+  --keyring-backend file \
+  --keyring-passphrase-env SUPERNODE_PASSPHRASE \
+  --key-name supernode \
+  --supernode-addr 0.0.0.0 \
+  --supernode-port 4444 \
+  --lumera-grpc https://lumera-testnet-grpc.linknode.org \
+  --chain-id lumera-testnet-2
+```
+
+Instead of `--keyring-passphrase-env`, you can pass `--keyring-passphrase` or `--keyring-passphrase-file`.
+
+Run it as a systemd service.
+
+```bash
+sudo tee /etc/systemd/system/supernode.service > /dev/null <<EOF
+[Unit]
+Description=Lumera SuperNode
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$USER
+Environment=SUPERNODE_PASSPHRASE=your-secure-passphrase
+ExecStart=/usr/local/bin/supernode start --basedir $HOME/.supernode
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo chmod 600 /etc/systemd/system/supernode.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now supernode
+sudo journalctl -fu supernode
+```
+
+The passphrase rules from Step 6 apply here too. On the other SuperNode pages, use `supernode` wherever `systemctl` and `journalctl` commands name `sn-manager`.
+
+</Accordion>
+
 ## Next steps
 
 With `sn-manager` running and `lumerad` installed, proceed to fund, delegate, and register your SuperNode on chain.
