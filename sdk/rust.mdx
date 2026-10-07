@@ -4,7 +4,7 @@ sidebarTitle: "Overview"
 description: "Build server-side Rust applications and CLI tools that store and retrieve files on Cascade."
 ---
 
-The [Rust SDK](https://github.com/LumeraProtocol/sdk-rs) is the official SDK for server-side applications, CLI tools, and system-level integrations with Lumera Protocol. It talks to the chain over gRPC and routes file transfers through SN-API, the REST gateway in front of SuperNodes.
+The Rust SDK is the official SDK for server-side applications, CLI tools, and system-level integrations with Lumera Protocol. It talks to the chain over gRPC and routes file transfers through SN-API, the REST gateway in front of SuperNodes.
 
 Because file transfers travel over HTTPS to SN-API, the SDK works from any machine with ordinary outbound internet access. The [Go SDK](/sdk/go) instead streams files to SuperNodes directly over gRPC on port 4444, which requires direct network reachability to that port.
 
