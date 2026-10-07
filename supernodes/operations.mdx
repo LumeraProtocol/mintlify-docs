@@ -308,7 +308,10 @@ cp -r ~/.supernode/keys/ ~/sn-backup/keys/
 | Registration fails with "insufficient stake" | Combined stake below minimum | Check both sources with `lumerad query staking delegation <SN_ACCOUNT> <VALOPER>` and your validator self-delegation. The combined total must meet `minimum_stake_for_sn` (check with `lumerad query supernode params`) |
 | `SigningInfo not found` after registration | Chain has not processed yet | Wait a few blocks and query again |
 | sn-manager will not start | Passphrase or config issue | Verify `SUPERNODE_PASSPHRASE` in the service file and inspect `~/.supernode/config.yml` |
-| Ports appear closed in metrics | Firewall or cloud security group | Verify `ufw status` and cloud provider firewall rules. Test externally with `nc -zv <IP> 4444` |
+| Ports appear closed in metrics | Firewall or cloud security group | Verify `ufw status` and cloud provider firewall rules for 4444, 4445, and 8002, and that the registered endpoint matches your public IP and port 4444. Test externally with `nc -zv <IP> 4444` |
+| Eligibility fails although `SN_ACCOUNT` was funded | Zero validator self-delegation, `SN_ACCOUNT` funds not delegated, or a different `SN_ACCOUNT` registered than the one that delegated | Keep a non-zero self-delegation, delegate from `SN_ACCOUNT` ([register, Step 2](/supernodes/register#step-2-delegate-from-the-supernode-account-to-the-validator)), and compare `identity` in `~/.supernode/config.yml` with the registered account |
+| `sn-manager` auto-update fails | The install is not writable by the service user | Install under `~/.sn-manager/bin`, remove any `/usr/local/bin/sn-manager` copy, and check that `command -v -a sn-manager` lists only the home install |
+| Service stays down after `sn-manager stop` | `sn-manager stop` exits cleanly, so systemd does not restart it | Start it again with `sudo systemctl start sn-manager` |
 | Cannot connect to validator gRPC | gRPC bound to localhost | On the validator, set `address = "0.0.0.0:9090"` in `~/.lumera/config/app.toml` and run `ufw allow from <SN_IP> to any port 9090` |
 
 ## Useful links
