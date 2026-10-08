@@ -104,9 +104,22 @@ You will pass `<VALIDATOR_IP>:9090` as `--lumera-grpc` in Step 5.
 
 Download and install the latest `sn-manager` release. Installing it under your home directory lets it update itself.
 
+On **mainnet**, download the latest release:
+
 ```bash
 curl -L https://github.com/LumeraProtocol/supernode/releases/latest/download/supernode-linux-amd64.tar.gz | tar -xz
+```
 
+On **testnet**, download the newest `-testnet` release instead. `latest` is always the newest mainnet release.
+
+```bash
+TAG=$(curl -s "https://api.github.com/repos/LumeraProtocol/supernode/releases?per_page=30" | grep -o '"tag_name": *"[^"]*-testnet"' | head -1 | cut -d'"' -f4)
+curl -L "https://github.com/LumeraProtocol/supernode/releases/download/$TAG/supernode-linux-amd64.tar.gz" | tar -xz
+```
+
+Then install it:
+
+```bash
 mkdir -p ~/.sn-manager/bin
 install -D -m 0755 sn-manager ~/.sn-manager/bin/sn-manager
 ```
@@ -299,7 +312,7 @@ You will be prompted for the keyring passphrase from Step 5. A successful output
 
 <Accordion title="Run the supernode binary directly">
 
-Install the binary.
+Install the binary. On testnet, replace `latest/download` with `download/$TAG`, with `TAG` set as in Step 4.
 
 ```bash
 sudo curl -L -o /usr/local/bin/supernode \
