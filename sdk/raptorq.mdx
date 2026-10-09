@@ -20,7 +20,6 @@ Most developers interact with Cascade through the [SuperNode gRPC API](/api/grpc
 | Linux | arm64 (including Raspberry Pi) |
 | macOS | amd64 (Intel) |
 | macOS | arm64 (Apple Silicon) |
-| Windows | amd64 |
 
 ---
 
@@ -29,13 +28,15 @@ Most developers interact with Cascade through the [SuperNode gRPC API](/api/grpc
 Add `rq-go` to your Go module.
 
 ```shell
-go get github.com/LumeraProtocol/rq-go
+go get lumera.build/rq-go@v0.3.0
 ```
+
+The module path is `lumera.build/rq-go` from v0.3.0 on. Earlier versions were published as `github.com/LumeraProtocol/rq-go`; switch the import path when you upgrade.
 
 Then import it in your source files.
 
 ```go
-import "github.com/LumeraProtocol/rq-go"
+import "lumera.build/rq-go"
 ```
 
 ---
@@ -51,7 +52,7 @@ import (
     "fmt"
     "os"
 
-    raptorq "github.com/LumeraProtocol/rq-go"
+    raptorq "lumera.build/rq-go"
 )
 
 func main() {

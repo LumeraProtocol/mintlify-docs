@@ -125,12 +125,13 @@ Select a network below to view its chain parameters, genesis file, seed nodes, a
 
     The claims file loaded into chain state at genesis is published next to it: [testnet-2/claims.csv](https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/testnet-2/claims.csv).
 
-    ### Seed Nodes
+    ### Peers
 
-    Add the network seed node to the `[p2p]` section of `~/.lumera/config/config.toml`:
+    Testnet has no seed node. Download the address book that Lumera's snapshot service keeps current; your node dials peers from it:
 
-    ```toml
-    seeds = "faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"
+    ```bash
+    curl -fsSL -o ~/.lumera/config/addrbook.json \
+      https://snapshots.lumera.io/testnet/addrbook.json
     ```
 
     ### Minimum Gas Price
@@ -151,9 +152,9 @@ Select a network below to view its chain parameters, genesis file, seed nodes, a
     curl -o ~/.lumera/config/genesis.json \
       https://raw.githubusercontent.com/LumeraProtocol/lumera-networks/master/testnet-2/genesis.json
     
-    # Set seeds in config.toml
-    sed -i 's/seeds = ""/seeds = "faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"/' \
-      ~/.lumera/config/config.toml
+    # Download the address book (testnet has no seed node)
+    curl -fsSL -o ~/.lumera/config/addrbook.json \
+      https://snapshots.lumera.io/testnet/addrbook.json
     
     # Set gas price in app.toml
     sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0.025ulume"/' \
