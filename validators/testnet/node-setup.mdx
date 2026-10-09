@@ -123,21 +123,20 @@ jq -r .chain_id ~/.lumera/config/genesis.json
 
 ## Step 6. Configure the node
 
-Set the [seed node](https://github.com/cosmos/chain-registry/blob/master/testnets/lumeratestnet/chain.json) and the minimum gas price.
+Set the minimum gas price.
 
 ```bash
-SEEDS="faff7c1350468c53121a669ac40e317a4a70c425@seeds.testnet.lumera.io:26656"
-
-sed -i "s|^seeds *=.*|seeds = \"$SEEDS\"|" "$HOME/.lumera/config/config.toml"
 sed -i "s|^minimum-gas-prices *=.*|minimum-gas-prices = \"0.025ulume\"|" "$HOME/.lumera/config/app.toml"
 ```
 
-Load a maintained [address book](https://www.polkachu.com/testnets/lumera/addrbooks) so a new node has peers to dial if the seed is unreachable.
+Testnet has no seed node. Load the address book that Lumera's snapshot service keeps current, so a new node has peers to dial:
 
 ```bash
 curl -fsSL -o "$HOME/.lumera/config/addrbook.json" \
-  https://snapshots.polkachu.com/testnet-addrbook/lumera/addrbook.json
+  https://snapshots.lumera.io/testnet/addrbook.json
 ```
+
+Polkachu publishes another one at `https://snapshots.polkachu.com/testnet-addrbook/lumera/addrbook.json`.
 
 Enable pruning so disk usage stays under control. Skip this only if you specifically need an archive node.
 
@@ -405,7 +404,7 @@ curl -fsSL localhost:26657/net_info | jq -r '.result.n_peers'
 ```
 
 <Note>
-If zero peers persists, check the logs. `Couldn't connect to any seeds` with `connection refused` means the seed is down. In that case, stop the node, refresh `seeds` from the [chain-registry](https://github.com/cosmos/chain-registry/blob/master/testnets/lumeratestnet/chain.json), install a current addrbook, then start it again. `config.toml` is only read at startup, so edits do nothing until you restart.
+If zero peers persists, the address book is probably stale. Stop the node, download a current one (`https://snapshots.lumera.io/testnet/addrbook.json`), then start it again. If `config.toml` still lists `seeds` from an older setup, clear them: testnet has no seed node, and `config.toml` is only read at startup.
 </Note>
 
 ## Verification checklist
