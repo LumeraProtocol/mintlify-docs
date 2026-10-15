@@ -241,9 +241,16 @@ console.log(new TextDecoder().decode(bytes));
 Query the action to follow its progress on chain.
 
 ```ts status.ts
-const action = await client.Blockchain.Action.getAction(actionId);
+const res = await fetch(
+  `${LUMERA_CHAIN_INFO.rest}/LumeraProtocol/lumera/action/v1/get_action/${actionId}`,
+);
+const { action } = await res.json();
 console.log("State:", action.state);
 ```
+
+<Warning>
+Do not use `client.Blockchain.Action.getAction()` on sdk-js 0.3.0. It parses the action metadata as JSON, but the chain stores it as protobuf bytes, so the call throws on every live action. Query the LCD route above until a release fixes it.
+</Warning>
 
 The state starts at `PENDING` after registration. It moves to `PROCESSING` while SuperNodes encode and distribute the file, then ends at `DONE`. An upload still unfinalized at its `expirationTime` ends at `EXPIRED` and the escrowed fee is refunded.
 

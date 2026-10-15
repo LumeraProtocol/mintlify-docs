@@ -208,7 +208,7 @@ Once created, the client exposes two primary sub-clients.
 ```ts
 // --- Blockchain queries (nested under Action / Supernode / Tx) ---
 client.Blockchain.Action.getParams();
-client.Blockchain.Action.getAction(actionId);
+client.Blockchain.Action.getAction(actionId);      // throws on 0.3.0, read the LCD instead
 client.Blockchain.Action.getActionFee(dataSizeKb); // size in KB, rounded up
 client.Blockchain.Supernode.listSupernodes();
 client.Blockchain.Tx.signAndBroadcast(signerAddress, messages, fee);

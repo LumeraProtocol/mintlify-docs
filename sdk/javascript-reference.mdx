@@ -103,7 +103,7 @@ Every download authenticates with an ADR-036 signature over the action ID. The [
 |---|---|
 | `Blockchain.getChainId()` | The connected chain ID |
 | `Blockchain.Action.getParams()` | Current action parameters such as `max_raptor_q_symbols` |
-| `Blockchain.Action.getAction(actionId)` | The action record with `creator`, `actionID`, `actionType`, `metadata`, and `state` |
+| `Blockchain.Action.getAction(actionId)` | The action record with `creator`, `actionID`, `actionType`, `metadata`, and `state`. Throws on 0.3.0, see below |
 | `Blockchain.Action.getActionFee(dataSizeKb)` | The storage fee in `ulume` for that size in KB, rounded up from bytes |
 | `Blockchain.Supernode.listSupernodes()` | All registered SuperNodes |
 | `Blockchain.Tx.simulate(address, msgs)` | Gas estimate for a set of messages |
@@ -113,6 +113,10 @@ Every download authenticates with an ADR-036 signature over the action ID. The [
 const dataSizeKb = Math.ceil(fileSizeBytes / 1024);
 const { amount } = await client.Blockchain.Action.getActionFee(dataSizeKb);
 ```
+
+<Warning>
+`Blockchain.Action.getAction()` throws on sdk-js 0.3.0, the current release. It decodes the action metadata as JSON, but the chain returns protobuf bytes. Read the action from the LCD route `/LumeraProtocol/lumera/action/v1/get_action/{actionId}` instead.
+</Warning>
 
 Chain parameter queries are cached for 5 minutes.
 
