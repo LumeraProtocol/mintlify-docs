@@ -147,7 +147,7 @@ The SDK retries this automatically with 5 attempts and 3-second delays. If the e
 The SuperNodes could not reconstruct the file. This happens with very recent uploads that are still processing, or with actions that have expired.
 
 1. Wait a few minutes after upload before you attempt a download.
-2. Verify the action status with `client.Blockchain.Action.getAction(actionId)`.
+2. Verify the action state on the LCD route `/LumeraProtocol/lumera/action/v1/get_action/{actionId}`. The SDK helper `getAction()` throws on 0.3.0.
 3. Check that `state === "ACTION_STATE_DONE"`.
 
 ### Private file access denied
