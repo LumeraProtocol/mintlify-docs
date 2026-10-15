@@ -11,7 +11,7 @@ Thanks for improving the Lumera Protocol documentation.
 
 ## Adding your public endpoints or snapshots
 
-Infrastructure operators can add a row to the Community providers table on `networks.mdx`.
+Infrastructure operators can add an entry to the Community providers section on `networks.mdx`.
 
 Open your pull request with this URL so the provider form loads, replacing the branch name.
 
