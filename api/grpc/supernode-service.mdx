@@ -8,15 +8,19 @@ description: "Query system status and resource metrics for a Lumera SuperNode ov
 
 ## Connection
 
-SuperNodes listen on **port 4444** by default (configurable via `supernode.port` in `config.yml`). You can verify connectivity with `grpcurl`.
+SuperNodes listen on **port 4444** by default. Set `supernode.port` in `config.yml` to change it.
+
+Port 4444 runs Lumera's own secure handshake, which checks the peer identity against on-chain state. Plain `grpcurl` cannot reach it. A plaintext dial opens the socket and then times out resolving the service descriptor. A TLS dial fails to connect. The service does not register gRPC reflection either.
+
+To check that a node is alive, call its HTTP gateway on port 8002.
 
 ```shell
-grpcurl -plaintext localhost:4444 lumera.supernode.v1.SupernodeService/GetStatus
+curl http://localhost:8002/api/v1/status
 ```
 
-<Note>
-  If TLS is enabled on the SuperNode, replace `-plaintext` with the appropriate `-cacert` / `-cert` / `-key` flags. Most production deployments terminate TLS at a reverse proxy and expose plaintext gRPC internally.
-</Note>
+Add `?include_p2p_metrics=true` to that request for DHT diagnostics.
+
+To call `SupernodeService` itself, use a client that performs the Lumera handshake, such as the [supernode Go SDK](https://github.com/LumeraProtocol/supernode/tree/master/sdk). Read the gRPC snippets on this page as message shapes rather than commands you can paste.
 
 ---
 
@@ -119,7 +123,7 @@ Returns a point-in-time status snapshot of the SuperNode. The request lets you t
 
   <Expandable title="network fields">
     <ResponseField name="network.peers_count" type="int32">
-      Number of peers currently connected in the P2P network. Always present, even when `include_p2p_metrics` is `false`.
+      Number of peers currently connected in the P2P network. The whole `network` object, this field included, is returned only when `include_p2p_metrics` is `true`.
     </ResponseField>
     <ResponseField name="network.peer_addresses" type="array of strings">
       List of connected peer addresses in `"ID@IP:Port"` format.
@@ -224,11 +228,8 @@ Returns a point-in-time status snapshot of the SuperNode. The request lets you t
 
 ## Full example with P2P metrics
 
-Pass `include_p2p_metrics: true` to receive DHT diagnostics alongside the standard fields.
+Set `include_p2p_metrics` to `true` to receive DHT diagnostics alongside the standard fields. Over the HTTP gateway the same request looks like this.
 
 ```shell
-grpcurl -plaintext \
-  -d '{"include_p2p_metrics": true}' \
-  localhost:4444 \
-  lumera.supernode.v1.SupernodeService/GetStatus
+curl "http://localhost:8002/api/v1/status?include_p2p_metrics=true"
 ```

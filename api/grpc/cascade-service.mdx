@@ -82,15 +82,17 @@ The server emits these events in order during a successful registration.
 | `ARTEFACTS_STORED` | Encoded symbols distributed and stored in the P2P network |
 | `ACTION_FINALIZED` | Finalization transaction submitted on-chain with `tx_hash` set |
 
-### grpcurl example
+### Register request shape
 
 ```shell
-# Stream file registration (sends metadata only; pipe real file data in production)
+# Metadata message only. Real clients stream DataChunk messages first.
 grpcurl -plaintext \
   -d '{"metadata": {"task_id": "task-001", "action_id": "action-abc"}}' \
   localhost:4444 \
   lumera.supernode.v1.CascadeService/Register
 ```
+
+Port 4444 requires Lumera's secure handshake, so this snippet does not run as written. See [Connection](/api/grpc/supernode-service#connection).
 
 <Note>
   Production clients should use a gRPC library (e.g., the [supernode Go SDK](https://github.com/LumeraProtocol/supernode/tree/master/sdk)) to open a real bidirectional stream and send file data as `DataChunk` messages before sending the `Metadata` message. The `grpcurl` snippet above illustrates the shape of the metadata message only.
@@ -141,7 +143,7 @@ Each message in the response stream is one of two types (`oneof`).
   </Expandable>
 </ResponseField>
 
-### grpcurl example
+### Download request shape
 
 ```shell
 grpcurl -plaintext \
@@ -149,6 +151,8 @@ grpcurl -plaintext \
   localhost:4444 \
   lumera.supernode.v1.CascadeService/Download
 ```
+
+Port 4444 requires Lumera's secure handshake, so `grpcurl` cannot run this request. See [Connection](/api/grpc/supernode-service#connection).
 
 <Note>
   The `signature` field must be produced by signing the `action_id` string with the **LumeraID key** linked to the owner address recorded on the action. Signatures produced with a different key are rejected with an `UNAUTHENTICATED` gRPC status. See the LumeraID documentation for how to generate a compatible signature.
