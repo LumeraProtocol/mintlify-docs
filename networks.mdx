@@ -19,7 +19,18 @@ Public endpoints allow applications and developers to query network state withou
 | **LCD (REST)** | `https://lcd.lumera.io` | `https://lumera-testnet-api.polkachu.com` |
 | **SN-API** | `https://snapi.lumera.io` | `https://snapi.testnet.lumera.io` |
 
-Community infrastructure providers such as [Polkachu](https://www.polkachu.com/networks/lumera) also operate public Lumera endpoints. Validator snapshots and additional connection resources are available in the [validator setup guides](/validators/mainnet/node-setup).
+### Community providers
+
+Independent operators also run public Lumera endpoints. They are listed here as a convenience and carry the same caveats as the endpoints above. Lumera does not operate them and offers no availability guarantee.
+
+| Provider | Network | RPC | LCD (REST) | gRPC | Snapshot |
+| --- | --- | --- | --- | --- | --- |
+| [Polkachu](https://www.polkachu.com/networks/lumera) | Mainnet | `https://lumera-rpc.polkachu.com` | `https://lumera-api.polkachu.com` | `lumera-grpc.polkachu.com:30790` | [Mainnet snapshots](https://www.polkachu.com/tendermint_snapshots/lumera), about 11 GB, daily |
+| [Polkachu](https://www.polkachu.com/testnets/lumera) | Testnet | `https://lumera-testnet-rpc.polkachu.com` | `https://lumera-testnet-api.polkachu.com` | `lumera-testnet-grpc.polkachu.com:30790` | [Testnet snapshots](https://www.polkachu.com/testnets/lumera/snapshots), about 55 GB |
+
+Run your own node or use a dedicated provider for production workloads.
+
+**Do you run public Lumera endpoints?** Add your row to this table. Open a pull request with the [provider listing template](https://github.com/LumeraProtocol/mintlify-docs/blob/main/.github/PULL_REQUEST_TEMPLATE/provider-listing.md) and fill in what you operate. We run every endpoint against the live chain before merging, so list only the networks you actually serve.
 
 ## Network Configuration
 
