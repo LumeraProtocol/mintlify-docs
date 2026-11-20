@@ -43,7 +43,7 @@ Uploads need LUME to pay the action fee. An empty wallet fails with this error.
 "insufficient funds: 0ulume is smaller than 50000ulume"
 ```
 
-Fund your wallet with testnet tokens from the [faucet](/faucet) before uploading.
+Fund your wallet on the network you are using. On testnet, you can request tokens from the [faucet](/faucet).
 
 ### Keplr extension not found
 
@@ -86,7 +86,7 @@ The task fails when no SuperNodes are online to handle your request.
 "Task failed with status: sdk:supernodes_unavailable"
 ```
 
-Wait a few minutes and retry. This usually means the testnet SuperNodes are temporarily down or overloaded.
+Wait a few minutes and retry. SuperNodes on your selected network may be temporarily unavailable or overloaded.
 
 ### Upload timeout
 
@@ -120,7 +120,7 @@ The transaction went through, but the SDK could not find the `action_registered`
 This usually means the upload started too soon after the client was created, or the transaction failed silently on chain. Work through three checks.
 
 1. Add a short delay before uploading so the chain can finalize the transaction.
-2. Confirm the transaction succeeded on [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2).
+2. Confirm the transaction succeeded in [Lumera Portal for your target network](/networks).
 3. Make sure you hold enough funds for the action fee. The transaction may have failed on gas.
 
 ### Action not found
@@ -138,7 +138,7 @@ try {
 
 The SDK retries this automatically with 5 attempts and 3-second delays. If the error persists, work through these steps.
 
-1. Verify the action exists on chain in [Lumera Portal](https://portal.testnet.lumera.io/lumera-testnet-2).
+1. Verify the action exists in [Lumera Portal for your target network](/networks).
 2. Increase the timeout in `taskOptions`.
 3. Try a different SN-API endpoint.
 
@@ -221,7 +221,7 @@ taskOptions: {
 | --- | --- |
 | Discord | [discord.com/invite/lumeraprotocol](https://discord.com/invite/lumeraprotocol) |
 | GitHub issues | [LumeraProtocol/releases](https://github.com/LumeraProtocol/releases/issues) (choose `sdk-js` as the product) |
-| Lumera Portal | [portal.testnet.lumera.io](https://portal.testnet.lumera.io/lumera-testnet-2) |
+| Lumera Portal | [Network explorers](/networks) |
 
 ## Next steps
 
